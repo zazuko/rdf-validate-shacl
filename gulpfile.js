@@ -40,6 +40,7 @@ gulp.task('browserify-public-tests', function () {
     if (fs.existsSync('public/test.js')) {
         fs.unlinkSync('public/test.js');
     }
+    fs.createReadStream('dist/shacl.js').pipe(fs.createWriteStream('public/shacl.js'));
     gulp.src('public/src/test.js')
         .pipe(browserify())
         .pipe(gulp.dest('public'));
