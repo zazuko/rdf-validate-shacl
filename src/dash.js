@@ -147,6 +147,13 @@ var registerDASH = function(context) {
         return results;
     };
 
+    var validateCoExistsWith = function($this, $path, $coExistsWith) {
+        var path = rdfquery.toRDFQueryPath($path);
+        var has1 = context.$data.query().path($this, path, null).getCount() > 0;
+        var has2 = context.$data.query().match($this, $coExistsWith, null).getCount() > 0;
+        return has1 === has2;
+    }
+
     var validateDatatype = function ($value, $datatype) {
         if ($value.isLiteral()) {
             return $datatype.equals($value.datatype) && isValidForDatatype($value.lex, $datatype);
@@ -209,6 +216,15 @@ var registerDASH = function(context) {
     var validateHasValueProperty = function ($this, $path, $hasValue) {
         var count = context.$data.query().path($this, rdfquery.toRDFQueryPath($path, context), $hasValue).getCount();
         return count > 0;
+    };
+
+    var validateHasValueWithClass = function($this, $path, $hasValueWithClass) {
+        return context.$data.query().
+        path($this, rdfquery.toRDFQueryPath($path), "?value").
+        filter(function(sol) {
+            return rdfquery.isInstanceOf(sol.value, $hasValueWithClass, context);
+        }).
+        hasSolution();
     };
 
     var validateIn = function ($value, $in) {
@@ -477,11 +493,13 @@ var registerDASH = function(context) {
     context.functionRegistry.validateClosed = validateClosed;
     context.functionRegistry.validateClosedByTypesNode = validateClosedByTypesNode;
     context.functionRegistry.validateDatatype = validateDatatype;
+    context.functionRegistry.validateCoExistsWith = validateCoExistsWith;
     context.functionRegistry.validateDisjoint = validateDisjoint;
     context.functionRegistry.validateEqualsProperty = validateEqualsProperty;
     context.functionRegistry.validateEqualsNode = validateEqualsNode;
     context.functionRegistry.validateHasValueNode = validateHasValueNode;
     context.functionRegistry.validateHasValueProperty = validateHasValueProperty;
+    context.functionRegistry.validateHasValueWithClass = validateHasValueWithClass;
     context.functionRegistry.validateIn = validateIn;
     context.functionRegistry.validateLanguageIn = validateLanguageIn;
     context.functionRegistry.validateLessThanProperty = validateLessThanProperty;

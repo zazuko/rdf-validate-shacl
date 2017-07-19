@@ -90,8 +90,8 @@ ex:InvalidResource3
 ex:ValidResource1
   rdf:type rdfs:Resource ;
   ex:address [
-      ex:postalCode 48791 ;
-      ex:suburb ex:KewarraBeach1 ;
+      ex:postalCode 4879 ;
+      ex:suburb ex:KewarraBeach ;
     ] ;
 .
 _:b31477
