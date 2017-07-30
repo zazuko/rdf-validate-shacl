@@ -4,7 +4,7 @@ var rdfquery = require("./rdfquery");
 var debug = require("debug")("validation-function");
 
 
-var globalObject = typeof(window) != null ? window : global;
+var globalObject = typeof window !== 'undefined' ? window : global;
 
 
 var ValidationFunction = function (functionName, parameters, functionRegistry) {

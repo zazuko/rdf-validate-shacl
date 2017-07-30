@@ -237,7 +237,7 @@ SHACLValidator.prototype.validate = function (data, dataMediaType, shapes, shape
 
 module.exports = SHACLValidator;
 
-},{"./src/dash":83,"./src/rdflib-graph":84,"./src/rdfquery":85,"./src/rdfquery/term-factory":87,"./src/shapes-graph":88,"./src/validation-engine":89,"./src/validation-report":91,"./src/vocabularies":92,"debug":9,"jsonld":20,"rdflib":43}],2:[function(_dereq_,module,exports){
+},{"./src/dash":83,"./src/rdflib-graph":84,"./src/rdfquery":85,"./src/rdfquery/term-factory":87,"./src/shapes-graph":88,"./src/validation-engine":89,"./src/validation-report":91,"./src/vocabularies":92,"debug":8,"jsonld":19,"rdflib":42}],2:[function(_dereq_,module,exports){
 ;(function () {
 
   var object = typeof exports != 'undefined' ? exports : this; // #8: web workers
@@ -300,1133 +300,6 @@ module.exports = SHACLValidator;
 }());
 
 },{}],3:[function(_dereq_,module,exports){
-(function (process){
-/*!
- * async
- * https://github.com/caolan/async
- *
- * Copyright 2010-2014 Caolan McMahon
- * Released under the MIT license
- */
-/*jshint onevar: false, indent:4 */
-/*global setImmediate: false, setTimeout: false, console: false */
-(function () {
-
-    var async = {};
-
-    // global on the server, window in the browser
-    var root, previous_async;
-
-    root = this;
-    if (root != null) {
-      previous_async = root.async;
-    }
-
-    async.noConflict = function () {
-        root.async = previous_async;
-        return async;
-    };
-
-    function only_once(fn) {
-        var called = false;
-        return function() {
-            if (called) throw new Error("Callback was already called.");
-            called = true;
-            fn.apply(root, arguments);
-        }
-    }
-
-    //// cross-browser compatiblity functions ////
-
-    var _toString = Object.prototype.toString;
-
-    var _isArray = Array.isArray || function (obj) {
-        return _toString.call(obj) === '[object Array]';
-    };
-
-    var _each = function (arr, iterator) {
-        for (var i = 0; i < arr.length; i += 1) {
-            iterator(arr[i], i, arr);
-        }
-    };
-
-    var _map = function (arr, iterator) {
-        if (arr.map) {
-            return arr.map(iterator);
-        }
-        var results = [];
-        _each(arr, function (x, i, a) {
-            results.push(iterator(x, i, a));
-        });
-        return results;
-    };
-
-    var _reduce = function (arr, iterator, memo) {
-        if (arr.reduce) {
-            return arr.reduce(iterator, memo);
-        }
-        _each(arr, function (x, i, a) {
-            memo = iterator(memo, x, i, a);
-        });
-        return memo;
-    };
-
-    var _keys = function (obj) {
-        if (Object.keys) {
-            return Object.keys(obj);
-        }
-        var keys = [];
-        for (var k in obj) {
-            if (obj.hasOwnProperty(k)) {
-                keys.push(k);
-            }
-        }
-        return keys;
-    };
-
-    //// exported async module functions ////
-
-    //// nextTick implementation with browser-compatible fallback ////
-    if (typeof process === 'undefined' || !(process.nextTick)) {
-        if (typeof setImmediate === 'function') {
-            async.nextTick = function (fn) {
-                // not a direct alias for IE10 compatibility
-                setImmediate(fn);
-            };
-            async.setImmediate = async.nextTick;
-        }
-        else {
-            async.nextTick = function (fn) {
-                setTimeout(fn, 0);
-            };
-            async.setImmediate = async.nextTick;
-        }
-    }
-    else {
-        async.nextTick = process.nextTick;
-        if (typeof setImmediate !== 'undefined') {
-            async.setImmediate = function (fn) {
-              // not a direct alias for IE10 compatibility
-              setImmediate(fn);
-            };
-        }
-        else {
-            async.setImmediate = async.nextTick;
-        }
-    }
-
-    async.each = function (arr, iterator, callback) {
-        callback = callback || function () {};
-        if (!arr.length) {
-            return callback();
-        }
-        var completed = 0;
-        _each(arr, function (x) {
-            iterator(x, only_once(done) );
-        });
-        function done(err) {
-          if (err) {
-              callback(err);
-              callback = function () {};
-          }
-          else {
-              completed += 1;
-              if (completed >= arr.length) {
-                  callback();
-              }
-          }
-        }
-    };
-    async.forEach = async.each;
-
-    async.eachSeries = function (arr, iterator, callback) {
-        callback = callback || function () {};
-        if (!arr.length) {
-            return callback();
-        }
-        var completed = 0;
-        var iterate = function () {
-            iterator(arr[completed], function (err) {
-                if (err) {
-                    callback(err);
-                    callback = function () {};
-                }
-                else {
-                    completed += 1;
-                    if (completed >= arr.length) {
-                        callback();
-                    }
-                    else {
-                        iterate();
-                    }
-                }
-            });
-        };
-        iterate();
-    };
-    async.forEachSeries = async.eachSeries;
-
-    async.eachLimit = function (arr, limit, iterator, callback) {
-        var fn = _eachLimit(limit);
-        fn.apply(null, [arr, iterator, callback]);
-    };
-    async.forEachLimit = async.eachLimit;
-
-    var _eachLimit = function (limit) {
-
-        return function (arr, iterator, callback) {
-            callback = callback || function () {};
-            if (!arr.length || limit <= 0) {
-                return callback();
-            }
-            var completed = 0;
-            var started = 0;
-            var running = 0;
-
-            (function replenish () {
-                if (completed >= arr.length) {
-                    return callback();
-                }
-
-                while (running < limit && started < arr.length) {
-                    started += 1;
-                    running += 1;
-                    iterator(arr[started - 1], function (err) {
-                        if (err) {
-                            callback(err);
-                            callback = function () {};
-                        }
-                        else {
-                            completed += 1;
-                            running -= 1;
-                            if (completed >= arr.length) {
-                                callback();
-                            }
-                            else {
-                                replenish();
-                            }
-                        }
-                    });
-                }
-            })();
-        };
-    };
-
-
-    var doParallel = function (fn) {
-        return function () {
-            var args = Array.prototype.slice.call(arguments);
-            return fn.apply(null, [async.each].concat(args));
-        };
-    };
-    var doParallelLimit = function(limit, fn) {
-        return function () {
-            var args = Array.prototype.slice.call(arguments);
-            return fn.apply(null, [_eachLimit(limit)].concat(args));
-        };
-    };
-    var doSeries = function (fn) {
-        return function () {
-            var args = Array.prototype.slice.call(arguments);
-            return fn.apply(null, [async.eachSeries].concat(args));
-        };
-    };
-
-
-    var _asyncMap = function (eachfn, arr, iterator, callback) {
-        arr = _map(arr, function (x, i) {
-            return {index: i, value: x};
-        });
-        if (!callback) {
-            eachfn(arr, function (x, callback) {
-                iterator(x.value, function (err) {
-                    callback(err);
-                });
-            });
-        } else {
-            var results = [];
-            eachfn(arr, function (x, callback) {
-                iterator(x.value, function (err, v) {
-                    results[x.index] = v;
-                    callback(err);
-                });
-            }, function (err) {
-                callback(err, results);
-            });
-        }
-    };
-    async.map = doParallel(_asyncMap);
-    async.mapSeries = doSeries(_asyncMap);
-    async.mapLimit = function (arr, limit, iterator, callback) {
-        return _mapLimit(limit)(arr, iterator, callback);
-    };
-
-    var _mapLimit = function(limit) {
-        return doParallelLimit(limit, _asyncMap);
-    };
-
-    // reduce only has a series version, as doing reduce in parallel won't
-    // work in many situations.
-    async.reduce = function (arr, memo, iterator, callback) {
-        async.eachSeries(arr, function (x, callback) {
-            iterator(memo, x, function (err, v) {
-                memo = v;
-                callback(err);
-            });
-        }, function (err) {
-            callback(err, memo);
-        });
-    };
-    // inject alias
-    async.inject = async.reduce;
-    // foldl alias
-    async.foldl = async.reduce;
-
-    async.reduceRight = function (arr, memo, iterator, callback) {
-        var reversed = _map(arr, function (x) {
-            return x;
-        }).reverse();
-        async.reduce(reversed, memo, iterator, callback);
-    };
-    // foldr alias
-    async.foldr = async.reduceRight;
-
-    var _filter = function (eachfn, arr, iterator, callback) {
-        var results = [];
-        arr = _map(arr, function (x, i) {
-            return {index: i, value: x};
-        });
-        eachfn(arr, function (x, callback) {
-            iterator(x.value, function (v) {
-                if (v) {
-                    results.push(x);
-                }
-                callback();
-            });
-        }, function (err) {
-            callback(_map(results.sort(function (a, b) {
-                return a.index - b.index;
-            }), function (x) {
-                return x.value;
-            }));
-        });
-    };
-    async.filter = doParallel(_filter);
-    async.filterSeries = doSeries(_filter);
-    // select alias
-    async.select = async.filter;
-    async.selectSeries = async.filterSeries;
-
-    var _reject = function (eachfn, arr, iterator, callback) {
-        var results = [];
-        arr = _map(arr, function (x, i) {
-            return {index: i, value: x};
-        });
-        eachfn(arr, function (x, callback) {
-            iterator(x.value, function (v) {
-                if (!v) {
-                    results.push(x);
-                }
-                callback();
-            });
-        }, function (err) {
-            callback(_map(results.sort(function (a, b) {
-                return a.index - b.index;
-            }), function (x) {
-                return x.value;
-            }));
-        });
-    };
-    async.reject = doParallel(_reject);
-    async.rejectSeries = doSeries(_reject);
-
-    var _detect = function (eachfn, arr, iterator, main_callback) {
-        eachfn(arr, function (x, callback) {
-            iterator(x, function (result) {
-                if (result) {
-                    main_callback(x);
-                    main_callback = function () {};
-                }
-                else {
-                    callback();
-                }
-            });
-        }, function (err) {
-            main_callback();
-        });
-    };
-    async.detect = doParallel(_detect);
-    async.detectSeries = doSeries(_detect);
-
-    async.some = function (arr, iterator, main_callback) {
-        async.each(arr, function (x, callback) {
-            iterator(x, function (v) {
-                if (v) {
-                    main_callback(true);
-                    main_callback = function () {};
-                }
-                callback();
-            });
-        }, function (err) {
-            main_callback(false);
-        });
-    };
-    // any alias
-    async.any = async.some;
-
-    async.every = function (arr, iterator, main_callback) {
-        async.each(arr, function (x, callback) {
-            iterator(x, function (v) {
-                if (!v) {
-                    main_callback(false);
-                    main_callback = function () {};
-                }
-                callback();
-            });
-        }, function (err) {
-            main_callback(true);
-        });
-    };
-    // all alias
-    async.all = async.every;
-
-    async.sortBy = function (arr, iterator, callback) {
-        async.map(arr, function (x, callback) {
-            iterator(x, function (err, criteria) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, {value: x, criteria: criteria});
-                }
-            });
-        }, function (err, results) {
-            if (err) {
-                return callback(err);
-            }
-            else {
-                var fn = function (left, right) {
-                    var a = left.criteria, b = right.criteria;
-                    return a < b ? -1 : a > b ? 1 : 0;
-                };
-                callback(null, _map(results.sort(fn), function (x) {
-                    return x.value;
-                }));
-            }
-        });
-    };
-
-    async.auto = function (tasks, callback) {
-        callback = callback || function () {};
-        var keys = _keys(tasks);
-        var remainingTasks = keys.length
-        if (!remainingTasks) {
-            return callback();
-        }
-
-        var results = {};
-
-        var listeners = [];
-        var addListener = function (fn) {
-            listeners.unshift(fn);
-        };
-        var removeListener = function (fn) {
-            for (var i = 0; i < listeners.length; i += 1) {
-                if (listeners[i] === fn) {
-                    listeners.splice(i, 1);
-                    return;
-                }
-            }
-        };
-        var taskComplete = function () {
-            remainingTasks--
-            _each(listeners.slice(0), function (fn) {
-                fn();
-            });
-        };
-
-        addListener(function () {
-            if (!remainingTasks) {
-                var theCallback = callback;
-                // prevent final callback from calling itself if it errors
-                callback = function () {};
-
-                theCallback(null, results);
-            }
-        });
-
-        _each(keys, function (k) {
-            var task = _isArray(tasks[k]) ? tasks[k]: [tasks[k]];
-            var taskCallback = function (err) {
-                var args = Array.prototype.slice.call(arguments, 1);
-                if (args.length <= 1) {
-                    args = args[0];
-                }
-                if (err) {
-                    var safeResults = {};
-                    _each(_keys(results), function(rkey) {
-                        safeResults[rkey] = results[rkey];
-                    });
-                    safeResults[k] = args;
-                    callback(err, safeResults);
-                    // stop subsequent errors hitting callback multiple times
-                    callback = function () {};
-                }
-                else {
-                    results[k] = args;
-                    async.setImmediate(taskComplete);
-                }
-            };
-            var requires = task.slice(0, Math.abs(task.length - 1)) || [];
-            var ready = function () {
-                return _reduce(requires, function (a, x) {
-                    return (a && results.hasOwnProperty(x));
-                }, true) && !results.hasOwnProperty(k);
-            };
-            if (ready()) {
-                task[task.length - 1](taskCallback, results);
-            }
-            else {
-                var listener = function () {
-                    if (ready()) {
-                        removeListener(listener);
-                        task[task.length - 1](taskCallback, results);
-                    }
-                };
-                addListener(listener);
-            }
-        });
-    };
-
-    async.retry = function(times, task, callback) {
-        var DEFAULT_TIMES = 5;
-        var attempts = [];
-        // Use defaults if times not passed
-        if (typeof times === 'function') {
-            callback = task;
-            task = times;
-            times = DEFAULT_TIMES;
-        }
-        // Make sure times is a number
-        times = parseInt(times, 10) || DEFAULT_TIMES;
-        var wrappedTask = function(wrappedCallback, wrappedResults) {
-            var retryAttempt = function(task, finalAttempt) {
-                return function(seriesCallback) {
-                    task(function(err, result){
-                        seriesCallback(!err || finalAttempt, {err: err, result: result});
-                    }, wrappedResults);
-                };
-            };
-            while (times) {
-                attempts.push(retryAttempt(task, !(times-=1)));
-            }
-            async.series(attempts, function(done, data){
-                data = data[data.length - 1];
-                (wrappedCallback || callback)(data.err, data.result);
-            });
-        }
-        // If a callback is passed, run this as a controll flow
-        return callback ? wrappedTask() : wrappedTask
-    };
-
-    async.waterfall = function (tasks, callback) {
-        callback = callback || function () {};
-        if (!_isArray(tasks)) {
-          var err = new Error('First argument to waterfall must be an array of functions');
-          return callback(err);
-        }
-        if (!tasks.length) {
-            return callback();
-        }
-        var wrapIterator = function (iterator) {
-            return function (err) {
-                if (err) {
-                    callback.apply(null, arguments);
-                    callback = function () {};
-                }
-                else {
-                    var args = Array.prototype.slice.call(arguments, 1);
-                    var next = iterator.next();
-                    if (next) {
-                        args.push(wrapIterator(next));
-                    }
-                    else {
-                        args.push(callback);
-                    }
-                    async.setImmediate(function () {
-                        iterator.apply(null, args);
-                    });
-                }
-            };
-        };
-        wrapIterator(async.iterator(tasks))();
-    };
-
-    var _parallel = function(eachfn, tasks, callback) {
-        callback = callback || function () {};
-        if (_isArray(tasks)) {
-            eachfn.map(tasks, function (fn, callback) {
-                if (fn) {
-                    fn(function (err) {
-                        var args = Array.prototype.slice.call(arguments, 1);
-                        if (args.length <= 1) {
-                            args = args[0];
-                        }
-                        callback.call(null, err, args);
-                    });
-                }
-            }, callback);
-        }
-        else {
-            var results = {};
-            eachfn.each(_keys(tasks), function (k, callback) {
-                tasks[k](function (err) {
-                    var args = Array.prototype.slice.call(arguments, 1);
-                    if (args.length <= 1) {
-                        args = args[0];
-                    }
-                    results[k] = args;
-                    callback(err);
-                });
-            }, function (err) {
-                callback(err, results);
-            });
-        }
-    };
-
-    async.parallel = function (tasks, callback) {
-        _parallel({ map: async.map, each: async.each }, tasks, callback);
-    };
-
-    async.parallelLimit = function(tasks, limit, callback) {
-        _parallel({ map: _mapLimit(limit), each: _eachLimit(limit) }, tasks, callback);
-    };
-
-    async.series = function (tasks, callback) {
-        callback = callback || function () {};
-        if (_isArray(tasks)) {
-            async.mapSeries(tasks, function (fn, callback) {
-                if (fn) {
-                    fn(function (err) {
-                        var args = Array.prototype.slice.call(arguments, 1);
-                        if (args.length <= 1) {
-                            args = args[0];
-                        }
-                        callback.call(null, err, args);
-                    });
-                }
-            }, callback);
-        }
-        else {
-            var results = {};
-            async.eachSeries(_keys(tasks), function (k, callback) {
-                tasks[k](function (err) {
-                    var args = Array.prototype.slice.call(arguments, 1);
-                    if (args.length <= 1) {
-                        args = args[0];
-                    }
-                    results[k] = args;
-                    callback(err);
-                });
-            }, function (err) {
-                callback(err, results);
-            });
-        }
-    };
-
-    async.iterator = function (tasks) {
-        var makeCallback = function (index) {
-            var fn = function () {
-                if (tasks.length) {
-                    tasks[index].apply(null, arguments);
-                }
-                return fn.next();
-            };
-            fn.next = function () {
-                return (index < tasks.length - 1) ? makeCallback(index + 1): null;
-            };
-            return fn;
-        };
-        return makeCallback(0);
-    };
-
-    async.apply = function (fn) {
-        var args = Array.prototype.slice.call(arguments, 1);
-        return function () {
-            return fn.apply(
-                null, args.concat(Array.prototype.slice.call(arguments))
-            );
-        };
-    };
-
-    var _concat = function (eachfn, arr, fn, callback) {
-        var r = [];
-        eachfn(arr, function (x, cb) {
-            fn(x, function (err, y) {
-                r = r.concat(y || []);
-                cb(err);
-            });
-        }, function (err) {
-            callback(err, r);
-        });
-    };
-    async.concat = doParallel(_concat);
-    async.concatSeries = doSeries(_concat);
-
-    async.whilst = function (test, iterator, callback) {
-        if (test()) {
-            iterator(function (err) {
-                if (err) {
-                    return callback(err);
-                }
-                async.whilst(test, iterator, callback);
-            });
-        }
-        else {
-            callback();
-        }
-    };
-
-    async.doWhilst = function (iterator, test, callback) {
-        iterator(function (err) {
-            if (err) {
-                return callback(err);
-            }
-            var args = Array.prototype.slice.call(arguments, 1);
-            if (test.apply(null, args)) {
-                async.doWhilst(iterator, test, callback);
-            }
-            else {
-                callback();
-            }
-        });
-    };
-
-    async.until = function (test, iterator, callback) {
-        if (!test()) {
-            iterator(function (err) {
-                if (err) {
-                    return callback(err);
-                }
-                async.until(test, iterator, callback);
-            });
-        }
-        else {
-            callback();
-        }
-    };
-
-    async.doUntil = function (iterator, test, callback) {
-        iterator(function (err) {
-            if (err) {
-                return callback(err);
-            }
-            var args = Array.prototype.slice.call(arguments, 1);
-            if (!test.apply(null, args)) {
-                async.doUntil(iterator, test, callback);
-            }
-            else {
-                callback();
-            }
-        });
-    };
-
-    async.queue = function (worker, concurrency) {
-        if (concurrency === undefined) {
-            concurrency = 1;
-        }
-        function _insert(q, data, pos, callback) {
-          if (!q.started){
-            q.started = true;
-          }
-          if (!_isArray(data)) {
-              data = [data];
-          }
-          if(data.length == 0) {
-             // call drain immediately if there are no tasks
-             return async.setImmediate(function() {
-                 if (q.drain) {
-                     q.drain();
-                 }
-             });
-          }
-          _each(data, function(task) {
-              var item = {
-                  data: task,
-                  callback: typeof callback === 'function' ? callback : null
-              };
-
-              if (pos) {
-                q.tasks.unshift(item);
-              } else {
-                q.tasks.push(item);
-              }
-
-              if (q.saturated && q.tasks.length === q.concurrency) {
-                  q.saturated();
-              }
-              async.setImmediate(q.process);
-          });
-        }
-
-        var workers = 0;
-        var q = {
-            tasks: [],
-            concurrency: concurrency,
-            saturated: null,
-            empty: null,
-            drain: null,
-            started: false,
-            paused: false,
-            push: function (data, callback) {
-              _insert(q, data, false, callback);
-            },
-            kill: function () {
-              q.drain = null;
-              q.tasks = [];
-            },
-            unshift: function (data, callback) {
-              _insert(q, data, true, callback);
-            },
-            process: function () {
-                if (!q.paused && workers < q.concurrency && q.tasks.length) {
-                    var task = q.tasks.shift();
-                    if (q.empty && q.tasks.length === 0) {
-                        q.empty();
-                    }
-                    workers += 1;
-                    var next = function () {
-                        workers -= 1;
-                        if (task.callback) {
-                            task.callback.apply(task, arguments);
-                        }
-                        if (q.drain && q.tasks.length + workers === 0) {
-                            q.drain();
-                        }
-                        q.process();
-                    };
-                    var cb = only_once(next);
-                    worker(task.data, cb);
-                }
-            },
-            length: function () {
-                return q.tasks.length;
-            },
-            running: function () {
-                return workers;
-            },
-            idle: function() {
-                return q.tasks.length + workers === 0;
-            },
-            pause: function () {
-                if (q.paused === true) { return; }
-                q.paused = true;
-            },
-            resume: function () {
-                if (q.paused === false) { return; }
-                q.paused = false;
-                // Need to call q.process once per concurrent
-                // worker to preserve full concurrency after pause
-                for (var w = 1; w <= q.concurrency; w++) {
-                    async.setImmediate(q.process);
-                }
-            }
-        };
-        return q;
-    };
-
-    async.priorityQueue = function (worker, concurrency) {
-
-        function _compareTasks(a, b){
-          return a.priority - b.priority;
-        };
-
-        function _binarySearch(sequence, item, compare) {
-          var beg = -1,
-              end = sequence.length - 1;
-          while (beg < end) {
-            var mid = beg + ((end - beg + 1) >>> 1);
-            if (compare(item, sequence[mid]) >= 0) {
-              beg = mid;
-            } else {
-              end = mid - 1;
-            }
-          }
-          return beg;
-        }
-
-        function _insert(q, data, priority, callback) {
-          if (!q.started){
-            q.started = true;
-          }
-          if (!_isArray(data)) {
-              data = [data];
-          }
-          if(data.length == 0) {
-             // call drain immediately if there are no tasks
-             return async.setImmediate(function() {
-                 if (q.drain) {
-                     q.drain();
-                 }
-             });
-          }
-          _each(data, function(task) {
-              var item = {
-                  data: task,
-                  priority: priority,
-                  callback: typeof callback === 'function' ? callback : null
-              };
-
-              q.tasks.splice(_binarySearch(q.tasks, item, _compareTasks) + 1, 0, item);
-
-              if (q.saturated && q.tasks.length === q.concurrency) {
-                  q.saturated();
-              }
-              async.setImmediate(q.process);
-          });
-        }
-
-        // Start with a normal queue
-        var q = async.queue(worker, concurrency);
-
-        // Override push to accept second parameter representing priority
-        q.push = function (data, priority, callback) {
-          _insert(q, data, priority, callback);
-        };
-
-        // Remove unshift function
-        delete q.unshift;
-
-        return q;
-    };
-
-    async.cargo = function (worker, payload) {
-        var working     = false,
-            tasks       = [];
-
-        var cargo = {
-            tasks: tasks,
-            payload: payload,
-            saturated: null,
-            empty: null,
-            drain: null,
-            drained: true,
-            push: function (data, callback) {
-                if (!_isArray(data)) {
-                    data = [data];
-                }
-                _each(data, function(task) {
-                    tasks.push({
-                        data: task,
-                        callback: typeof callback === 'function' ? callback : null
-                    });
-                    cargo.drained = false;
-                    if (cargo.saturated && tasks.length === payload) {
-                        cargo.saturated();
-                    }
-                });
-                async.setImmediate(cargo.process);
-            },
-            process: function process() {
-                if (working) return;
-                if (tasks.length === 0) {
-                    if(cargo.drain && !cargo.drained) cargo.drain();
-                    cargo.drained = true;
-                    return;
-                }
-
-                var ts = typeof payload === 'number'
-                            ? tasks.splice(0, payload)
-                            : tasks.splice(0, tasks.length);
-
-                var ds = _map(ts, function (task) {
-                    return task.data;
-                });
-
-                if(cargo.empty) cargo.empty();
-                working = true;
-                worker(ds, function () {
-                    working = false;
-
-                    var args = arguments;
-                    _each(ts, function (data) {
-                        if (data.callback) {
-                            data.callback.apply(null, args);
-                        }
-                    });
-
-                    process();
-                });
-            },
-            length: function () {
-                return tasks.length;
-            },
-            running: function () {
-                return working;
-            }
-        };
-        return cargo;
-    };
-
-    var _console_fn = function (name) {
-        return function (fn) {
-            var args = Array.prototype.slice.call(arguments, 1);
-            fn.apply(null, args.concat([function (err) {
-                var args = Array.prototype.slice.call(arguments, 1);
-                if (typeof console !== 'undefined') {
-                    if (err) {
-                        if (console.error) {
-                            console.error(err);
-                        }
-                    }
-                    else if (console[name]) {
-                        _each(args, function (x) {
-                            console[name](x);
-                        });
-                    }
-                }
-            }]));
-        };
-    };
-    async.log = _console_fn('log');
-    async.dir = _console_fn('dir');
-    /*async.info = _console_fn('info');
-    async.warn = _console_fn('warn');
-    async.error = _console_fn('error');*/
-
-    async.memoize = function (fn, hasher) {
-        var memo = {};
-        var queues = {};
-        hasher = hasher || function (x) {
-            return x;
-        };
-        var memoized = function () {
-            var args = Array.prototype.slice.call(arguments);
-            var callback = args.pop();
-            var key = hasher.apply(null, args);
-            if (key in memo) {
-                async.nextTick(function () {
-                    callback.apply(null, memo[key]);
-                });
-            }
-            else if (key in queues) {
-                queues[key].push(callback);
-            }
-            else {
-                queues[key] = [callback];
-                fn.apply(null, args.concat([function () {
-                    memo[key] = arguments;
-                    var q = queues[key];
-                    delete queues[key];
-                    for (var i = 0, l = q.length; i < l; i++) {
-                      q[i].apply(null, arguments);
-                    }
-                }]));
-            }
-        };
-        memoized.memo = memo;
-        memoized.unmemoized = fn;
-        return memoized;
-    };
-
-    async.unmemoize = function (fn) {
-      return function () {
-        return (fn.unmemoized || fn).apply(null, arguments);
-      };
-    };
-
-    async.times = function (count, iterator, callback) {
-        var counter = [];
-        for (var i = 0; i < count; i++) {
-            counter.push(i);
-        }
-        return async.map(counter, iterator, callback);
-    };
-
-    async.timesSeries = function (count, iterator, callback) {
-        var counter = [];
-        for (var i = 0; i < count; i++) {
-            counter.push(i);
-        }
-        return async.mapSeries(counter, iterator, callback);
-    };
-
-    async.seq = function (/* functions... */) {
-        var fns = arguments;
-        return function () {
-            var that = this;
-            var args = Array.prototype.slice.call(arguments);
-            var callback = args.pop();
-            async.reduce(fns, args, function (newargs, fn, cb) {
-                fn.apply(that, newargs.concat([function () {
-                    var err = arguments[0];
-                    var nextargs = Array.prototype.slice.call(arguments, 1);
-                    cb(err, nextargs);
-                }]))
-            },
-            function (err, results) {
-                callback.apply(that, [err].concat(results));
-            });
-        };
-    };
-
-    async.compose = function (/* functions... */) {
-      return async.seq.apply(null, Array.prototype.reverse.call(arguments));
-    };
-
-    var _applyEach = function (eachfn, fns /*args...*/) {
-        var go = function () {
-            var that = this;
-            var args = Array.prototype.slice.call(arguments);
-            var callback = args.pop();
-            return eachfn(fns, function (fn, cb) {
-                fn.apply(that, args.concat([cb]));
-            },
-            callback);
-        };
-        if (arguments.length > 2) {
-            var args = Array.prototype.slice.call(arguments, 2);
-            return go.apply(this, args);
-        }
-        else {
-            return go;
-        }
-    };
-    async.applyEach = doParallel(_applyEach);
-    async.applyEachSeries = doSeries(_applyEach);
-
-    async.forever = function (fn, callback) {
-        function next(err) {
-            if (err) {
-                if (callback) {
-                    return callback(err);
-                }
-                throw err;
-            }
-            fn(next);
-        }
-        next();
-    };
-
-    // Node.js
-    if (typeof module !== 'undefined' && module.exports) {
-        module.exports = async;
-    }
-    // AMD / RequireJS
-    else if (typeof define !== 'undefined' && define.amd) {
-        define([], function () {
-            return async;
-        });
-    }
-    // included directly via <script> tag
-    else {
-        root.async = async;
-    }
-
-}());
-
-}).call(this,_dereq_("g5I+bs"))
-},{"g5I+bs":30}],4:[function(_dereq_,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -1552,9 +425,9 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],5:[function(_dereq_,module,exports){
+},{}],4:[function(_dereq_,module,exports){
 
-},{}],6:[function(_dereq_,module,exports){
+},{}],5:[function(_dereq_,module,exports){
 (function (global){
 /*! http://mths.be/punycode v1.2.4 by @mathias */
 ;(function(root) {
@@ -2065,7 +938,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 }(this));
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],7:[function(_dereq_,module,exports){
+},{}],6:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -2258,7 +1131,7 @@ function base64DetectIncompleteChar(buffer) {
   return incomplete;
 }
 
-},{"buffer":8}],8:[function(_dereq_,module,exports){
+},{"buffer":7}],7:[function(_dereq_,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -3369,7 +2242,7 @@ function assert (test, message) {
   if (!test) throw new Error(message || 'Failed assertion')
 }
 
-},{"base64-js":4,"ieee754":17}],9:[function(_dereq_,module,exports){
+},{"base64-js":3,"ieee754":16}],8:[function(_dereq_,module,exports){
 (function (process){
 /**
  * This is the web browser implementation of `debug()`.
@@ -3557,8 +2430,8 @@ function localstorage() {
   } catch (e) {}
 }
 
-}).call(this,_dereq_("g5I+bs"))
-},{"./debug":10,"g5I+bs":30}],10:[function(_dereq_,module,exports){
+}).call(this,_dereq_("v3go1D"))
+},{"./debug":9,"v3go1D":29}],9:[function(_dereq_,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -3762,7 +2635,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":21}],11:[function(_dereq_,module,exports){
+},{"ms":20}],10:[function(_dereq_,module,exports){
 (function (process,global){
 /*!
  * @overview es6-promise - a tiny implementation of Promises/A+.
@@ -4737,8 +3610,8 @@ function coerce(val) {
 }).call(this);
 
 
-}).call(this,_dereq_("g5I+bs"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"g5I+bs":30}],12:[function(_dereq_,module,exports){
+}).call(this,_dereq_("v3go1D"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"v3go1D":29}],11:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5041,7 +3914,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],13:[function(_dereq_,module,exports){
+},{}],12:[function(_dereq_,module,exports){
 var http = module.exports;
 var EventEmitter = _dereq_('events').EventEmitter;
 var Request = _dereq_('./lib/request');
@@ -5180,7 +4053,7 @@ http.STATUS_CODES = {
     510 : 'Not Extended',               // RFC 2774
     511 : 'Network Authentication Required' // RFC 6585
 };
-},{"./lib/request":14,"events":12,"url":75}],14:[function(_dereq_,module,exports){
+},{"./lib/request":13,"events":11,"url":78}],13:[function(_dereq_,module,exports){
 var Stream = _dereq_('stream');
 var Response = _dereq_('./response');
 var Base64 = _dereq_('Base64');
@@ -5371,7 +4244,7 @@ var indexOf = function (xs, x) {
     return -1;
 };
 
-},{"./response":15,"Base64":2,"inherits":18,"stream":69}],15:[function(_dereq_,module,exports){
+},{"./response":14,"Base64":2,"inherits":17,"stream":72}],14:[function(_dereq_,module,exports){
 var Stream = _dereq_('stream');
 var util = _dereq_('util');
 
@@ -5493,7 +4366,7 @@ var isArray = Array.isArray || function (xs) {
     return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{"stream":69,"util":78}],16:[function(_dereq_,module,exports){
+},{"stream":72,"util":81}],15:[function(_dereq_,module,exports){
 var http = _dereq_('http');
 
 var https = module.exports;
@@ -5509,7 +4382,7 @@ https.request = function (params, cb) {
     return http.request.call(this, params, cb);
 }
 
-},{"http":13}],17:[function(_dereq_,module,exports){
+},{"http":12}],16:[function(_dereq_,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = nBytes * 8 - mLen - 1
@@ -5595,7 +4468,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],18:[function(_dereq_,module,exports){
+},{}],17:[function(_dereq_,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -5620,9 +4493,9 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],19:[function(_dereq_,module,exports){
+},{}],18:[function(_dereq_,module,exports){
 // Ignore module for browserify (see package.json)
-},{}],20:[function(_dereq_,module,exports){
+},{}],19:[function(_dereq_,module,exports){
 (function (process,global,__dirname){
 /**
  * A JavaScript implementation of the JSON-LD API.
@@ -13816,8 +12689,8 @@ return factory;
 
 })();
 
-}).call(this,_dereq_("g5I+bs"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},"/node_modules/jsonld/js")
-},{"crypto":19,"es6-promise":11,"g5I+bs":30,"http":19,"jsonld-request":19,"pkginfo":19,"request":19,"util":19,"xmldom":19}],21:[function(_dereq_,module,exports){
+}).call(this,_dereq_("v3go1D"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},"/node_modules\\jsonld\\js")
+},{"crypto":18,"es6-promise":10,"http":18,"jsonld-request":18,"pkginfo":18,"request":18,"util":18,"v3go1D":29,"xmldom":18}],20:[function(_dereq_,module,exports){
 /**
  * Helpers.
  */
@@ -13971,7 +12844,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],22:[function(_dereq_,module,exports){
+},{}],21:[function(_dereq_,module,exports){
 // Replace local require by a lazy loader
 var globalRequire = _dereq_;
 _dereq_ = function () {};
@@ -13999,7 +12872,7 @@ Object.keys(exports).forEach(function (submodule) {
   });
 });
 
-},{"./lib/N3Lexer":23,"./lib/N3Parser":24,"./lib/N3Store":25,"./lib/N3StreamParser":26,"./lib/N3StreamWriter":27,"./lib/N3Util":28,"./lib/N3Writer":29}],23:[function(_dereq_,module,exports){
+},{"./lib/N3Lexer":22,"./lib/N3Parser":23,"./lib/N3Store":24,"./lib/N3StreamParser":25,"./lib/N3StreamWriter":26,"./lib/N3Util":27,"./lib/N3Writer":28}],22:[function(_dereq_,module,exports){
 // **N3Lexer** tokenizes N3 documents.
 var fromCharCode = String.fromCharCode;
 var immediately = typeof setImmediate === 'function' ? setImmediate :
@@ -14360,7 +13233,7 @@ N3Lexer.prototype = {
 // Export the `N3Lexer` class as a whole.
 module.exports = N3Lexer;
 
-},{}],24:[function(_dereq_,module,exports){
+},{}],23:[function(_dereq_,module,exports){
 // **N3Parser** parses N3 documents.
 var N3Lexer = _dereq_('./N3Lexer');
 
@@ -15062,7 +13935,7 @@ function noop() {}
 // Export the `N3Parser` class as a whole.
 module.exports = N3Parser;
 
-},{"./N3Lexer":23}],25:[function(_dereq_,module,exports){
+},{"./N3Lexer":22}],24:[function(_dereq_,module,exports){
 // **N3Store** objects store N3 triples by graph in memory.
 
 var expandPrefixedName = _dereq_('./N3Util').expandPrefixedName;
@@ -15421,7 +14294,7 @@ N3Store.prototype = {
 // Export the `N3Store` class as a whole.
 module.exports = N3Store;
 
-},{"./N3Util":28}],26:[function(_dereq_,module,exports){
+},{"./N3Util":27}],25:[function(_dereq_,module,exports){
 // **N3StreamParser** parses an N3 stream into a triple stream
 var Transform = _dereq_('stream').Transform,
     util = _dereq_('util'),
@@ -15457,7 +14330,7 @@ util.inherits(N3StreamParser, Transform);
 // Export the `N3StreamParser` class as a whole.
 module.exports = N3StreamParser;
 
-},{"./N3Parser.js":24,"stream":69,"util":78}],27:[function(_dereq_,module,exports){
+},{"./N3Parser.js":23,"stream":72,"util":81}],26:[function(_dereq_,module,exports){
 // **N3StreamWriter** serializes a triple stream into an N3 stream
 var Transform = _dereq_('stream').Transform,
     util = _dereq_('util'),
@@ -15489,7 +14362,7 @@ util.inherits(N3StreamWriter, Transform);
 // Export the `N3StreamWriter` class as a whole.
 module.exports = N3StreamWriter;
 
-},{"./N3Writer.js":29,"stream":69,"util":78}],28:[function(_dereq_,module,exports){
+},{"./N3Writer.js":28,"stream":72,"util":81}],27:[function(_dereq_,module,exports){
 // **N3Util** provides N3 utility functions
 
 var Xsd = 'http://www.w3.org/2001/XMLSchema#';
@@ -15607,7 +14480,7 @@ function applyToThis(f) {
 // Expose N3Util, attaching all functions to it
 module.exports = addN3Util(addN3Util);
 
-},{}],29:[function(_dereq_,module,exports){
+},{}],28:[function(_dereq_,module,exports){
 // **N3Writer** writes N3 documents.
 
 // Matches a literal as represented in memory by the N3 library
@@ -15937,7 +14810,7 @@ function characterReplacer(character) {
 // Export the `N3Writer` class as a whole.
 module.exports = N3Writer;
 
-},{}],30:[function(_dereq_,module,exports){
+},{}],29:[function(_dereq_,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -16002,7 +14875,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],31:[function(_dereq_,module,exports){
+},{}],30:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -16088,7 +14961,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],32:[function(_dereq_,module,exports){
+},{}],31:[function(_dereq_,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -16175,13 +15048,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],33:[function(_dereq_,module,exports){
+},{}],32:[function(_dereq_,module,exports){
 'use strict';
 
 exports.decode = exports.parse = _dereq_('./decode');
 exports.encode = exports.stringify = _dereq_('./encode');
 
-},{"./decode":31,"./encode":32}],34:[function(_dereq_,module,exports){
+},{"./decode":30,"./encode":31}],33:[function(_dereq_,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -16257,7 +15130,7 @@ BlankNode.prototype.isBlank = 1;
 BlankNode.prototype.isVar = 1;
 
 module.exports = BlankNode;
-},{"./class-order":35,"./node":51}],35:[function(_dereq_,module,exports){
+},{"./class-order":34,"./node":50}],34:[function(_dereq_,module,exports){
 'use strict';
 
 var ClassOrder = {
@@ -16270,7 +15143,7 @@ var ClassOrder = {
 };
 
 module.exports = ClassOrder;
-},{}],36:[function(_dereq_,module,exports){
+},{}],35:[function(_dereq_,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -16355,7 +15228,7 @@ Collection.prototype.compareTerm = BlankNode.prototype.compareTerm;
 Collection.prototype.isVar = 0;
 
 module.exports = Collection;
-},{"./blank-node":34,"./class-order":35,"./node":51}],37:[function(_dereq_,module,exports){
+},{"./blank-node":33,"./class-order":34,"./node":50}],36:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports.convertToJson = convertToJson;
@@ -16418,7 +15291,7 @@ function convertToNQuads(n3String, nquadCallback) {
     nquadCallback(err, nquadString);
   });
 }
-},{"async":3,"jsonld":20,"n3":22}],38:[function(_dereq_,module,exports){
+},{"async":67,"jsonld":19,"n3":21}],37:[function(_dereq_,module,exports){
 'use strict';
 
 var _indexedFormula = _dereq_('./indexed-formula');
@@ -16498,7 +15371,7 @@ module.exports.collection = collection;
 module.exports.fetcher = fetcher;
 module.exports.lit = lit;
 module.exports.st = st;
-},{"./blank-node":34,"./collection":36,"./default-graph":39,"./fetcher":41,"./indexed-formula":44,"./literal":46,"./named-node":49,"./statement":61,"./variable":66}],39:[function(_dereq_,module,exports){
+},{"./blank-node":33,"./collection":35,"./default-graph":38,"./fetcher":40,"./indexed-formula":43,"./literal":45,"./named-node":48,"./statement":60,"./variable":65}],38:[function(_dereq_,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -16535,7 +15408,7 @@ var DefaultGraph = function (_Node) {
 }(Node);
 
 module.exports = DefaultGraph;
-},{"./node":51}],40:[function(_dereq_,module,exports){
+},{"./node":50}],39:[function(_dereq_,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -16577,7 +15450,7 @@ var Empty = function (_Node) {
 Empty.termType = 'empty';
 
 module.exports = Empty;
-},{"./node":51}],41:[function(_dereq_,module,exports){
+},{"./node":50}],40:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -18190,7 +17063,7 @@ var Fetcher = function Fetcher(store, timeout, async) {
 }; // End of fetcher
 
 module.exports = Fetcher;
-},{"./log":47,"./n3parser":48,"./named-node":49,"./namespace":50,"./parse":52,"./rdfaparser":56,"./rdfxmlparser":57,"./serialize":58,"./uri":64,"./util":65}],42:[function(_dereq_,module,exports){
+},{"./log":46,"./n3parser":47,"./named-node":48,"./namespace":49,"./parse":51,"./rdfaparser":55,"./rdfxmlparser":56,"./serialize":57,"./uri":63,"./util":64}],41:[function(_dereq_,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -18816,7 +17689,7 @@ Formula.prototype.variable = function (name) {
 };
 
 module.exports = Formula;
-},{"./blank-node":34,"./class-order":35,"./collection":36,"./literal":46,"./log":47,"./named-node":49,"./namespace":50,"./node":51,"./serialize":58,"./statement":61,"./variable":66}],43:[function(_dereq_,module,exports){
+},{"./blank-node":33,"./class-order":34,"./collection":35,"./literal":45,"./log":46,"./named-node":48,"./namespace":49,"./node":50,"./serialize":57,"./statement":60,"./variable":65}],42:[function(_dereq_,module,exports){
 'use strict';
 
 var _indexedFormula = _dereq_('./indexed-formula');
@@ -18879,7 +17752,7 @@ $rdf.quad = $rdf.DataFactory.quad;
 $rdf.triple = $rdf.DataFactory.triple;
 
 module.exports = $rdf;
-},{"./blank-node":34,"./collection":36,"./convert":37,"./data-factory":38,"./empty":40,"./fetcher":41,"./formula":42,"./indexed-formula":44,"./jsonparser":45,"./literal":46,"./log":47,"./n3parser":48,"./named-node":49,"./namespace":50,"./node":51,"./parse":52,"./patch-parser":53,"./query":55,"./query-to-sparql":54,"./rdfaparser":56,"./rdfxmlparser":57,"./serialize":58,"./serializer":59,"./sparql-to-query":60,"./statement":61,"./update-manager":62,"./updates-via":63,"./uri":64,"./util":65,"./variable":66}],44:[function(_dereq_,module,exports){
+},{"./blank-node":33,"./collection":35,"./convert":36,"./data-factory":37,"./empty":39,"./fetcher":40,"./formula":41,"./indexed-formula":43,"./jsonparser":44,"./literal":45,"./log":46,"./n3parser":47,"./named-node":48,"./namespace":49,"./node":50,"./parse":51,"./patch-parser":52,"./query":54,"./query-to-sparql":53,"./rdfaparser":55,"./rdfxmlparser":56,"./serialize":57,"./serializer":58,"./sparql-to-query":59,"./statement":60,"./update-manager":61,"./updates-via":62,"./uri":63,"./util":64,"./variable":65}],43:[function(_dereq_,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -19787,7 +18660,7 @@ exports.default = IndexedFormula;
 
 
 IndexedFormula.handleRDFType = handleRDFType;
-},{"./formula":42,"./node":51,"./query":55,"./statement":61,"./util":65,"./variable":66}],45:[function(_dereq_,module,exports){
+},{"./formula":41,"./node":50,"./query":54,"./statement":60,"./util":64,"./variable":65}],44:[function(_dereq_,module,exports){
 'use strict';
 
 var jsonParser = function () {
@@ -19845,7 +18718,7 @@ var jsonParser = function () {
 }();
 
 module.exports = jsonParser;
-},{}],46:[function(_dereq_,module,exports){
+},{}],45:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -20028,7 +18901,7 @@ Literal.prototype.lang = '';
 Literal.prototype.isVar = 0;
 
 module.exports = Literal;
-},{"./class-order":35,"./named-node":49,"./node":51,"./xsd":67}],47:[function(_dereq_,module,exports){
+},{"./class-order":34,"./named-node":48,"./node":50,"./xsd":66}],46:[function(_dereq_,module,exports){
 "use strict";
 
 /**
@@ -20055,7 +18928,7 @@ module.exports = {
     return;
   }
 };
-},{}],48:[function(_dereq_,module,exports){
+},{}],47:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -21549,7 +20422,7 @@ var N3Parser = function () {
 }();
 
 module.exports = N3Parser;
-},{"./uri":64,"./util":65}],49:[function(_dereq_,module,exports){
+},{"./uri":63,"./util":64}],48:[function(_dereq_,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -21669,7 +20542,7 @@ NamedNode.prototype.classOrder = ClassOrder['NamedNode'];
 NamedNode.prototype.isVar = 0;
 
 module.exports = NamedNode;
-},{"./class-order":35,"./node":51}],50:[function(_dereq_,module,exports){
+},{"./class-order":34,"./node":50}],49:[function(_dereq_,module,exports){
 'use strict';
 
 var NamedNode = _dereq_('./named-node');
@@ -21681,7 +20554,7 @@ function Namespace(nsuri) {
 }
 
 module.exports = Namespace;
-},{"./named-node":49}],51:[function(_dereq_,module,exports){
+},{"./named-node":48}],50:[function(_dereq_,module,exports){
 'use strict';
 /**
  * The superclass of all RDF Statement objects, that is
@@ -21786,7 +20659,7 @@ Node.fromValue = function fromValue(value) {
   }
   return Literal.fromValue(value);
 };
-},{"./collection":36,"./literal":46,"./named-node":49}],52:[function(_dereq_,module,exports){
+},{"./collection":35,"./literal":45,"./named-node":48}],51:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = parse;
@@ -21931,7 +20804,7 @@ function parse(str, kb, base, contentType, callback) {
     }
   }
 }
-},{"./blank-node":34,"./literal":46,"./n3parser":48,"./named-node":49,"./patch-parser":53,"./rdfaparser":56,"./rdfxmlparser":57,"./util":65,"jsonld":20,"n3":22}],53:[function(_dereq_,module,exports){
+},{"./blank-node":33,"./literal":45,"./n3parser":47,"./named-node":48,"./patch-parser":52,"./rdfaparser":55,"./rdfxmlparser":56,"./util":64,"jsonld":19,"n3":21}],52:[function(_dereq_,module,exports){
 'use strict';
 
 // Parse a simple SPARL-Update subset syntax for patches.
@@ -22027,7 +20900,7 @@ function sparqlUpdateParser(str, kb, base) {
   } // while
   // return clauses
 }
-},{"./n3parser":48,"./namespace":50}],54:[function(_dereq_,module,exports){
+},{"./n3parser":47,"./namespace":49}],53:[function(_dereq_,module,exports){
 'use strict';
 
 var log = _dereq_('./log');
@@ -22105,7 +20978,7 @@ function queryToSPARQL(query) {
 }
 
 module.exports = queryToSPARQL;
-},{"./log":47}],55:[function(_dereq_,module,exports){
+},{"./log":46}],54:[function(_dereq_,module,exports){
 'use strict';
 
 var _indexedFormula = _dereq_('./indexed-formula');
@@ -22675,7 +21548,7 @@ function indexedFormulaQuery(myQuery, callback, fetcher, onDone) {
 
 module.exports.Query = Query;
 module.exports.indexedFormulaQuery = indexedFormulaQuery;
-},{"./indexed-formula":44,"./log":47,"./uri":64}],56:[function(_dereq_,module,exports){
+},{"./indexed-formula":43,"./log":46,"./uri":63}],55:[function(_dereq_,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -23629,7 +22502,7 @@ RDFaProcessor.dateTimeTypes = [{ pattern: /-?P(?:[0-9]+Y)?(?:[0-9]+M)?(?:[0-9]+D
   type: 'http://www.w3.org/2001/XMLSchema#gYear' }];
 
 module.exports = RDFaProcessor;
-},{"./blank-node":34,"./data-factory":38,"./literal":46,"./named-node":49,"./uri":64,"./util":65}],57:[function(_dereq_,module,exports){
+},{"./blank-node":33,"./data-factory":37,"./literal":45,"./named-node":48,"./uri":63,"./util":64}],56:[function(_dereq_,module,exports){
 'use strict';
 
 /**
@@ -24078,7 +22951,7 @@ var RDFParser = function RDFParser(store) {
 };
 
 module.exports = RDFParser;
-},{"./uri":64}],58:[function(_dereq_,module,exports){
+},{"./uri":63}],57:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = serialize;
@@ -24156,7 +23029,7 @@ function serialize(target, kb, base, contentType, callback, options) {
     }
   }
 }
-},{"./convert":37,"./serializer":59}],59:[function(_dereq_,module,exports){
+},{"./convert":36,"./serializer":58}],58:[function(_dereq_,module,exports){
 'use strict';
 
 /*      Serialization of RDF Graphs
@@ -25111,7 +23984,7 @@ var Serializer = function () {
 }();
 
 module.exports = Serializer;
-},{"./blank-node":34,"./named-node":49,"./uri":64,"./util":65,"./xsd":67}],60:[function(_dereq_,module,exports){
+},{"./blank-node":33,"./named-node":48,"./uri":63,"./util":64,"./xsd":66}],59:[function(_dereq_,module,exports){
 'use strict';
 
 // Converting between SPARQL queries and the $rdf query API
@@ -25611,7 +24484,7 @@ function SPARQLToQuery(SPARQL, testMode, kb) {
 }
 
 module.exports = SPARQLToQuery;
-},{"./log":47,"./query":55}],61:[function(_dereq_,module,exports){
+},{"./log":46,"./query":54}],60:[function(_dereq_,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -25675,7 +24548,7 @@ var Statement = function () {
 }();
 
 module.exports = Statement;
-},{"./node":51}],62:[function(_dereq_,module,exports){
+},{"./node":50}],61:[function(_dereq_,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
@@ -26635,7 +25508,7 @@ var UpdateManager = function () {
 }();
 
 module.exports = UpdateManager;
-},{"./data-factory":38,"./fetcher":41,"./indexed-formula":44,"./namespace":50,"./serializer":59,"./uri":64,"./util":65}],63:[function(_dereq_,module,exports){
+},{"./data-factory":37,"./fetcher":40,"./indexed-formula":43,"./namespace":49,"./serializer":58,"./uri":63,"./util":64}],62:[function(_dereq_,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -26821,7 +25694,7 @@ var UpdatesVia = function () {
 
 module.exports.UpdatesSocket = UpdatesSocket;
 module.exports.UpdatesVia = UpdatesVia;
-},{"./data-factory":38}],64:[function(_dereq_,module,exports){
+},{"./data-factory":37}],63:[function(_dereq_,module,exports){
 'use strict';
 
 /*
@@ -27008,7 +25881,7 @@ function refTo(base, uri) {
   }
   return s + uri.slice(i);
 }
-},{"./named-node":49}],65:[function(_dereq_,module,exports){
+},{"./named-node":48}],64:[function(_dereq_,module,exports){
 'use strict';
 
 /**
@@ -27490,7 +26363,7 @@ function xhr() {
     return false;
   }
 }
-},{"./log":47,"./named-node":49,"./uri":64,"xmldom":79,"xmlhttprequest":82}],66:[function(_dereq_,module,exports){
+},{"./log":46,"./named-node":48,"./uri":63,"xmldom":68,"xmlhttprequest":82}],65:[function(_dereq_,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -27568,7 +26441,7 @@ Variable.prototype.classOrder = ClassOrder['Variable'];
 Variable.prototype.isVar = 1;
 
 module.exports = Variable;
-},{"./class-order":35,"./node":51,"./uri":64}],67:[function(_dereq_,module,exports){
+},{"./class-order":34,"./node":50,"./uri":63}],66:[function(_dereq_,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -27588,3147 +26461,1134 @@ XSD.langString = new NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#langS
 XSD.string = new NamedNode('http://www.w3.org/2001/XMLSchema#string');
 
 module.exports = XSD;
-},{"./named-node":49}],68:[function(_dereq_,module,exports){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
+},{"./named-node":48}],67:[function(_dereq_,module,exports){
+(function (process){
+/*!
+ * async
+ * https://github.com/caolan/async
+ *
+ * Copyright 2010-2014 Caolan McMahon
+ * Released under the MIT license
+ */
+/*jshint onevar: false, indent:4 */
+/*global setImmediate: false, setTimeout: false, console: false */
+(function () {
 
-// a duplex stream is just a stream that is both readable and writable.
-// Since JS doesn't have multiple prototypal inheritance, this class
-// prototypally inherits from Readable, and then parasitically from
-// Writable.
+    var async = {};
 
-module.exports = Duplex;
-var inherits = _dereq_('inherits');
-var setImmediate = _dereq_('process/browser.js').nextTick;
-var Readable = _dereq_('./readable.js');
-var Writable = _dereq_('./writable.js');
+    // global on the server, window in the browser
+    var root, previous_async;
 
-inherits(Duplex, Readable);
-
-Duplex.prototype.write = Writable.prototype.write;
-Duplex.prototype.end = Writable.prototype.end;
-Duplex.prototype._write = Writable.prototype._write;
-
-function Duplex(options) {
-  if (!(this instanceof Duplex))
-    return new Duplex(options);
-
-  Readable.call(this, options);
-  Writable.call(this, options);
-
-  if (options && options.readable === false)
-    this.readable = false;
-
-  if (options && options.writable === false)
-    this.writable = false;
-
-  this.allowHalfOpen = true;
-  if (options && options.allowHalfOpen === false)
-    this.allowHalfOpen = false;
-
-  this.once('end', onend);
-}
-
-// the no-half-open enforcer
-function onend() {
-  // if we allow half-open state, or if the writable side ended,
-  // then we're ok.
-  if (this.allowHalfOpen || this._writableState.ended)
-    return;
-
-  // no more data can be written.
-  // But allow more writes to happen in this tick.
-  var self = this;
-  setImmediate(function () {
-    self.end();
-  });
-}
-
-},{"./readable.js":72,"./writable.js":74,"inherits":18,"process/browser.js":70}],69:[function(_dereq_,module,exports){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-module.exports = Stream;
-
-var EE = _dereq_('events').EventEmitter;
-var inherits = _dereq_('inherits');
-
-inherits(Stream, EE);
-Stream.Readable = _dereq_('./readable.js');
-Stream.Writable = _dereq_('./writable.js');
-Stream.Duplex = _dereq_('./duplex.js');
-Stream.Transform = _dereq_('./transform.js');
-Stream.PassThrough = _dereq_('./passthrough.js');
-
-// Backwards-compat with node 0.4.x
-Stream.Stream = Stream;
-
-
-
-// old-style streams.  Note that the pipe method (the only relevant
-// part of this class) is overridden in the Readable class.
-
-function Stream() {
-  EE.call(this);
-}
-
-Stream.prototype.pipe = function(dest, options) {
-  var source = this;
-
-  function ondata(chunk) {
-    if (dest.writable) {
-      if (false === dest.write(chunk) && source.pause) {
-        source.pause();
-      }
-    }
-  }
-
-  source.on('data', ondata);
-
-  function ondrain() {
-    if (source.readable && source.resume) {
-      source.resume();
-    }
-  }
-
-  dest.on('drain', ondrain);
-
-  // If the 'end' option is not supplied, dest.end() will be called when
-  // source gets the 'end' or 'close' events.  Only dest.end() once.
-  if (!dest._isStdio && (!options || options.end !== false)) {
-    source.on('end', onend);
-    source.on('close', onclose);
-  }
-
-  var didOnEnd = false;
-  function onend() {
-    if (didOnEnd) return;
-    didOnEnd = true;
-
-    dest.end();
-  }
-
-
-  function onclose() {
-    if (didOnEnd) return;
-    didOnEnd = true;
-
-    if (typeof dest.destroy === 'function') dest.destroy();
-  }
-
-  // don't leave dangling pipes when there are errors.
-  function onerror(er) {
-    cleanup();
-    if (EE.listenerCount(this, 'error') === 0) {
-      throw er; // Unhandled stream error in pipe.
-    }
-  }
-
-  source.on('error', onerror);
-  dest.on('error', onerror);
-
-  // remove all the event listeners that were added.
-  function cleanup() {
-    source.removeListener('data', ondata);
-    dest.removeListener('drain', ondrain);
-
-    source.removeListener('end', onend);
-    source.removeListener('close', onclose);
-
-    source.removeListener('error', onerror);
-    dest.removeListener('error', onerror);
-
-    source.removeListener('end', cleanup);
-    source.removeListener('close', cleanup);
-
-    dest.removeListener('close', cleanup);
-  }
-
-  source.on('end', cleanup);
-  source.on('close', cleanup);
-
-  dest.on('close', cleanup);
-
-  dest.emit('pipe', source);
-
-  // Allow for unix-like usage: A.pipe(B).pipe(C)
-  return dest;
-};
-
-},{"./duplex.js":68,"./passthrough.js":71,"./readable.js":72,"./transform.js":73,"./writable.js":74,"events":12,"inherits":18}],70:[function(_dereq_,module,exports){
-// shim for using process in browser
-
-var process = module.exports = {};
-
-process.nextTick = (function () {
-    var canSetImmediate = typeof window !== 'undefined'
-    && window.setImmediate;
-    var canPost = typeof window !== 'undefined'
-    && window.postMessage && window.addEventListener
-    ;
-
-    if (canSetImmediate) {
-        return function (f) { return window.setImmediate(f) };
+    root = this;
+    if (root != null) {
+      previous_async = root.async;
     }
 
-    if (canPost) {
-        var queue = [];
-        window.addEventListener('message', function (ev) {
-            var source = ev.source;
-            if ((source === window || source === null) && ev.data === 'process-tick') {
-                ev.stopPropagation();
-                if (queue.length > 0) {
-                    var fn = queue.shift();
-                    fn();
+    async.noConflict = function () {
+        root.async = previous_async;
+        return async;
+    };
+
+    function only_once(fn) {
+        var called = false;
+        return function() {
+            if (called) throw new Error("Callback was already called.");
+            called = true;
+            fn.apply(root, arguments);
+        }
+    }
+
+    //// cross-browser compatiblity functions ////
+
+    var _toString = Object.prototype.toString;
+
+    var _isArray = Array.isArray || function (obj) {
+        return _toString.call(obj) === '[object Array]';
+    };
+
+    var _each = function (arr, iterator) {
+        for (var i = 0; i < arr.length; i += 1) {
+            iterator(arr[i], i, arr);
+        }
+    };
+
+    var _map = function (arr, iterator) {
+        if (arr.map) {
+            return arr.map(iterator);
+        }
+        var results = [];
+        _each(arr, function (x, i, a) {
+            results.push(iterator(x, i, a));
+        });
+        return results;
+    };
+
+    var _reduce = function (arr, iterator, memo) {
+        if (arr.reduce) {
+            return arr.reduce(iterator, memo);
+        }
+        _each(arr, function (x, i, a) {
+            memo = iterator(memo, x, i, a);
+        });
+        return memo;
+    };
+
+    var _keys = function (obj) {
+        if (Object.keys) {
+            return Object.keys(obj);
+        }
+        var keys = [];
+        for (var k in obj) {
+            if (obj.hasOwnProperty(k)) {
+                keys.push(k);
+            }
+        }
+        return keys;
+    };
+
+    //// exported async module functions ////
+
+    //// nextTick implementation with browser-compatible fallback ////
+    if (typeof process === 'undefined' || !(process.nextTick)) {
+        if (typeof setImmediate === 'function') {
+            async.nextTick = function (fn) {
+                // not a direct alias for IE10 compatibility
+                setImmediate(fn);
+            };
+            async.setImmediate = async.nextTick;
+        }
+        else {
+            async.nextTick = function (fn) {
+                setTimeout(fn, 0);
+            };
+            async.setImmediate = async.nextTick;
+        }
+    }
+    else {
+        async.nextTick = process.nextTick;
+        if (typeof setImmediate !== 'undefined') {
+            async.setImmediate = function (fn) {
+              // not a direct alias for IE10 compatibility
+              setImmediate(fn);
+            };
+        }
+        else {
+            async.setImmediate = async.nextTick;
+        }
+    }
+
+    async.each = function (arr, iterator, callback) {
+        callback = callback || function () {};
+        if (!arr.length) {
+            return callback();
+        }
+        var completed = 0;
+        _each(arr, function (x) {
+            iterator(x, only_once(done) );
+        });
+        function done(err) {
+          if (err) {
+              callback(err);
+              callback = function () {};
+          }
+          else {
+              completed += 1;
+              if (completed >= arr.length) {
+                  callback();
+              }
+          }
+        }
+    };
+    async.forEach = async.each;
+
+    async.eachSeries = function (arr, iterator, callback) {
+        callback = callback || function () {};
+        if (!arr.length) {
+            return callback();
+        }
+        var completed = 0;
+        var iterate = function () {
+            iterator(arr[completed], function (err) {
+                if (err) {
+                    callback(err);
+                    callback = function () {};
+                }
+                else {
+                    completed += 1;
+                    if (completed >= arr.length) {
+                        callback();
+                    }
+                    else {
+                        iterate();
+                    }
+                }
+            });
+        };
+        iterate();
+    };
+    async.forEachSeries = async.eachSeries;
+
+    async.eachLimit = function (arr, limit, iterator, callback) {
+        var fn = _eachLimit(limit);
+        fn.apply(null, [arr, iterator, callback]);
+    };
+    async.forEachLimit = async.eachLimit;
+
+    var _eachLimit = function (limit) {
+
+        return function (arr, iterator, callback) {
+            callback = callback || function () {};
+            if (!arr.length || limit <= 0) {
+                return callback();
+            }
+            var completed = 0;
+            var started = 0;
+            var running = 0;
+
+            (function replenish () {
+                if (completed >= arr.length) {
+                    return callback();
+                }
+
+                while (running < limit && started < arr.length) {
+                    started += 1;
+                    running += 1;
+                    iterator(arr[started - 1], function (err) {
+                        if (err) {
+                            callback(err);
+                            callback = function () {};
+                        }
+                        else {
+                            completed += 1;
+                            running -= 1;
+                            if (completed >= arr.length) {
+                                callback();
+                            }
+                            else {
+                                replenish();
+                            }
+                        }
+                    });
+                }
+            })();
+        };
+    };
+
+
+    var doParallel = function (fn) {
+        return function () {
+            var args = Array.prototype.slice.call(arguments);
+            return fn.apply(null, [async.each].concat(args));
+        };
+    };
+    var doParallelLimit = function(limit, fn) {
+        return function () {
+            var args = Array.prototype.slice.call(arguments);
+            return fn.apply(null, [_eachLimit(limit)].concat(args));
+        };
+    };
+    var doSeries = function (fn) {
+        return function () {
+            var args = Array.prototype.slice.call(arguments);
+            return fn.apply(null, [async.eachSeries].concat(args));
+        };
+    };
+
+
+    var _asyncMap = function (eachfn, arr, iterator, callback) {
+        arr = _map(arr, function (x, i) {
+            return {index: i, value: x};
+        });
+        if (!callback) {
+            eachfn(arr, function (x, callback) {
+                iterator(x.value, function (err) {
+                    callback(err);
+                });
+            });
+        } else {
+            var results = [];
+            eachfn(arr, function (x, callback) {
+                iterator(x.value, function (err, v) {
+                    results[x.index] = v;
+                    callback(err);
+                });
+            }, function (err) {
+                callback(err, results);
+            });
+        }
+    };
+    async.map = doParallel(_asyncMap);
+    async.mapSeries = doSeries(_asyncMap);
+    async.mapLimit = function (arr, limit, iterator, callback) {
+        return _mapLimit(limit)(arr, iterator, callback);
+    };
+
+    var _mapLimit = function(limit) {
+        return doParallelLimit(limit, _asyncMap);
+    };
+
+    // reduce only has a series version, as doing reduce in parallel won't
+    // work in many situations.
+    async.reduce = function (arr, memo, iterator, callback) {
+        async.eachSeries(arr, function (x, callback) {
+            iterator(memo, x, function (err, v) {
+                memo = v;
+                callback(err);
+            });
+        }, function (err) {
+            callback(err, memo);
+        });
+    };
+    // inject alias
+    async.inject = async.reduce;
+    // foldl alias
+    async.foldl = async.reduce;
+
+    async.reduceRight = function (arr, memo, iterator, callback) {
+        var reversed = _map(arr, function (x) {
+            return x;
+        }).reverse();
+        async.reduce(reversed, memo, iterator, callback);
+    };
+    // foldr alias
+    async.foldr = async.reduceRight;
+
+    var _filter = function (eachfn, arr, iterator, callback) {
+        var results = [];
+        arr = _map(arr, function (x, i) {
+            return {index: i, value: x};
+        });
+        eachfn(arr, function (x, callback) {
+            iterator(x.value, function (v) {
+                if (v) {
+                    results.push(x);
+                }
+                callback();
+            });
+        }, function (err) {
+            callback(_map(results.sort(function (a, b) {
+                return a.index - b.index;
+            }), function (x) {
+                return x.value;
+            }));
+        });
+    };
+    async.filter = doParallel(_filter);
+    async.filterSeries = doSeries(_filter);
+    // select alias
+    async.select = async.filter;
+    async.selectSeries = async.filterSeries;
+
+    var _reject = function (eachfn, arr, iterator, callback) {
+        var results = [];
+        arr = _map(arr, function (x, i) {
+            return {index: i, value: x};
+        });
+        eachfn(arr, function (x, callback) {
+            iterator(x.value, function (v) {
+                if (!v) {
+                    results.push(x);
+                }
+                callback();
+            });
+        }, function (err) {
+            callback(_map(results.sort(function (a, b) {
+                return a.index - b.index;
+            }), function (x) {
+                return x.value;
+            }));
+        });
+    };
+    async.reject = doParallel(_reject);
+    async.rejectSeries = doSeries(_reject);
+
+    var _detect = function (eachfn, arr, iterator, main_callback) {
+        eachfn(arr, function (x, callback) {
+            iterator(x, function (result) {
+                if (result) {
+                    main_callback(x);
+                    main_callback = function () {};
+                }
+                else {
+                    callback();
+                }
+            });
+        }, function (err) {
+            main_callback();
+        });
+    };
+    async.detect = doParallel(_detect);
+    async.detectSeries = doSeries(_detect);
+
+    async.some = function (arr, iterator, main_callback) {
+        async.each(arr, function (x, callback) {
+            iterator(x, function (v) {
+                if (v) {
+                    main_callback(true);
+                    main_callback = function () {};
+                }
+                callback();
+            });
+        }, function (err) {
+            main_callback(false);
+        });
+    };
+    // any alias
+    async.any = async.some;
+
+    async.every = function (arr, iterator, main_callback) {
+        async.each(arr, function (x, callback) {
+            iterator(x, function (v) {
+                if (!v) {
+                    main_callback(false);
+                    main_callback = function () {};
+                }
+                callback();
+            });
+        }, function (err) {
+            main_callback(true);
+        });
+    };
+    // all alias
+    async.all = async.every;
+
+    async.sortBy = function (arr, iterator, callback) {
+        async.map(arr, function (x, callback) {
+            iterator(x, function (err, criteria) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, {value: x, criteria: criteria});
+                }
+            });
+        }, function (err, results) {
+            if (err) {
+                return callback(err);
+            }
+            else {
+                var fn = function (left, right) {
+                    var a = left.criteria, b = right.criteria;
+                    return a < b ? -1 : a > b ? 1 : 0;
+                };
+                callback(null, _map(results.sort(fn), function (x) {
+                    return x.value;
+                }));
+            }
+        });
+    };
+
+    async.auto = function (tasks, callback) {
+        callback = callback || function () {};
+        var keys = _keys(tasks);
+        var remainingTasks = keys.length
+        if (!remainingTasks) {
+            return callback();
+        }
+
+        var results = {};
+
+        var listeners = [];
+        var addListener = function (fn) {
+            listeners.unshift(fn);
+        };
+        var removeListener = function (fn) {
+            for (var i = 0; i < listeners.length; i += 1) {
+                if (listeners[i] === fn) {
+                    listeners.splice(i, 1);
+                    return;
                 }
             }
-        }, true);
-
-        return function nextTick(fn) {
-            queue.push(fn);
-            window.postMessage('process-tick', '*');
         };
-    }
+        var taskComplete = function () {
+            remainingTasks--
+            _each(listeners.slice(0), function (fn) {
+                fn();
+            });
+        };
 
-    return function nextTick(fn) {
-        setTimeout(fn, 0);
+        addListener(function () {
+            if (!remainingTasks) {
+                var theCallback = callback;
+                // prevent final callback from calling itself if it errors
+                callback = function () {};
+
+                theCallback(null, results);
+            }
+        });
+
+        _each(keys, function (k) {
+            var task = _isArray(tasks[k]) ? tasks[k]: [tasks[k]];
+            var taskCallback = function (err) {
+                var args = Array.prototype.slice.call(arguments, 1);
+                if (args.length <= 1) {
+                    args = args[0];
+                }
+                if (err) {
+                    var safeResults = {};
+                    _each(_keys(results), function(rkey) {
+                        safeResults[rkey] = results[rkey];
+                    });
+                    safeResults[k] = args;
+                    callback(err, safeResults);
+                    // stop subsequent errors hitting callback multiple times
+                    callback = function () {};
+                }
+                else {
+                    results[k] = args;
+                    async.setImmediate(taskComplete);
+                }
+            };
+            var requires = task.slice(0, Math.abs(task.length - 1)) || [];
+            var ready = function () {
+                return _reduce(requires, function (a, x) {
+                    return (a && results.hasOwnProperty(x));
+                }, true) && !results.hasOwnProperty(k);
+            };
+            if (ready()) {
+                task[task.length - 1](taskCallback, results);
+            }
+            else {
+                var listener = function () {
+                    if (ready()) {
+                        removeListener(listener);
+                        task[task.length - 1](taskCallback, results);
+                    }
+                };
+                addListener(listener);
+            }
+        });
     };
-})();
 
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-}
-
-// TODO(shtylman)
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-
-},{}],71:[function(_dereq_,module,exports){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// a passthrough stream.
-// basically just the most minimal sort of Transform stream.
-// Every written chunk gets output as-is.
-
-module.exports = PassThrough;
-
-var Transform = _dereq_('./transform.js');
-var inherits = _dereq_('inherits');
-inherits(PassThrough, Transform);
-
-function PassThrough(options) {
-  if (!(this instanceof PassThrough))
-    return new PassThrough(options);
-
-  Transform.call(this, options);
-}
-
-PassThrough.prototype._transform = function(chunk, encoding, cb) {
-  cb(null, chunk);
-};
-
-},{"./transform.js":73,"inherits":18}],72:[function(_dereq_,module,exports){
-(function (process){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-module.exports = Readable;
-Readable.ReadableState = ReadableState;
-
-var EE = _dereq_('events').EventEmitter;
-var Stream = _dereq_('./index.js');
-var Buffer = _dereq_('buffer').Buffer;
-var setImmediate = _dereq_('process/browser.js').nextTick;
-var StringDecoder;
-
-var inherits = _dereq_('inherits');
-inherits(Readable, Stream);
-
-function ReadableState(options, stream) {
-  options = options || {};
-
-  // the point at which it stops calling _read() to fill the buffer
-  // Note: 0 is a valid value, means "don't call _read preemptively ever"
-  var hwm = options.highWaterMark;
-  this.highWaterMark = (hwm || hwm === 0) ? hwm : 16 * 1024;
-
-  // cast to ints.
-  this.highWaterMark = ~~this.highWaterMark;
-
-  this.buffer = [];
-  this.length = 0;
-  this.pipes = null;
-  this.pipesCount = 0;
-  this.flowing = false;
-  this.ended = false;
-  this.endEmitted = false;
-  this.reading = false;
-
-  // In streams that never have any data, and do push(null) right away,
-  // the consumer can miss the 'end' event if they do some I/O before
-  // consuming the stream.  So, we don't emit('end') until some reading
-  // happens.
-  this.calledRead = false;
-
-  // a flag to be able to tell if the onwrite cb is called immediately,
-  // or on a later tick.  We set this to true at first, becuase any
-  // actions that shouldn't happen until "later" should generally also
-  // not happen before the first write call.
-  this.sync = true;
-
-  // whenever we return null, then we set a flag to say
-  // that we're awaiting a 'readable' event emission.
-  this.needReadable = false;
-  this.emittedReadable = false;
-  this.readableListening = false;
-
-
-  // object stream flag. Used to make read(n) ignore n and to
-  // make all the buffer merging and length checks go away
-  this.objectMode = !!options.objectMode;
-
-  // Crypto is kind of old and crusty.  Historically, its default string
-  // encoding is 'binary' so we have to make this configurable.
-  // Everything else in the universe uses 'utf8', though.
-  this.defaultEncoding = options.defaultEncoding || 'utf8';
-
-  // when piping, we only care about 'readable' events that happen
-  // after read()ing all the bytes and not getting any pushback.
-  this.ranOut = false;
-
-  // the number of writers that are awaiting a drain event in .pipe()s
-  this.awaitDrain = 0;
-
-  // if true, a maybeReadMore has been scheduled
-  this.readingMore = false;
-
-  this.decoder = null;
-  this.encoding = null;
-  if (options.encoding) {
-    if (!StringDecoder)
-      StringDecoder = _dereq_('string_decoder').StringDecoder;
-    this.decoder = new StringDecoder(options.encoding);
-    this.encoding = options.encoding;
-  }
-}
-
-function Readable(options) {
-  if (!(this instanceof Readable))
-    return new Readable(options);
-
-  this._readableState = new ReadableState(options, this);
-
-  // legacy
-  this.readable = true;
-
-  Stream.call(this);
-}
-
-// Manually shove something into the read() buffer.
-// This returns true if the highWaterMark has not been hit yet,
-// similar to how Writable.write() returns true if you should
-// write() some more.
-Readable.prototype.push = function(chunk, encoding) {
-  var state = this._readableState;
-
-  if (typeof chunk === 'string' && !state.objectMode) {
-    encoding = encoding || state.defaultEncoding;
-    if (encoding !== state.encoding) {
-      chunk = new Buffer(chunk, encoding);
-      encoding = '';
-    }
-  }
-
-  return readableAddChunk(this, state, chunk, encoding, false);
-};
-
-// Unshift should *always* be something directly out of read()
-Readable.prototype.unshift = function(chunk) {
-  var state = this._readableState;
-  return readableAddChunk(this, state, chunk, '', true);
-};
-
-function readableAddChunk(stream, state, chunk, encoding, addToFront) {
-  var er = chunkInvalid(state, chunk);
-  if (er) {
-    stream.emit('error', er);
-  } else if (chunk === null || chunk === undefined) {
-    state.reading = false;
-    if (!state.ended)
-      onEofChunk(stream, state);
-  } else if (state.objectMode || chunk && chunk.length > 0) {
-    if (state.ended && !addToFront) {
-      var e = new Error('stream.push() after EOF');
-      stream.emit('error', e);
-    } else if (state.endEmitted && addToFront) {
-      var e = new Error('stream.unshift() after end event');
-      stream.emit('error', e);
-    } else {
-      if (state.decoder && !addToFront && !encoding)
-        chunk = state.decoder.write(chunk);
-
-      // update the buffer info.
-      state.length += state.objectMode ? 1 : chunk.length;
-      if (addToFront) {
-        state.buffer.unshift(chunk);
-      } else {
-        state.reading = false;
-        state.buffer.push(chunk);
-      }
-
-      if (state.needReadable)
-        emitReadable(stream);
-
-      maybeReadMore(stream, state);
-    }
-  } else if (!addToFront) {
-    state.reading = false;
-  }
-
-  return needMoreData(state);
-}
-
-
-
-// if it's past the high water mark, we can push in some more.
-// Also, if we have no data yet, we can stand some
-// more bytes.  This is to work around cases where hwm=0,
-// such as the repl.  Also, if the push() triggered a
-// readable event, and the user called read(largeNumber) such that
-// needReadable was set, then we ought to push more, so that another
-// 'readable' event will be triggered.
-function needMoreData(state) {
-  return !state.ended &&
-         (state.needReadable ||
-          state.length < state.highWaterMark ||
-          state.length === 0);
-}
-
-// backwards compatibility.
-Readable.prototype.setEncoding = function(enc) {
-  if (!StringDecoder)
-    StringDecoder = _dereq_('string_decoder').StringDecoder;
-  this._readableState.decoder = new StringDecoder(enc);
-  this._readableState.encoding = enc;
-};
-
-// Don't raise the hwm > 128MB
-var MAX_HWM = 0x800000;
-function roundUpToNextPowerOf2(n) {
-  if (n >= MAX_HWM) {
-    n = MAX_HWM;
-  } else {
-    // Get the next highest power of 2
-    n--;
-    for (var p = 1; p < 32; p <<= 1) n |= n >> p;
-    n++;
-  }
-  return n;
-}
-
-function howMuchToRead(n, state) {
-  if (state.length === 0 && state.ended)
-    return 0;
-
-  if (state.objectMode)
-    return n === 0 ? 0 : 1;
-
-  if (isNaN(n) || n === null) {
-    // only flow one buffer at a time
-    if (state.flowing && state.buffer.length)
-      return state.buffer[0].length;
-    else
-      return state.length;
-  }
-
-  if (n <= 0)
-    return 0;
-
-  // If we're asking for more than the target buffer level,
-  // then raise the water mark.  Bump up to the next highest
-  // power of 2, to prevent increasing it excessively in tiny
-  // amounts.
-  if (n > state.highWaterMark)
-    state.highWaterMark = roundUpToNextPowerOf2(n);
-
-  // don't have that much.  return null, unless we've ended.
-  if (n > state.length) {
-    if (!state.ended) {
-      state.needReadable = true;
-      return 0;
-    } else
-      return state.length;
-  }
-
-  return n;
-}
-
-// you can override either this method, or the async _read(n) below.
-Readable.prototype.read = function(n) {
-  var state = this._readableState;
-  state.calledRead = true;
-  var nOrig = n;
-
-  if (typeof n !== 'number' || n > 0)
-    state.emittedReadable = false;
-
-  // if we're doing read(0) to trigger a readable event, but we
-  // already have a bunch of data in the buffer, then just trigger
-  // the 'readable' event and move on.
-  if (n === 0 &&
-      state.needReadable &&
-      (state.length >= state.highWaterMark || state.ended)) {
-    emitReadable(this);
-    return null;
-  }
-
-  n = howMuchToRead(n, state);
-
-  // if we've ended, and we're now clear, then finish it up.
-  if (n === 0 && state.ended) {
-    if (state.length === 0)
-      endReadable(this);
-    return null;
-  }
-
-  // All the actual chunk generation logic needs to be
-  // *below* the call to _read.  The reason is that in certain
-  // synthetic stream cases, such as passthrough streams, _read
-  // may be a completely synchronous operation which may change
-  // the state of the read buffer, providing enough data when
-  // before there was *not* enough.
-  //
-  // So, the steps are:
-  // 1. Figure out what the state of things will be after we do
-  // a read from the buffer.
-  //
-  // 2. If that resulting state will trigger a _read, then call _read.
-  // Note that this may be asynchronous, or synchronous.  Yes, it is
-  // deeply ugly to write APIs this way, but that still doesn't mean
-  // that the Readable class should behave improperly, as streams are
-  // designed to be sync/async agnostic.
-  // Take note if the _read call is sync or async (ie, if the read call
-  // has returned yet), so that we know whether or not it's safe to emit
-  // 'readable' etc.
-  //
-  // 3. Actually pull the requested chunks out of the buffer and return.
-
-  // if we need a readable event, then we need to do some reading.
-  var doRead = state.needReadable;
-
-  // if we currently have less than the highWaterMark, then also read some
-  if (state.length - n <= state.highWaterMark)
-    doRead = true;
-
-  // however, if we've ended, then there's no point, and if we're already
-  // reading, then it's unnecessary.
-  if (state.ended || state.reading)
-    doRead = false;
-
-  if (doRead) {
-    state.reading = true;
-    state.sync = true;
-    // if the length is currently zero, then we *need* a readable event.
-    if (state.length === 0)
-      state.needReadable = true;
-    // call internal read method
-    this._read(state.highWaterMark);
-    state.sync = false;
-  }
-
-  // If _read called its callback synchronously, then `reading`
-  // will be false, and we need to re-evaluate how much data we
-  // can return to the user.
-  if (doRead && !state.reading)
-    n = howMuchToRead(nOrig, state);
-
-  var ret;
-  if (n > 0)
-    ret = fromList(n, state);
-  else
-    ret = null;
-
-  if (ret === null) {
-    state.needReadable = true;
-    n = 0;
-  }
-
-  state.length -= n;
-
-  // If we have nothing in the buffer, then we want to know
-  // as soon as we *do* get something into the buffer.
-  if (state.length === 0 && !state.ended)
-    state.needReadable = true;
-
-  // If we happened to read() exactly the remaining amount in the
-  // buffer, and the EOF has been seen at this point, then make sure
-  // that we emit 'end' on the very next tick.
-  if (state.ended && !state.endEmitted && state.length === 0)
-    endReadable(this);
-
-  return ret;
-};
-
-function chunkInvalid(state, chunk) {
-  var er = null;
-  if (!Buffer.isBuffer(chunk) &&
-      'string' !== typeof chunk &&
-      chunk !== null &&
-      chunk !== undefined &&
-      !state.objectMode &&
-      !er) {
-    er = new TypeError('Invalid non-string/buffer chunk');
-  }
-  return er;
-}
-
-
-function onEofChunk(stream, state) {
-  if (state.decoder && !state.ended) {
-    var chunk = state.decoder.end();
-    if (chunk && chunk.length) {
-      state.buffer.push(chunk);
-      state.length += state.objectMode ? 1 : chunk.length;
-    }
-  }
-  state.ended = true;
-
-  // if we've ended and we have some data left, then emit
-  // 'readable' now to make sure it gets picked up.
-  if (state.length > 0)
-    emitReadable(stream);
-  else
-    endReadable(stream);
-}
-
-// Don't emit readable right away in sync mode, because this can trigger
-// another read() call => stack overflow.  This way, it might trigger
-// a nextTick recursion warning, but that's not so bad.
-function emitReadable(stream) {
-  var state = stream._readableState;
-  state.needReadable = false;
-  if (state.emittedReadable)
-    return;
-
-  state.emittedReadable = true;
-  if (state.sync)
-    setImmediate(function() {
-      emitReadable_(stream);
-    });
-  else
-    emitReadable_(stream);
-}
-
-function emitReadable_(stream) {
-  stream.emit('readable');
-}
-
-
-// at this point, the user has presumably seen the 'readable' event,
-// and called read() to consume some data.  that may have triggered
-// in turn another _read(n) call, in which case reading = true if
-// it's in progress.
-// However, if we're not ended, or reading, and the length < hwm,
-// then go ahead and try to read some more preemptively.
-function maybeReadMore(stream, state) {
-  if (!state.readingMore) {
-    state.readingMore = true;
-    setImmediate(function() {
-      maybeReadMore_(stream, state);
-    });
-  }
-}
-
-function maybeReadMore_(stream, state) {
-  var len = state.length;
-  while (!state.reading && !state.flowing && !state.ended &&
-         state.length < state.highWaterMark) {
-    stream.read(0);
-    if (len === state.length)
-      // didn't get any data, stop spinning.
-      break;
-    else
-      len = state.length;
-  }
-  state.readingMore = false;
-}
-
-// abstract method.  to be overridden in specific implementation classes.
-// call cb(er, data) where data is <= n in length.
-// for virtual (non-string, non-buffer) streams, "length" is somewhat
-// arbitrary, and perhaps not very meaningful.
-Readable.prototype._read = function(n) {
-  this.emit('error', new Error('not implemented'));
-};
-
-Readable.prototype.pipe = function(dest, pipeOpts) {
-  var src = this;
-  var state = this._readableState;
-
-  switch (state.pipesCount) {
-    case 0:
-      state.pipes = dest;
-      break;
-    case 1:
-      state.pipes = [state.pipes, dest];
-      break;
-    default:
-      state.pipes.push(dest);
-      break;
-  }
-  state.pipesCount += 1;
-
-  var doEnd = (!pipeOpts || pipeOpts.end !== false) &&
-              dest !== process.stdout &&
-              dest !== process.stderr;
-
-  var endFn = doEnd ? onend : cleanup;
-  if (state.endEmitted)
-    setImmediate(endFn);
-  else
-    src.once('end', endFn);
-
-  dest.on('unpipe', onunpipe);
-  function onunpipe(readable) {
-    if (readable !== src) return;
-    cleanup();
-  }
-
-  function onend() {
-    dest.end();
-  }
-
-  // when the dest drains, it reduces the awaitDrain counter
-  // on the source.  This would be more elegant with a .once()
-  // handler in flow(), but adding and removing repeatedly is
-  // too slow.
-  var ondrain = pipeOnDrain(src);
-  dest.on('drain', ondrain);
-
-  function cleanup() {
-    // cleanup event handlers once the pipe is broken
-    dest.removeListener('close', onclose);
-    dest.removeListener('finish', onfinish);
-    dest.removeListener('drain', ondrain);
-    dest.removeListener('error', onerror);
-    dest.removeListener('unpipe', onunpipe);
-    src.removeListener('end', onend);
-    src.removeListener('end', cleanup);
-
-    // if the reader is waiting for a drain event from this
-    // specific writer, then it would cause it to never start
-    // flowing again.
-    // So, if this is awaiting a drain, then we just call it now.
-    // If we don't know, then assume that we are waiting for one.
-    if (!dest._writableState || dest._writableState.needDrain)
-      ondrain();
-  }
-
-  // if the dest has an error, then stop piping into it.
-  // however, don't suppress the throwing behavior for this.
-  // check for listeners before emit removes one-time listeners.
-  var errListeners = EE.listenerCount(dest, 'error');
-  function onerror(er) {
-    unpipe();
-    if (errListeners === 0 && EE.listenerCount(dest, 'error') === 0)
-      dest.emit('error', er);
-  }
-  dest.once('error', onerror);
-
-  // Both close and finish should trigger unpipe, but only once.
-  function onclose() {
-    dest.removeListener('finish', onfinish);
-    unpipe();
-  }
-  dest.once('close', onclose);
-  function onfinish() {
-    dest.removeListener('close', onclose);
-    unpipe();
-  }
-  dest.once('finish', onfinish);
-
-  function unpipe() {
-    src.unpipe(dest);
-  }
-
-  // tell the dest that it's being piped to
-  dest.emit('pipe', src);
-
-  // start the flow if it hasn't been started already.
-  if (!state.flowing) {
-    // the handler that waits for readable events after all
-    // the data gets sucked out in flow.
-    // This would be easier to follow with a .once() handler
-    // in flow(), but that is too slow.
-    this.on('readable', pipeOnReadable);
-
-    state.flowing = true;
-    setImmediate(function() {
-      flow(src);
-    });
-  }
-
-  return dest;
-};
-
-function pipeOnDrain(src) {
-  return function() {
-    var dest = this;
-    var state = src._readableState;
-    state.awaitDrain--;
-    if (state.awaitDrain === 0)
-      flow(src);
-  };
-}
-
-function flow(src) {
-  var state = src._readableState;
-  var chunk;
-  state.awaitDrain = 0;
-
-  function write(dest, i, list) {
-    var written = dest.write(chunk);
-    if (false === written) {
-      state.awaitDrain++;
-    }
-  }
-
-  while (state.pipesCount && null !== (chunk = src.read())) {
-
-    if (state.pipesCount === 1)
-      write(state.pipes, 0, null);
-    else
-      forEach(state.pipes, write);
-
-    src.emit('data', chunk);
-
-    // if anyone needs a drain, then we have to wait for that.
-    if (state.awaitDrain > 0)
-      return;
-  }
-
-  // if every destination was unpiped, either before entering this
-  // function, or in the while loop, then stop flowing.
-  //
-  // NB: This is a pretty rare edge case.
-  if (state.pipesCount === 0) {
-    state.flowing = false;
-
-    // if there were data event listeners added, then switch to old mode.
-    if (EE.listenerCount(src, 'data') > 0)
-      emitDataEvents(src);
-    return;
-  }
-
-  // at this point, no one needed a drain, so we just ran out of data
-  // on the next readable event, start it over again.
-  state.ranOut = true;
-}
-
-function pipeOnReadable() {
-  if (this._readableState.ranOut) {
-    this._readableState.ranOut = false;
-    flow(this);
-  }
-}
-
-
-Readable.prototype.unpipe = function(dest) {
-  var state = this._readableState;
-
-  // if we're not piping anywhere, then do nothing.
-  if (state.pipesCount === 0)
-    return this;
-
-  // just one destination.  most common case.
-  if (state.pipesCount === 1) {
-    // passed in one, but it's not the right one.
-    if (dest && dest !== state.pipes)
-      return this;
-
-    if (!dest)
-      dest = state.pipes;
-
-    // got a match.
-    state.pipes = null;
-    state.pipesCount = 0;
-    this.removeListener('readable', pipeOnReadable);
-    state.flowing = false;
-    if (dest)
-      dest.emit('unpipe', this);
-    return this;
-  }
-
-  // slow case. multiple pipe destinations.
-
-  if (!dest) {
-    // remove all.
-    var dests = state.pipes;
-    var len = state.pipesCount;
-    state.pipes = null;
-    state.pipesCount = 0;
-    this.removeListener('readable', pipeOnReadable);
-    state.flowing = false;
-
-    for (var i = 0; i < len; i++)
-      dests[i].emit('unpipe', this);
-    return this;
-  }
-
-  // try to find the right one.
-  var i = indexOf(state.pipes, dest);
-  if (i === -1)
-    return this;
-
-  state.pipes.splice(i, 1);
-  state.pipesCount -= 1;
-  if (state.pipesCount === 1)
-    state.pipes = state.pipes[0];
-
-  dest.emit('unpipe', this);
-
-  return this;
-};
-
-// set up data events if they are asked for
-// Ensure readable listeners eventually get something
-Readable.prototype.on = function(ev, fn) {
-  var res = Stream.prototype.on.call(this, ev, fn);
-
-  if (ev === 'data' && !this._readableState.flowing)
-    emitDataEvents(this);
-
-  if (ev === 'readable' && this.readable) {
-    var state = this._readableState;
-    if (!state.readableListening) {
-      state.readableListening = true;
-      state.emittedReadable = false;
-      state.needReadable = true;
-      if (!state.reading) {
-        this.read(0);
-      } else if (state.length) {
-        emitReadable(this, state);
-      }
-    }
-  }
-
-  return res;
-};
-Readable.prototype.addListener = Readable.prototype.on;
-
-// pause() and resume() are remnants of the legacy readable stream API
-// If the user uses them, then switch into old mode.
-Readable.prototype.resume = function() {
-  emitDataEvents(this);
-  this.read(0);
-  this.emit('resume');
-};
-
-Readable.prototype.pause = function() {
-  emitDataEvents(this, true);
-  this.emit('pause');
-};
-
-function emitDataEvents(stream, startPaused) {
-  var state = stream._readableState;
-
-  if (state.flowing) {
-    // https://github.com/isaacs/readable-stream/issues/16
-    throw new Error('Cannot switch to old mode now.');
-  }
-
-  var paused = startPaused || false;
-  var readable = false;
-
-  // convert to an old-style stream.
-  stream.readable = true;
-  stream.pipe = Stream.prototype.pipe;
-  stream.on = stream.addListener = Stream.prototype.on;
-
-  stream.on('readable', function() {
-    readable = true;
-
-    var c;
-    while (!paused && (null !== (c = stream.read())))
-      stream.emit('data', c);
-
-    if (c === null) {
-      readable = false;
-      stream._readableState.needReadable = true;
-    }
-  });
-
-  stream.pause = function() {
-    paused = true;
-    this.emit('pause');
-  };
-
-  stream.resume = function() {
-    paused = false;
-    if (readable)
-      setImmediate(function() {
-        stream.emit('readable');
-      });
-    else
-      this.read(0);
-    this.emit('resume');
-  };
-
-  // now make it start, just in case it hadn't already.
-  stream.emit('readable');
-}
-
-// wrap an old-style stream as the async data source.
-// This is *not* part of the readable stream interface.
-// It is an ugly unfortunate mess of history.
-Readable.prototype.wrap = function(stream) {
-  var state = this._readableState;
-  var paused = false;
-
-  var self = this;
-  stream.on('end', function() {
-    if (state.decoder && !state.ended) {
-      var chunk = state.decoder.end();
-      if (chunk && chunk.length)
-        self.push(chunk);
-    }
-
-    self.push(null);
-  });
-
-  stream.on('data', function(chunk) {
-    if (state.decoder)
-      chunk = state.decoder.write(chunk);
-    if (!chunk || !state.objectMode && !chunk.length)
-      return;
-
-    var ret = self.push(chunk);
-    if (!ret) {
-      paused = true;
-      stream.pause();
-    }
-  });
-
-  // proxy all the other methods.
-  // important when wrapping filters and duplexes.
-  for (var i in stream) {
-    if (typeof stream[i] === 'function' &&
-        typeof this[i] === 'undefined') {
-      this[i] = function(method) { return function() {
-        return stream[method].apply(stream, arguments);
-      }}(i);
-    }
-  }
-
-  // proxy certain important events.
-  var events = ['error', 'close', 'destroy', 'pause', 'resume'];
-  forEach(events, function(ev) {
-    stream.on(ev, function (x) {
-      return self.emit.apply(self, ev, x);
-    });
-  });
-
-  // when we try to consume some more bytes, simply unpause the
-  // underlying stream.
-  self._read = function(n) {
-    if (paused) {
-      paused = false;
-      stream.resume();
-    }
-  };
-
-  return self;
-};
-
-
-
-// exposed for testing purposes only.
-Readable._fromList = fromList;
-
-// Pluck off n bytes from an array of buffers.
-// Length is the combined lengths of all the buffers in the list.
-function fromList(n, state) {
-  var list = state.buffer;
-  var length = state.length;
-  var stringMode = !!state.decoder;
-  var objectMode = !!state.objectMode;
-  var ret;
-
-  // nothing in the list, definitely empty.
-  if (list.length === 0)
-    return null;
-
-  if (length === 0)
-    ret = null;
-  else if (objectMode)
-    ret = list.shift();
-  else if (!n || n >= length) {
-    // read it all, truncate the array.
-    if (stringMode)
-      ret = list.join('');
-    else
-      ret = Buffer.concat(list, length);
-    list.length = 0;
-  } else {
-    // read just some of it.
-    if (n < list[0].length) {
-      // just take a part of the first list item.
-      // slice is the same for buffers and strings.
-      var buf = list[0];
-      ret = buf.slice(0, n);
-      list[0] = buf.slice(n);
-    } else if (n === list[0].length) {
-      // first list is a perfect match
-      ret = list.shift();
-    } else {
-      // complex case.
-      // we have enough to cover it, but it spans past the first buffer.
-      if (stringMode)
-        ret = '';
-      else
-        ret = new Buffer(n);
-
-      var c = 0;
-      for (var i = 0, l = list.length; i < l && c < n; i++) {
-        var buf = list[0];
-        var cpy = Math.min(n - c, buf.length);
-
-        if (stringMode)
-          ret += buf.slice(0, cpy);
-        else
-          buf.copy(ret, c, 0, cpy);
-
-        if (cpy < buf.length)
-          list[0] = buf.slice(cpy);
-        else
-          list.shift();
-
-        c += cpy;
-      }
-    }
-  }
-
-  return ret;
-}
-
-function endReadable(stream) {
-  var state = stream._readableState;
-
-  // If we get here before consuming all the bytes, then that is a
-  // bug in node.  Should never happen.
-  if (state.length > 0)
-    throw new Error('endReadable called on non-empty stream');
-
-  if (!state.endEmitted && state.calledRead) {
-    state.ended = true;
-    setImmediate(function() {
-      // Check that we didn't get one last unshift.
-      if (!state.endEmitted && state.length === 0) {
-        state.endEmitted = true;
-        stream.readable = false;
-        stream.emit('end');
-      }
-    });
-  }
-}
-
-function forEach (xs, f) {
-  for (var i = 0, l = xs.length; i < l; i++) {
-    f(xs[i], i);
-  }
-}
-
-function indexOf (xs, x) {
-  for (var i = 0, l = xs.length; i < l; i++) {
-    if (xs[i] === x) return i;
-  }
-  return -1;
-}
-
-}).call(this,_dereq_("g5I+bs"))
-},{"./index.js":69,"buffer":8,"events":12,"g5I+bs":30,"inherits":18,"process/browser.js":70,"string_decoder":7}],73:[function(_dereq_,module,exports){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// a transform stream is a readable/writable stream where you do
-// something with the data.  Sometimes it's called a "filter",
-// but that's not a great name for it, since that implies a thing where
-// some bits pass through, and others are simply ignored.  (That would
-// be a valid example of a transform, of course.)
-//
-// While the output is causally related to the input, it's not a
-// necessarily symmetric or synchronous transformation.  For example,
-// a zlib stream might take multiple plain-text writes(), and then
-// emit a single compressed chunk some time in the future.
-//
-// Here's how this works:
-//
-// The Transform stream has all the aspects of the readable and writable
-// stream classes.  When you write(chunk), that calls _write(chunk,cb)
-// internally, and returns false if there's a lot of pending writes
-// buffered up.  When you call read(), that calls _read(n) until
-// there's enough pending readable data buffered up.
-//
-// In a transform stream, the written data is placed in a buffer.  When
-// _read(n) is called, it transforms the queued up data, calling the
-// buffered _write cb's as it consumes chunks.  If consuming a single
-// written chunk would result in multiple output chunks, then the first
-// outputted bit calls the readcb, and subsequent chunks just go into
-// the read buffer, and will cause it to emit 'readable' if necessary.
-//
-// This way, back-pressure is actually determined by the reading side,
-// since _read has to be called to start processing a new chunk.  However,
-// a pathological inflate type of transform can cause excessive buffering
-// here.  For example, imagine a stream where every byte of input is
-// interpreted as an integer from 0-255, and then results in that many
-// bytes of output.  Writing the 4 bytes {ff,ff,ff,ff} would result in
-// 1kb of data being output.  In this case, you could write a very small
-// amount of input, and end up with a very large amount of output.  In
-// such a pathological inflating mechanism, there'd be no way to tell
-// the system to stop doing the transform.  A single 4MB write could
-// cause the system to run out of memory.
-//
-// However, even in such a pathological case, only a single written chunk
-// would be consumed, and then the rest would wait (un-transformed) until
-// the results of the previous transformed chunk were consumed.
-
-module.exports = Transform;
-
-var Duplex = _dereq_('./duplex.js');
-var inherits = _dereq_('inherits');
-inherits(Transform, Duplex);
-
-
-function TransformState(options, stream) {
-  this.afterTransform = function(er, data) {
-    return afterTransform(stream, er, data);
-  };
-
-  this.needTransform = false;
-  this.transforming = false;
-  this.writecb = null;
-  this.writechunk = null;
-}
-
-function afterTransform(stream, er, data) {
-  var ts = stream._transformState;
-  ts.transforming = false;
-
-  var cb = ts.writecb;
-
-  if (!cb)
-    return stream.emit('error', new Error('no writecb in Transform class'));
-
-  ts.writechunk = null;
-  ts.writecb = null;
-
-  if (data !== null && data !== undefined)
-    stream.push(data);
-
-  if (cb)
-    cb(er);
-
-  var rs = stream._readableState;
-  rs.reading = false;
-  if (rs.needReadable || rs.length < rs.highWaterMark) {
-    stream._read(rs.highWaterMark);
-  }
-}
-
-
-function Transform(options) {
-  if (!(this instanceof Transform))
-    return new Transform(options);
-
-  Duplex.call(this, options);
-
-  var ts = this._transformState = new TransformState(options, this);
-
-  // when the writable side finishes, then flush out anything remaining.
-  var stream = this;
-
-  // start out asking for a readable event once data is transformed.
-  this._readableState.needReadable = true;
-
-  // we have implemented the _read method, and done the other things
-  // that Readable wants before the first _read call, so unset the
-  // sync guard flag.
-  this._readableState.sync = false;
-
-  this.once('finish', function() {
-    if ('function' === typeof this._flush)
-      this._flush(function(er) {
-        done(stream, er);
-      });
-    else
-      done(stream);
-  });
-}
-
-Transform.prototype.push = function(chunk, encoding) {
-  this._transformState.needTransform = false;
-  return Duplex.prototype.push.call(this, chunk, encoding);
-};
-
-// This is the part where you do stuff!
-// override this function in implementation classes.
-// 'chunk' is an input chunk.
-//
-// Call `push(newChunk)` to pass along transformed output
-// to the readable side.  You may call 'push' zero or more times.
-//
-// Call `cb(err)` when you are done with this chunk.  If you pass
-// an error, then that'll put the hurt on the whole operation.  If you
-// never call cb(), then you'll never get another chunk.
-Transform.prototype._transform = function(chunk, encoding, cb) {
-  throw new Error('not implemented');
-};
-
-Transform.prototype._write = function(chunk, encoding, cb) {
-  var ts = this._transformState;
-  ts.writecb = cb;
-  ts.writechunk = chunk;
-  ts.writeencoding = encoding;
-  if (!ts.transforming) {
-    var rs = this._readableState;
-    if (ts.needTransform ||
-        rs.needReadable ||
-        rs.length < rs.highWaterMark)
-      this._read(rs.highWaterMark);
-  }
-};
-
-// Doesn't matter what the args are here.
-// _transform does all the work.
-// That we got here means that the readable side wants more data.
-Transform.prototype._read = function(n) {
-  var ts = this._transformState;
-
-  if (ts.writechunk && ts.writecb && !ts.transforming) {
-    ts.transforming = true;
-    this._transform(ts.writechunk, ts.writeencoding, ts.afterTransform);
-  } else {
-    // mark that we need a transform, so that any data that comes in
-    // will get processed, now that we've asked for it.
-    ts.needTransform = true;
-  }
-};
-
-
-function done(stream, er) {
-  if (er)
-    return stream.emit('error', er);
-
-  // if there's nothing in the write buffer, then that means
-  // that nothing more will ever be provided
-  var ws = stream._writableState;
-  var rs = stream._readableState;
-  var ts = stream._transformState;
-
-  if (ws.length)
-    throw new Error('calling transform done when ws.length != 0');
-
-  if (ts.transforming)
-    throw new Error('calling transform done when still transforming');
-
-  return stream.push(null);
-}
-
-},{"./duplex.js":68,"inherits":18}],74:[function(_dereq_,module,exports){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// A bit simpler than readable streams.
-// Implement an async ._write(chunk, cb), and it'll handle all
-// the drain event emission and buffering.
-
-module.exports = Writable;
-Writable.WritableState = WritableState;
-
-var isUint8Array = typeof Uint8Array !== 'undefined'
-  ? function (x) { return x instanceof Uint8Array }
-  : function (x) {
-    return x && x.constructor && x.constructor.name === 'Uint8Array'
-  }
-;
-var isArrayBuffer = typeof ArrayBuffer !== 'undefined'
-  ? function (x) { return x instanceof ArrayBuffer }
-  : function (x) {
-    return x && x.constructor && x.constructor.name === 'ArrayBuffer'
-  }
-;
-
-var inherits = _dereq_('inherits');
-var Stream = _dereq_('./index.js');
-var setImmediate = _dereq_('process/browser.js').nextTick;
-var Buffer = _dereq_('buffer').Buffer;
-
-inherits(Writable, Stream);
-
-function WriteReq(chunk, encoding, cb) {
-  this.chunk = chunk;
-  this.encoding = encoding;
-  this.callback = cb;
-}
-
-function WritableState(options, stream) {
-  options = options || {};
-
-  // the point at which write() starts returning false
-  // Note: 0 is a valid value, means that we always return false if
-  // the entire buffer is not flushed immediately on write()
-  var hwm = options.highWaterMark;
-  this.highWaterMark = (hwm || hwm === 0) ? hwm : 16 * 1024;
-
-  // object stream flag to indicate whether or not this stream
-  // contains buffers or objects.
-  this.objectMode = !!options.objectMode;
-
-  // cast to ints.
-  this.highWaterMark = ~~this.highWaterMark;
-
-  this.needDrain = false;
-  // at the start of calling end()
-  this.ending = false;
-  // when end() has been called, and returned
-  this.ended = false;
-  // when 'finish' is emitted
-  this.finished = false;
-
-  // should we decode strings into buffers before passing to _write?
-  // this is here so that some node-core streams can optimize string
-  // handling at a lower level.
-  var noDecode = options.decodeStrings === false;
-  this.decodeStrings = !noDecode;
-
-  // Crypto is kind of old and crusty.  Historically, its default string
-  // encoding is 'binary' so we have to make this configurable.
-  // Everything else in the universe uses 'utf8', though.
-  this.defaultEncoding = options.defaultEncoding || 'utf8';
-
-  // not an actual buffer we keep track of, but a measurement
-  // of how much we're waiting to get pushed to some underlying
-  // socket or file.
-  this.length = 0;
-
-  // a flag to see when we're in the middle of a write.
-  this.writing = false;
-
-  // a flag to be able to tell if the onwrite cb is called immediately,
-  // or on a later tick.  We set this to true at first, becuase any
-  // actions that shouldn't happen until "later" should generally also
-  // not happen before the first write call.
-  this.sync = true;
-
-  // a flag to know if we're processing previously buffered items, which
-  // may call the _write() callback in the same tick, so that we don't
-  // end up in an overlapped onwrite situation.
-  this.bufferProcessing = false;
-
-  // the callback that's passed to _write(chunk,cb)
-  this.onwrite = function(er) {
-    onwrite(stream, er);
-  };
-
-  // the callback that the user supplies to write(chunk,encoding,cb)
-  this.writecb = null;
-
-  // the amount that is being written when _write is called.
-  this.writelen = 0;
-
-  this.buffer = [];
-}
-
-function Writable(options) {
-  // Writable ctor is applied to Duplexes, though they're not
-  // instanceof Writable, they're instanceof Readable.
-  if (!(this instanceof Writable) && !(this instanceof Stream.Duplex))
-    return new Writable(options);
-
-  this._writableState = new WritableState(options, this);
-
-  // legacy.
-  this.writable = true;
-
-  Stream.call(this);
-}
-
-// Otherwise people can pipe Writable streams, which is just wrong.
-Writable.prototype.pipe = function() {
-  this.emit('error', new Error('Cannot pipe. Not readable.'));
-};
-
-
-function writeAfterEnd(stream, state, cb) {
-  var er = new Error('write after end');
-  // TODO: defer error events consistently everywhere, not just the cb
-  stream.emit('error', er);
-  setImmediate(function() {
-    cb(er);
-  });
-}
-
-// If we get something that is not a buffer, string, null, or undefined,
-// and we're not in objectMode, then that's an error.
-// Otherwise stream chunks are all considered to be of length=1, and the
-// watermarks determine how many objects to keep in the buffer, rather than
-// how many bytes or characters.
-function validChunk(stream, state, chunk, cb) {
-  var valid = true;
-  if (!Buffer.isBuffer(chunk) &&
-      'string' !== typeof chunk &&
-      chunk !== null &&
-      chunk !== undefined &&
-      !state.objectMode) {
-    var er = new TypeError('Invalid non-string/buffer chunk');
-    stream.emit('error', er);
-    setImmediate(function() {
-      cb(er);
-    });
-    valid = false;
-  }
-  return valid;
-}
-
-Writable.prototype.write = function(chunk, encoding, cb) {
-  var state = this._writableState;
-  var ret = false;
-
-  if (typeof encoding === 'function') {
-    cb = encoding;
-    encoding = null;
-  }
-
-  if (!Buffer.isBuffer(chunk) && isUint8Array(chunk))
-    chunk = new Buffer(chunk);
-  if (isArrayBuffer(chunk) && typeof Uint8Array !== 'undefined')
-    chunk = new Buffer(new Uint8Array(chunk));
-  
-  if (Buffer.isBuffer(chunk))
-    encoding = 'buffer';
-  else if (!encoding)
-    encoding = state.defaultEncoding;
-
-  if (typeof cb !== 'function')
-    cb = function() {};
-
-  if (state.ended)
-    writeAfterEnd(this, state, cb);
-  else if (validChunk(this, state, chunk, cb))
-    ret = writeOrBuffer(this, state, chunk, encoding, cb);
-
-  return ret;
-};
-
-function decodeChunk(state, chunk, encoding) {
-  if (!state.objectMode &&
-      state.decodeStrings !== false &&
-      typeof chunk === 'string') {
-    chunk = new Buffer(chunk, encoding);
-  }
-  return chunk;
-}
-
-// if we're already writing something, then just put this
-// in the queue, and wait our turn.  Otherwise, call _write
-// If we return false, then we need a drain event, so set that flag.
-function writeOrBuffer(stream, state, chunk, encoding, cb) {
-  chunk = decodeChunk(state, chunk, encoding);
-  var len = state.objectMode ? 1 : chunk.length;
-
-  state.length += len;
-
-  var ret = state.length < state.highWaterMark;
-  state.needDrain = !ret;
-
-  if (state.writing)
-    state.buffer.push(new WriteReq(chunk, encoding, cb));
-  else
-    doWrite(stream, state, len, chunk, encoding, cb);
-
-  return ret;
-}
-
-function doWrite(stream, state, len, chunk, encoding, cb) {
-  state.writelen = len;
-  state.writecb = cb;
-  state.writing = true;
-  state.sync = true;
-  stream._write(chunk, encoding, state.onwrite);
-  state.sync = false;
-}
-
-function onwriteError(stream, state, sync, er, cb) {
-  if (sync)
-    setImmediate(function() {
-      cb(er);
-    });
-  else
-    cb(er);
-
-  stream.emit('error', er);
-}
-
-function onwriteStateUpdate(state) {
-  state.writing = false;
-  state.writecb = null;
-  state.length -= state.writelen;
-  state.writelen = 0;
-}
-
-function onwrite(stream, er) {
-  var state = stream._writableState;
-  var sync = state.sync;
-  var cb = state.writecb;
-
-  onwriteStateUpdate(state);
-
-  if (er)
-    onwriteError(stream, state, sync, er, cb);
-  else {
-    // Check if we're actually ready to finish, but don't emit yet
-    var finished = needFinish(stream, state);
-
-    if (!finished && !state.bufferProcessing && state.buffer.length)
-      clearBuffer(stream, state);
-
-    if (sync) {
-      setImmediate(function() {
-        afterWrite(stream, state, finished, cb);
-      });
-    } else {
-      afterWrite(stream, state, finished, cb);
-    }
-  }
-}
-
-function afterWrite(stream, state, finished, cb) {
-  if (!finished)
-    onwriteDrain(stream, state);
-  cb();
-  if (finished)
-    finishMaybe(stream, state);
-}
-
-// Must force callback to be called on nextTick, so that we don't
-// emit 'drain' before the write() consumer gets the 'false' return
-// value, and has a chance to attach a 'drain' listener.
-function onwriteDrain(stream, state) {
-  if (state.length === 0 && state.needDrain) {
-    state.needDrain = false;
-    stream.emit('drain');
-  }
-}
-
-
-// if there's something in the buffer waiting, then process it
-function clearBuffer(stream, state) {
-  state.bufferProcessing = true;
-
-  for (var c = 0; c < state.buffer.length; c++) {
-    var entry = state.buffer[c];
-    var chunk = entry.chunk;
-    var encoding = entry.encoding;
-    var cb = entry.callback;
-    var len = state.objectMode ? 1 : chunk.length;
-
-    doWrite(stream, state, len, chunk, encoding, cb);
-
-    // if we didn't call the onwrite immediately, then
-    // it means that we need to wait until it does.
-    // also, that means that the chunk and cb are currently
-    // being processed, so move the buffer counter past them.
-    if (state.writing) {
-      c++;
-      break;
-    }
-  }
-
-  state.bufferProcessing = false;
-  if (c < state.buffer.length)
-    state.buffer = state.buffer.slice(c);
-  else
-    state.buffer.length = 0;
-}
-
-Writable.prototype._write = function(chunk, encoding, cb) {
-  cb(new Error('not implemented'));
-};
-
-Writable.prototype.end = function(chunk, encoding, cb) {
-  var state = this._writableState;
-
-  if (typeof chunk === 'function') {
-    cb = chunk;
-    chunk = null;
-    encoding = null;
-  } else if (typeof encoding === 'function') {
-    cb = encoding;
-    encoding = null;
-  }
-
-  if (typeof chunk !== 'undefined' && chunk !== null)
-    this.write(chunk, encoding);
-
-  // ignore unnecessary end() calls.
-  if (!state.ending && !state.finished)
-    endWritable(this, state, cb);
-};
-
-
-function needFinish(stream, state) {
-  return (state.ending &&
-          state.length === 0 &&
-          !state.finished &&
-          !state.writing);
-}
-
-function finishMaybe(stream, state) {
-  var need = needFinish(stream, state);
-  if (need) {
-    state.finished = true;
-    stream.emit('finish');
-  }
-  return need;
-}
-
-function endWritable(stream, state, cb) {
-  state.ending = true;
-  finishMaybe(stream, state);
-  if (cb) {
-    if (state.finished)
-      setImmediate(cb);
-    else
-      stream.once('finish', cb);
-  }
-  state.ended = true;
-}
-
-},{"./index.js":69,"buffer":8,"inherits":18,"process/browser.js":70}],75:[function(_dereq_,module,exports){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-var punycode = _dereq_('punycode');
-
-exports.parse = urlParse;
-exports.resolve = urlResolve;
-exports.resolveObject = urlResolveObject;
-exports.format = urlFormat;
-
-exports.Url = Url;
-
-function Url() {
-  this.protocol = null;
-  this.slashes = null;
-  this.auth = null;
-  this.host = null;
-  this.port = null;
-  this.hostname = null;
-  this.hash = null;
-  this.search = null;
-  this.query = null;
-  this.pathname = null;
-  this.path = null;
-  this.href = null;
-}
-
-// Reference: RFC 3986, RFC 1808, RFC 2396
-
-// define these here so at least they only have to be
-// compiled once on the first module load.
-var protocolPattern = /^([a-z0-9.+-]+:)/i,
-    portPattern = /:[0-9]*$/,
-
-    // RFC 2396: characters reserved for delimiting URLs.
-    // We actually just auto-escape these.
-    delims = ['<', '>', '"', '`', ' ', '\r', '\n', '\t'],
-
-    // RFC 2396: characters not allowed for various reasons.
-    unwise = ['{', '}', '|', '\\', '^', '`'].concat(delims),
-
-    // Allowed by RFCs, but cause of XSS attacks.  Always escape these.
-    autoEscape = ['\''].concat(unwise),
-    // Characters that are never ever allowed in a hostname.
-    // Note that any invalid chars are also handled, but these
-    // are the ones that are *expected* to be seen, so we fast-path
-    // them.
-    nonHostChars = ['%', '/', '?', ';', '#'].concat(autoEscape),
-    hostEndingChars = ['/', '?', '#'],
-    hostnameMaxLen = 255,
-    hostnamePartPattern = /^[a-z0-9A-Z_-]{0,63}$/,
-    hostnamePartStart = /^([a-z0-9A-Z_-]{0,63})(.*)$/,
-    // protocols that can allow "unsafe" and "unwise" chars.
-    unsafeProtocol = {
-      'javascript': true,
-      'javascript:': true
-    },
-    // protocols that never have a hostname.
-    hostlessProtocol = {
-      'javascript': true,
-      'javascript:': true
-    },
-    // protocols that always contain a // bit.
-    slashedProtocol = {
-      'http': true,
-      'https': true,
-      'ftp': true,
-      'gopher': true,
-      'file': true,
-      'http:': true,
-      'https:': true,
-      'ftp:': true,
-      'gopher:': true,
-      'file:': true
-    },
-    querystring = _dereq_('querystring');
-
-function urlParse(url, parseQueryString, slashesDenoteHost) {
-  if (url && isObject(url) && url instanceof Url) return url;
-
-  var u = new Url;
-  u.parse(url, parseQueryString, slashesDenoteHost);
-  return u;
-}
-
-Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
-  if (!isString(url)) {
-    throw new TypeError("Parameter 'url' must be a string, not " + typeof url);
-  }
-
-  var rest = url;
-
-  // trim before proceeding.
-  // This is to support parse stuff like "  http://foo.com  \n"
-  rest = rest.trim();
-
-  var proto = protocolPattern.exec(rest);
-  if (proto) {
-    proto = proto[0];
-    var lowerProto = proto.toLowerCase();
-    this.protocol = lowerProto;
-    rest = rest.substr(proto.length);
-  }
-
-  // figure out if it's got a host
-  // user@server is *always* interpreted as a hostname, and url
-  // resolution will treat //foo/bar as host=foo,path=bar because that's
-  // how the browser resolves relative URLs.
-  if (slashesDenoteHost || proto || rest.match(/^\/\/[^@\/]+@[^@\/]+/)) {
-    var slashes = rest.substr(0, 2) === '//';
-    if (slashes && !(proto && hostlessProtocol[proto])) {
-      rest = rest.substr(2);
-      this.slashes = true;
-    }
-  }
-
-  if (!hostlessProtocol[proto] &&
-      (slashes || (proto && !slashedProtocol[proto]))) {
-
-    // there's a hostname.
-    // the first instance of /, ?, ;, or # ends the host.
-    //
-    // If there is an @ in the hostname, then non-host chars *are* allowed
-    // to the left of the last @ sign, unless some host-ending character
-    // comes *before* the @-sign.
-    // URLs are obnoxious.
-    //
-    // ex:
-    // http://a@b@c/ => user:a@b host:c
-    // http://a@b?@c => user:a host:c path:/?@c
-
-    // v0.12 TODO(isaacs): This is not quite how Chrome does things.
-    // Review our test case against browsers more comprehensively.
-
-    // find the first instance of any hostEndingChars
-    var hostEnd = -1;
-    for (var i = 0; i < hostEndingChars.length; i++) {
-      var hec = rest.indexOf(hostEndingChars[i]);
-      if (hec !== -1 && (hostEnd === -1 || hec < hostEnd))
-        hostEnd = hec;
-    }
-
-    // at this point, either we have an explicit point where the
-    // auth portion cannot go past, or the last @ char is the decider.
-    var auth, atSign;
-    if (hostEnd === -1) {
-      // atSign can be anywhere.
-      atSign = rest.lastIndexOf('@');
-    } else {
-      // atSign must be in auth portion.
-      // http://a@b/c@d => host:b auth:a path:/c@d
-      atSign = rest.lastIndexOf('@', hostEnd);
-    }
-
-    // Now we have a portion which is definitely the auth.
-    // Pull that off.
-    if (atSign !== -1) {
-      auth = rest.slice(0, atSign);
-      rest = rest.slice(atSign + 1);
-      this.auth = decodeURIComponent(auth);
-    }
-
-    // the host is the remaining to the left of the first non-host char
-    hostEnd = -1;
-    for (var i = 0; i < nonHostChars.length; i++) {
-      var hec = rest.indexOf(nonHostChars[i]);
-      if (hec !== -1 && (hostEnd === -1 || hec < hostEnd))
-        hostEnd = hec;
-    }
-    // if we still have not hit it, then the entire thing is a host.
-    if (hostEnd === -1)
-      hostEnd = rest.length;
-
-    this.host = rest.slice(0, hostEnd);
-    rest = rest.slice(hostEnd);
-
-    // pull out port.
-    this.parseHost();
-
-    // we've indicated that there is a hostname,
-    // so even if it's empty, it has to be present.
-    this.hostname = this.hostname || '';
-
-    // if hostname begins with [ and ends with ]
-    // assume that it's an IPv6 address.
-    var ipv6Hostname = this.hostname[0] === '[' &&
-        this.hostname[this.hostname.length - 1] === ']';
-
-    // validate a little.
-    if (!ipv6Hostname) {
-      var hostparts = this.hostname.split(/\./);
-      for (var i = 0, l = hostparts.length; i < l; i++) {
-        var part = hostparts[i];
-        if (!part) continue;
-        if (!part.match(hostnamePartPattern)) {
-          var newpart = '';
-          for (var j = 0, k = part.length; j < k; j++) {
-            if (part.charCodeAt(j) > 127) {
-              // we replace non-ASCII char with a temporary placeholder
-              // we need this to make sure size of hostname is not
-              // broken by replacing non-ASCII by nothing
-              newpart += 'x';
+    async.retry = function(times, task, callback) {
+        var DEFAULT_TIMES = 5;
+        var attempts = [];
+        // Use defaults if times not passed
+        if (typeof times === 'function') {
+            callback = task;
+            task = times;
+            times = DEFAULT_TIMES;
+        }
+        // Make sure times is a number
+        times = parseInt(times, 10) || DEFAULT_TIMES;
+        var wrappedTask = function(wrappedCallback, wrappedResults) {
+            var retryAttempt = function(task, finalAttempt) {
+                return function(seriesCallback) {
+                    task(function(err, result){
+                        seriesCallback(!err || finalAttempt, {err: err, result: result});
+                    }, wrappedResults);
+                };
+            };
+            while (times) {
+                attempts.push(retryAttempt(task, !(times-=1)));
+            }
+            async.series(attempts, function(done, data){
+                data = data[data.length - 1];
+                (wrappedCallback || callback)(data.err, data.result);
+            });
+        }
+        // If a callback is passed, run this as a controll flow
+        return callback ? wrappedTask() : wrappedTask
+    };
+
+    async.waterfall = function (tasks, callback) {
+        callback = callback || function () {};
+        if (!_isArray(tasks)) {
+          var err = new Error('First argument to waterfall must be an array of functions');
+          return callback(err);
+        }
+        if (!tasks.length) {
+            return callback();
+        }
+        var wrapIterator = function (iterator) {
+            return function (err) {
+                if (err) {
+                    callback.apply(null, arguments);
+                    callback = function () {};
+                }
+                else {
+                    var args = Array.prototype.slice.call(arguments, 1);
+                    var next = iterator.next();
+                    if (next) {
+                        args.push(wrapIterator(next));
+                    }
+                    else {
+                        args.push(callback);
+                    }
+                    async.setImmediate(function () {
+                        iterator.apply(null, args);
+                    });
+                }
+            };
+        };
+        wrapIterator(async.iterator(tasks))();
+    };
+
+    var _parallel = function(eachfn, tasks, callback) {
+        callback = callback || function () {};
+        if (_isArray(tasks)) {
+            eachfn.map(tasks, function (fn, callback) {
+                if (fn) {
+                    fn(function (err) {
+                        var args = Array.prototype.slice.call(arguments, 1);
+                        if (args.length <= 1) {
+                            args = args[0];
+                        }
+                        callback.call(null, err, args);
+                    });
+                }
+            }, callback);
+        }
+        else {
+            var results = {};
+            eachfn.each(_keys(tasks), function (k, callback) {
+                tasks[k](function (err) {
+                    var args = Array.prototype.slice.call(arguments, 1);
+                    if (args.length <= 1) {
+                        args = args[0];
+                    }
+                    results[k] = args;
+                    callback(err);
+                });
+            }, function (err) {
+                callback(err, results);
+            });
+        }
+    };
+
+    async.parallel = function (tasks, callback) {
+        _parallel({ map: async.map, each: async.each }, tasks, callback);
+    };
+
+    async.parallelLimit = function(tasks, limit, callback) {
+        _parallel({ map: _mapLimit(limit), each: _eachLimit(limit) }, tasks, callback);
+    };
+
+    async.series = function (tasks, callback) {
+        callback = callback || function () {};
+        if (_isArray(tasks)) {
+            async.mapSeries(tasks, function (fn, callback) {
+                if (fn) {
+                    fn(function (err) {
+                        var args = Array.prototype.slice.call(arguments, 1);
+                        if (args.length <= 1) {
+                            args = args[0];
+                        }
+                        callback.call(null, err, args);
+                    });
+                }
+            }, callback);
+        }
+        else {
+            var results = {};
+            async.eachSeries(_keys(tasks), function (k, callback) {
+                tasks[k](function (err) {
+                    var args = Array.prototype.slice.call(arguments, 1);
+                    if (args.length <= 1) {
+                        args = args[0];
+                    }
+                    results[k] = args;
+                    callback(err);
+                });
+            }, function (err) {
+                callback(err, results);
+            });
+        }
+    };
+
+    async.iterator = function (tasks) {
+        var makeCallback = function (index) {
+            var fn = function () {
+                if (tasks.length) {
+                    tasks[index].apply(null, arguments);
+                }
+                return fn.next();
+            };
+            fn.next = function () {
+                return (index < tasks.length - 1) ? makeCallback(index + 1): null;
+            };
+            return fn;
+        };
+        return makeCallback(0);
+    };
+
+    async.apply = function (fn) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return function () {
+            return fn.apply(
+                null, args.concat(Array.prototype.slice.call(arguments))
+            );
+        };
+    };
+
+    var _concat = function (eachfn, arr, fn, callback) {
+        var r = [];
+        eachfn(arr, function (x, cb) {
+            fn(x, function (err, y) {
+                r = r.concat(y || []);
+                cb(err);
+            });
+        }, function (err) {
+            callback(err, r);
+        });
+    };
+    async.concat = doParallel(_concat);
+    async.concatSeries = doSeries(_concat);
+
+    async.whilst = function (test, iterator, callback) {
+        if (test()) {
+            iterator(function (err) {
+                if (err) {
+                    return callback(err);
+                }
+                async.whilst(test, iterator, callback);
+            });
+        }
+        else {
+            callback();
+        }
+    };
+
+    async.doWhilst = function (iterator, test, callback) {
+        iterator(function (err) {
+            if (err) {
+                return callback(err);
+            }
+            var args = Array.prototype.slice.call(arguments, 1);
+            if (test.apply(null, args)) {
+                async.doWhilst(iterator, test, callback);
+            }
+            else {
+                callback();
+            }
+        });
+    };
+
+    async.until = function (test, iterator, callback) {
+        if (!test()) {
+            iterator(function (err) {
+                if (err) {
+                    return callback(err);
+                }
+                async.until(test, iterator, callback);
+            });
+        }
+        else {
+            callback();
+        }
+    };
+
+    async.doUntil = function (iterator, test, callback) {
+        iterator(function (err) {
+            if (err) {
+                return callback(err);
+            }
+            var args = Array.prototype.slice.call(arguments, 1);
+            if (!test.apply(null, args)) {
+                async.doUntil(iterator, test, callback);
+            }
+            else {
+                callback();
+            }
+        });
+    };
+
+    async.queue = function (worker, concurrency) {
+        if (concurrency === undefined) {
+            concurrency = 1;
+        }
+        function _insert(q, data, pos, callback) {
+          if (!q.started){
+            q.started = true;
+          }
+          if (!_isArray(data)) {
+              data = [data];
+          }
+          if(data.length == 0) {
+             // call drain immediately if there are no tasks
+             return async.setImmediate(function() {
+                 if (q.drain) {
+                     q.drain();
+                 }
+             });
+          }
+          _each(data, function(task) {
+              var item = {
+                  data: task,
+                  callback: typeof callback === 'function' ? callback : null
+              };
+
+              if (pos) {
+                q.tasks.unshift(item);
+              } else {
+                q.tasks.push(item);
+              }
+
+              if (q.saturated && q.tasks.length === q.concurrency) {
+                  q.saturated();
+              }
+              async.setImmediate(q.process);
+          });
+        }
+
+        var workers = 0;
+        var q = {
+            tasks: [],
+            concurrency: concurrency,
+            saturated: null,
+            empty: null,
+            drain: null,
+            started: false,
+            paused: false,
+            push: function (data, callback) {
+              _insert(q, data, false, callback);
+            },
+            kill: function () {
+              q.drain = null;
+              q.tasks = [];
+            },
+            unshift: function (data, callback) {
+              _insert(q, data, true, callback);
+            },
+            process: function () {
+                if (!q.paused && workers < q.concurrency && q.tasks.length) {
+                    var task = q.tasks.shift();
+                    if (q.empty && q.tasks.length === 0) {
+                        q.empty();
+                    }
+                    workers += 1;
+                    var next = function () {
+                        workers -= 1;
+                        if (task.callback) {
+                            task.callback.apply(task, arguments);
+                        }
+                        if (q.drain && q.tasks.length + workers === 0) {
+                            q.drain();
+                        }
+                        q.process();
+                    };
+                    var cb = only_once(next);
+                    worker(task.data, cb);
+                }
+            },
+            length: function () {
+                return q.tasks.length;
+            },
+            running: function () {
+                return workers;
+            },
+            idle: function() {
+                return q.tasks.length + workers === 0;
+            },
+            pause: function () {
+                if (q.paused === true) { return; }
+                q.paused = true;
+            },
+            resume: function () {
+                if (q.paused === false) { return; }
+                q.paused = false;
+                // Need to call q.process once per concurrent
+                // worker to preserve full concurrency after pause
+                for (var w = 1; w <= q.concurrency; w++) {
+                    async.setImmediate(q.process);
+                }
+            }
+        };
+        return q;
+    };
+
+    async.priorityQueue = function (worker, concurrency) {
+
+        function _compareTasks(a, b){
+          return a.priority - b.priority;
+        };
+
+        function _binarySearch(sequence, item, compare) {
+          var beg = -1,
+              end = sequence.length - 1;
+          while (beg < end) {
+            var mid = beg + ((end - beg + 1) >>> 1);
+            if (compare(item, sequence[mid]) >= 0) {
+              beg = mid;
             } else {
-              newpart += part[j];
+              end = mid - 1;
             }
           }
-          // we test again with ASCII char only
-          if (!newpart.match(hostnamePartPattern)) {
-            var validParts = hostparts.slice(0, i);
-            var notHost = hostparts.slice(i + 1);
-            var bit = part.match(hostnamePartStart);
-            if (bit) {
-              validParts.push(bit[1]);
-              notHost.unshift(bit[2]);
-            }
-            if (notHost.length) {
-              rest = '/' + notHost.join('.') + rest;
-            }
-            this.hostname = validParts.join('.');
-            break;
+          return beg;
+        }
+
+        function _insert(q, data, priority, callback) {
+          if (!q.started){
+            q.started = true;
           }
+          if (!_isArray(data)) {
+              data = [data];
+          }
+          if(data.length == 0) {
+             // call drain immediately if there are no tasks
+             return async.setImmediate(function() {
+                 if (q.drain) {
+                     q.drain();
+                 }
+             });
+          }
+          _each(data, function(task) {
+              var item = {
+                  data: task,
+                  priority: priority,
+                  callback: typeof callback === 'function' ? callback : null
+              };
+
+              q.tasks.splice(_binarySearch(q.tasks, item, _compareTasks) + 1, 0, item);
+
+              if (q.saturated && q.tasks.length === q.concurrency) {
+                  q.saturated();
+              }
+              async.setImmediate(q.process);
+          });
         }
-      }
-    }
 
-    if (this.hostname.length > hostnameMaxLen) {
-      this.hostname = '';
-    } else {
-      // hostnames are always lower case.
-      this.hostname = this.hostname.toLowerCase();
-    }
+        // Start with a normal queue
+        var q = async.queue(worker, concurrency);
 
-    if (!ipv6Hostname) {
-      // IDNA Support: Returns a puny coded representation of "domain".
-      // It only converts the part of the domain name that
-      // has non ASCII characters. I.e. it dosent matter if
-      // you call it with a domain that already is in ASCII.
-      var domainArray = this.hostname.split('.');
-      var newOut = [];
-      for (var i = 0; i < domainArray.length; ++i) {
-        var s = domainArray[i];
-        newOut.push(s.match(/[^A-Za-z0-9_-]/) ?
-            'xn--' + punycode.encode(s) : s);
-      }
-      this.hostname = newOut.join('.');
-    }
+        // Override push to accept second parameter representing priority
+        q.push = function (data, priority, callback) {
+          _insert(q, data, priority, callback);
+        };
 
-    var p = this.port ? ':' + this.port : '';
-    var h = this.hostname || '';
-    this.host = h + p;
-    this.href += this.host;
+        // Remove unshift function
+        delete q.unshift;
 
-    // strip [ and ] from the hostname
-    // the host field still retains them, though
-    if (ipv6Hostname) {
-      this.hostname = this.hostname.substr(1, this.hostname.length - 2);
-      if (rest[0] !== '/') {
-        rest = '/' + rest;
-      }
-    }
-  }
-
-  // now rest is set to the post-host stuff.
-  // chop off any delim chars.
-  if (!unsafeProtocol[lowerProto]) {
-
-    // First, make 100% sure that any "autoEscape" chars get
-    // escaped, even if encodeURIComponent doesn't think they
-    // need to be.
-    for (var i = 0, l = autoEscape.length; i < l; i++) {
-      var ae = autoEscape[i];
-      var esc = encodeURIComponent(ae);
-      if (esc === ae) {
-        esc = escape(ae);
-      }
-      rest = rest.split(ae).join(esc);
-    }
-  }
-
-
-  // chop off from the tail first.
-  var hash = rest.indexOf('#');
-  if (hash !== -1) {
-    // got a fragment string.
-    this.hash = rest.substr(hash);
-    rest = rest.slice(0, hash);
-  }
-  var qm = rest.indexOf('?');
-  if (qm !== -1) {
-    this.search = rest.substr(qm);
-    this.query = rest.substr(qm + 1);
-    if (parseQueryString) {
-      this.query = querystring.parse(this.query);
-    }
-    rest = rest.slice(0, qm);
-  } else if (parseQueryString) {
-    // no query string, but parseQueryString still requested
-    this.search = '';
-    this.query = {};
-  }
-  if (rest) this.pathname = rest;
-  if (slashedProtocol[lowerProto] &&
-      this.hostname && !this.pathname) {
-    this.pathname = '/';
-  }
-
-  //to support http.request
-  if (this.pathname || this.search) {
-    var p = this.pathname || '';
-    var s = this.search || '';
-    this.path = p + s;
-  }
-
-  // finally, reconstruct the href based on what has been validated.
-  this.href = this.format();
-  return this;
-};
-
-// format a parsed object into a url string
-function urlFormat(obj) {
-  // ensure it's an object, and not a string url.
-  // If it's an obj, this is a no-op.
-  // this way, you can call url_format() on strings
-  // to clean up potentially wonky urls.
-  if (isString(obj)) obj = urlParse(obj);
-  if (!(obj instanceof Url)) return Url.prototype.format.call(obj);
-  return obj.format();
-}
-
-Url.prototype.format = function() {
-  var auth = this.auth || '';
-  if (auth) {
-    auth = encodeURIComponent(auth);
-    auth = auth.replace(/%3A/i, ':');
-    auth += '@';
-  }
-
-  var protocol = this.protocol || '',
-      pathname = this.pathname || '',
-      hash = this.hash || '',
-      host = false,
-      query = '';
-
-  if (this.host) {
-    host = auth + this.host;
-  } else if (this.hostname) {
-    host = auth + (this.hostname.indexOf(':') === -1 ?
-        this.hostname :
-        '[' + this.hostname + ']');
-    if (this.port) {
-      host += ':' + this.port;
-    }
-  }
-
-  if (this.query &&
-      isObject(this.query) &&
-      Object.keys(this.query).length) {
-    query = querystring.stringify(this.query);
-  }
-
-  var search = this.search || (query && ('?' + query)) || '';
-
-  if (protocol && protocol.substr(-1) !== ':') protocol += ':';
-
-  // only the slashedProtocols get the //.  Not mailto:, xmpp:, etc.
-  // unless they had them to begin with.
-  if (this.slashes ||
-      (!protocol || slashedProtocol[protocol]) && host !== false) {
-    host = '//' + (host || '');
-    if (pathname && pathname.charAt(0) !== '/') pathname = '/' + pathname;
-  } else if (!host) {
-    host = '';
-  }
-
-  if (hash && hash.charAt(0) !== '#') hash = '#' + hash;
-  if (search && search.charAt(0) !== '?') search = '?' + search;
-
-  pathname = pathname.replace(/[?#]/g, function(match) {
-    return encodeURIComponent(match);
-  });
-  search = search.replace('#', '%23');
-
-  return protocol + host + pathname + search + hash;
-};
-
-function urlResolve(source, relative) {
-  return urlParse(source, false, true).resolve(relative);
-}
-
-Url.prototype.resolve = function(relative) {
-  return this.resolveObject(urlParse(relative, false, true)).format();
-};
-
-function urlResolveObject(source, relative) {
-  if (!source) return relative;
-  return urlParse(source, false, true).resolveObject(relative);
-}
-
-Url.prototype.resolveObject = function(relative) {
-  if (isString(relative)) {
-    var rel = new Url();
-    rel.parse(relative, false, true);
-    relative = rel;
-  }
-
-  var result = new Url();
-  Object.keys(this).forEach(function(k) {
-    result[k] = this[k];
-  }, this);
-
-  // hash is always overridden, no matter what.
-  // even href="" will remove it.
-  result.hash = relative.hash;
-
-  // if the relative url is empty, then there's nothing left to do here.
-  if (relative.href === '') {
-    result.href = result.format();
-    return result;
-  }
-
-  // hrefs like //foo/bar always cut to the protocol.
-  if (relative.slashes && !relative.protocol) {
-    // take everything except the protocol from relative
-    Object.keys(relative).forEach(function(k) {
-      if (k !== 'protocol')
-        result[k] = relative[k];
-    });
-
-    //urlParse appends trailing / to urls like http://www.example.com
-    if (slashedProtocol[result.protocol] &&
-        result.hostname && !result.pathname) {
-      result.path = result.pathname = '/';
-    }
-
-    result.href = result.format();
-    return result;
-  }
-
-  if (relative.protocol && relative.protocol !== result.protocol) {
-    // if it's a known url protocol, then changing
-    // the protocol does weird things
-    // first, if it's not file:, then we MUST have a host,
-    // and if there was a path
-    // to begin with, then we MUST have a path.
-    // if it is file:, then the host is dropped,
-    // because that's known to be hostless.
-    // anything else is assumed to be absolute.
-    if (!slashedProtocol[relative.protocol]) {
-      Object.keys(relative).forEach(function(k) {
-        result[k] = relative[k];
-      });
-      result.href = result.format();
-      return result;
-    }
-
-    result.protocol = relative.protocol;
-    if (!relative.host && !hostlessProtocol[relative.protocol]) {
-      var relPath = (relative.pathname || '').split('/');
-      while (relPath.length && !(relative.host = relPath.shift()));
-      if (!relative.host) relative.host = '';
-      if (!relative.hostname) relative.hostname = '';
-      if (relPath[0] !== '') relPath.unshift('');
-      if (relPath.length < 2) relPath.unshift('');
-      result.pathname = relPath.join('/');
-    } else {
-      result.pathname = relative.pathname;
-    }
-    result.search = relative.search;
-    result.query = relative.query;
-    result.host = relative.host || '';
-    result.auth = relative.auth;
-    result.hostname = relative.hostname || relative.host;
-    result.port = relative.port;
-    // to support http.request
-    if (result.pathname || result.search) {
-      var p = result.pathname || '';
-      var s = result.search || '';
-      result.path = p + s;
-    }
-    result.slashes = result.slashes || relative.slashes;
-    result.href = result.format();
-    return result;
-  }
-
-  var isSourceAbs = (result.pathname && result.pathname.charAt(0) === '/'),
-      isRelAbs = (
-          relative.host ||
-          relative.pathname && relative.pathname.charAt(0) === '/'
-      ),
-      mustEndAbs = (isRelAbs || isSourceAbs ||
-                    (result.host && relative.pathname)),
-      removeAllDots = mustEndAbs,
-      srcPath = result.pathname && result.pathname.split('/') || [],
-      relPath = relative.pathname && relative.pathname.split('/') || [],
-      psychotic = result.protocol && !slashedProtocol[result.protocol];
-
-  // if the url is a non-slashed url, then relative
-  // links like ../.. should be able
-  // to crawl up to the hostname, as well.  This is strange.
-  // result.protocol has already been set by now.
-  // Later on, put the first path part into the host field.
-  if (psychotic) {
-    result.hostname = '';
-    result.port = null;
-    if (result.host) {
-      if (srcPath[0] === '') srcPath[0] = result.host;
-      else srcPath.unshift(result.host);
-    }
-    result.host = '';
-    if (relative.protocol) {
-      relative.hostname = null;
-      relative.port = null;
-      if (relative.host) {
-        if (relPath[0] === '') relPath[0] = relative.host;
-        else relPath.unshift(relative.host);
-      }
-      relative.host = null;
-    }
-    mustEndAbs = mustEndAbs && (relPath[0] === '' || srcPath[0] === '');
-  }
-
-  if (isRelAbs) {
-    // it's absolute.
-    result.host = (relative.host || relative.host === '') ?
-                  relative.host : result.host;
-    result.hostname = (relative.hostname || relative.hostname === '') ?
-                      relative.hostname : result.hostname;
-    result.search = relative.search;
-    result.query = relative.query;
-    srcPath = relPath;
-    // fall through to the dot-handling below.
-  } else if (relPath.length) {
-    // it's relative
-    // throw away the existing file, and take the new path instead.
-    if (!srcPath) srcPath = [];
-    srcPath.pop();
-    srcPath = srcPath.concat(relPath);
-    result.search = relative.search;
-    result.query = relative.query;
-  } else if (!isNullOrUndefined(relative.search)) {
-    // just pull out the search.
-    // like href='?foo'.
-    // Put this after the other two cases because it simplifies the booleans
-    if (psychotic) {
-      result.hostname = result.host = srcPath.shift();
-      //occationaly the auth can get stuck only in host
-      //this especialy happens in cases like
-      //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
-      var authInHost = result.host && result.host.indexOf('@') > 0 ?
-                       result.host.split('@') : false;
-      if (authInHost) {
-        result.auth = authInHost.shift();
-        result.host = result.hostname = authInHost.shift();
-      }
-    }
-    result.search = relative.search;
-    result.query = relative.query;
-    //to support http.request
-    if (!isNull(result.pathname) || !isNull(result.search)) {
-      result.path = (result.pathname ? result.pathname : '') +
-                    (result.search ? result.search : '');
-    }
-    result.href = result.format();
-    return result;
-  }
-
-  if (!srcPath.length) {
-    // no path at all.  easy.
-    // we've already handled the other stuff above.
-    result.pathname = null;
-    //to support http.request
-    if (result.search) {
-      result.path = '/' + result.search;
-    } else {
-      result.path = null;
-    }
-    result.href = result.format();
-    return result;
-  }
-
-  // if a url ENDs in . or .., then it must get a trailing slash.
-  // however, if it ends in anything else non-slashy,
-  // then it must NOT get a trailing slash.
-  var last = srcPath.slice(-1)[0];
-  var hasTrailingSlash = (
-      (result.host || relative.host) && (last === '.' || last === '..') ||
-      last === '');
-
-  // strip single dots, resolve double dots to parent dir
-  // if the path tries to go above the root, `up` ends up > 0
-  var up = 0;
-  for (var i = srcPath.length; i >= 0; i--) {
-    last = srcPath[i];
-    if (last == '.') {
-      srcPath.splice(i, 1);
-    } else if (last === '..') {
-      srcPath.splice(i, 1);
-      up++;
-    } else if (up) {
-      srcPath.splice(i, 1);
-      up--;
-    }
-  }
-
-  // if the path is allowed to go above the root, restore leading ..s
-  if (!mustEndAbs && !removeAllDots) {
-    for (; up--; up) {
-      srcPath.unshift('..');
-    }
-  }
-
-  if (mustEndAbs && srcPath[0] !== '' &&
-      (!srcPath[0] || srcPath[0].charAt(0) !== '/')) {
-    srcPath.unshift('');
-  }
-
-  if (hasTrailingSlash && (srcPath.join('/').substr(-1) !== '/')) {
-    srcPath.push('');
-  }
-
-  var isAbsolute = srcPath[0] === '' ||
-      (srcPath[0] && srcPath[0].charAt(0) === '/');
-
-  // put the host back
-  if (psychotic) {
-    result.hostname = result.host = isAbsolute ? '' :
-                                    srcPath.length ? srcPath.shift() : '';
-    //occationaly the auth can get stuck only in host
-    //this especialy happens in cases like
-    //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
-    var authInHost = result.host && result.host.indexOf('@') > 0 ?
-                     result.host.split('@') : false;
-    if (authInHost) {
-      result.auth = authInHost.shift();
-      result.host = result.hostname = authInHost.shift();
-    }
-  }
-
-  mustEndAbs = mustEndAbs || (result.host && srcPath.length);
-
-  if (mustEndAbs && !isAbsolute) {
-    srcPath.unshift('');
-  }
-
-  if (!srcPath.length) {
-    result.pathname = null;
-    result.path = null;
-  } else {
-    result.pathname = srcPath.join('/');
-  }
-
-  //to support request.http
-  if (!isNull(result.pathname) || !isNull(result.search)) {
-    result.path = (result.pathname ? result.pathname : '') +
-                  (result.search ? result.search : '');
-  }
-  result.auth = relative.auth || result.auth;
-  result.slashes = result.slashes || relative.slashes;
-  result.href = result.format();
-  return result;
-};
-
-Url.prototype.parseHost = function() {
-  var host = this.host;
-  var port = portPattern.exec(host);
-  if (port) {
-    port = port[0];
-    if (port !== ':') {
-      this.port = port.substr(1);
-    }
-    host = host.substr(0, host.length - port.length);
-  }
-  if (host) this.hostname = host;
-};
-
-function isString(arg) {
-  return typeof arg === "string";
-}
-
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
-}
-
-function isNull(arg) {
-  return arg === null;
-}
-function isNullOrUndefined(arg) {
-  return  arg == null;
-}
-
-},{"punycode":6,"querystring":33}],76:[function(_dereq_,module,exports){
-module.exports=_dereq_(18)
-},{}],77:[function(_dereq_,module,exports){
-module.exports = function isBuffer(arg) {
-  return arg && typeof arg === 'object'
-    && typeof arg.copy === 'function'
-    && typeof arg.fill === 'function'
-    && typeof arg.readUInt8 === 'function';
-}
-},{}],78:[function(_dereq_,module,exports){
-(function (process,global){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-var formatRegExp = /%[sdj%]/g;
-exports.format = function(f) {
-  if (!isString(f)) {
-    var objects = [];
-    for (var i = 0; i < arguments.length; i++) {
-      objects.push(inspect(arguments[i]));
-    }
-    return objects.join(' ');
-  }
-
-  var i = 1;
-  var args = arguments;
-  var len = args.length;
-  var str = String(f).replace(formatRegExp, function(x) {
-    if (x === '%%') return '%';
-    if (i >= len) return x;
-    switch (x) {
-      case '%s': return String(args[i++]);
-      case '%d': return Number(args[i++]);
-      case '%j':
-        try {
-          return JSON.stringify(args[i++]);
-        } catch (_) {
-          return '[Circular]';
-        }
-      default:
-        return x;
-    }
-  });
-  for (var x = args[i]; i < len; x = args[++i]) {
-    if (isNull(x) || !isObject(x)) {
-      str += ' ' + x;
-    } else {
-      str += ' ' + inspect(x);
-    }
-  }
-  return str;
-};
-
-
-// Mark that a method should not be used.
-// Returns a modified function which warns once by default.
-// If --no-deprecation is set, then it is a no-op.
-exports.deprecate = function(fn, msg) {
-  // Allow for deprecating things in the process of starting up.
-  if (isUndefined(global.process)) {
-    return function() {
-      return exports.deprecate(fn, msg).apply(this, arguments);
+        return q;
     };
-  }
 
-  if (process.noDeprecation === true) {
-    return fn;
-  }
+    async.cargo = function (worker, payload) {
+        var working     = false,
+            tasks       = [];
 
-  var warned = false;
-  function deprecated() {
-    if (!warned) {
-      if (process.throwDeprecation) {
-        throw new Error(msg);
-      } else if (process.traceDeprecation) {
-        console.trace(msg);
-      } else {
-        console.error(msg);
-      }
-      warned = true;
-    }
-    return fn.apply(this, arguments);
-  }
+        var cargo = {
+            tasks: tasks,
+            payload: payload,
+            saturated: null,
+            empty: null,
+            drain: null,
+            drained: true,
+            push: function (data, callback) {
+                if (!_isArray(data)) {
+                    data = [data];
+                }
+                _each(data, function(task) {
+                    tasks.push({
+                        data: task,
+                        callback: typeof callback === 'function' ? callback : null
+                    });
+                    cargo.drained = false;
+                    if (cargo.saturated && tasks.length === payload) {
+                        cargo.saturated();
+                    }
+                });
+                async.setImmediate(cargo.process);
+            },
+            process: function process() {
+                if (working) return;
+                if (tasks.length === 0) {
+                    if(cargo.drain && !cargo.drained) cargo.drain();
+                    cargo.drained = true;
+                    return;
+                }
 
-  return deprecated;
-};
+                var ts = typeof payload === 'number'
+                            ? tasks.splice(0, payload)
+                            : tasks.splice(0, tasks.length);
 
+                var ds = _map(ts, function (task) {
+                    return task.data;
+                });
 
-var debugs = {};
-var debugEnviron;
-exports.debuglog = function(set) {
-  if (isUndefined(debugEnviron))
-    debugEnviron = process.env.NODE_DEBUG || '';
-  set = set.toUpperCase();
-  if (!debugs[set]) {
-    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
-      var pid = process.pid;
-      debugs[set] = function() {
-        var msg = exports.format.apply(exports, arguments);
-        console.error('%s %d: %s', set, pid, msg);
+                if(cargo.empty) cargo.empty();
+                working = true;
+                worker(ds, function () {
+                    working = false;
+
+                    var args = arguments;
+                    _each(ts, function (data) {
+                        if (data.callback) {
+                            data.callback.apply(null, args);
+                        }
+                    });
+
+                    process();
+                });
+            },
+            length: function () {
+                return tasks.length;
+            },
+            running: function () {
+                return working;
+            }
+        };
+        return cargo;
+    };
+
+    var _console_fn = function (name) {
+        return function (fn) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            fn.apply(null, args.concat([function (err) {
+                var args = Array.prototype.slice.call(arguments, 1);
+                if (typeof console !== 'undefined') {
+                    if (err) {
+                        if (console.error) {
+                            console.error(err);
+                        }
+                    }
+                    else if (console[name]) {
+                        _each(args, function (x) {
+                            console[name](x);
+                        });
+                    }
+                }
+            }]));
+        };
+    };
+    async.log = _console_fn('log');
+    async.dir = _console_fn('dir');
+    /*async.info = _console_fn('info');
+    async.warn = _console_fn('warn');
+    async.error = _console_fn('error');*/
+
+    async.memoize = function (fn, hasher) {
+        var memo = {};
+        var queues = {};
+        hasher = hasher || function (x) {
+            return x;
+        };
+        var memoized = function () {
+            var args = Array.prototype.slice.call(arguments);
+            var callback = args.pop();
+            var key = hasher.apply(null, args);
+            if (key in memo) {
+                async.nextTick(function () {
+                    callback.apply(null, memo[key]);
+                });
+            }
+            else if (key in queues) {
+                queues[key].push(callback);
+            }
+            else {
+                queues[key] = [callback];
+                fn.apply(null, args.concat([function () {
+                    memo[key] = arguments;
+                    var q = queues[key];
+                    delete queues[key];
+                    for (var i = 0, l = q.length; i < l; i++) {
+                      q[i].apply(null, arguments);
+                    }
+                }]));
+            }
+        };
+        memoized.memo = memo;
+        memoized.unmemoized = fn;
+        return memoized;
+    };
+
+    async.unmemoize = function (fn) {
+      return function () {
+        return (fn.unmemoized || fn).apply(null, arguments);
       };
-    } else {
-      debugs[set] = function() {};
-    }
-  }
-  return debugs[set];
-};
+    };
 
-
-/**
- * Echos the value of a value. Trys to print the value out
- * in the best way possible given the different types.
- *
- * @param {Object} obj The object to print out.
- * @param {Object} opts Optional options object that alters the output.
- */
-/* legacy: obj, showHidden, depth, colors*/
-function inspect(obj, opts) {
-  // default options
-  var ctx = {
-    seen: [],
-    stylize: stylizeNoColor
-  };
-  // legacy...
-  if (arguments.length >= 3) ctx.depth = arguments[2];
-  if (arguments.length >= 4) ctx.colors = arguments[3];
-  if (isBoolean(opts)) {
-    // legacy...
-    ctx.showHidden = opts;
-  } else if (opts) {
-    // got an "options" object
-    exports._extend(ctx, opts);
-  }
-  // set default options
-  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
-  if (isUndefined(ctx.depth)) ctx.depth = 2;
-  if (isUndefined(ctx.colors)) ctx.colors = false;
-  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
-  if (ctx.colors) ctx.stylize = stylizeWithColor;
-  return formatValue(ctx, obj, ctx.depth);
-}
-exports.inspect = inspect;
-
-
-// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
-inspect.colors = {
-  'bold' : [1, 22],
-  'italic' : [3, 23],
-  'underline' : [4, 24],
-  'inverse' : [7, 27],
-  'white' : [37, 39],
-  'grey' : [90, 39],
-  'black' : [30, 39],
-  'blue' : [34, 39],
-  'cyan' : [36, 39],
-  'green' : [32, 39],
-  'magenta' : [35, 39],
-  'red' : [31, 39],
-  'yellow' : [33, 39]
-};
-
-// Don't use 'blue' not visible on cmd.exe
-inspect.styles = {
-  'special': 'cyan',
-  'number': 'yellow',
-  'boolean': 'yellow',
-  'undefined': 'grey',
-  'null': 'bold',
-  'string': 'green',
-  'date': 'magenta',
-  // "name": intentionally not styling
-  'regexp': 'red'
-};
-
-
-function stylizeWithColor(str, styleType) {
-  var style = inspect.styles[styleType];
-
-  if (style) {
-    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
-           '\u001b[' + inspect.colors[style][1] + 'm';
-  } else {
-    return str;
-  }
-}
-
-
-function stylizeNoColor(str, styleType) {
-  return str;
-}
-
-
-function arrayToHash(array) {
-  var hash = {};
-
-  array.forEach(function(val, idx) {
-    hash[val] = true;
-  });
-
-  return hash;
-}
-
-
-function formatValue(ctx, value, recurseTimes) {
-  // Provide a hook for user-specified inspect functions.
-  // Check that value is an object with an inspect function on it
-  if (ctx.customInspect &&
-      value &&
-      isFunction(value.inspect) &&
-      // Filter out the util module, it's inspect function is special
-      value.inspect !== exports.inspect &&
-      // Also filter out any prototype objects using the circular check.
-      !(value.constructor && value.constructor.prototype === value)) {
-    var ret = value.inspect(recurseTimes, ctx);
-    if (!isString(ret)) {
-      ret = formatValue(ctx, ret, recurseTimes);
-    }
-    return ret;
-  }
-
-  // Primitive types cannot have properties
-  var primitive = formatPrimitive(ctx, value);
-  if (primitive) {
-    return primitive;
-  }
-
-  // Look up the keys of the object.
-  var keys = Object.keys(value);
-  var visibleKeys = arrayToHash(keys);
-
-  if (ctx.showHidden) {
-    keys = Object.getOwnPropertyNames(value);
-  }
-
-  // IE doesn't make error fields non-enumerable
-  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
-  if (isError(value)
-      && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
-    return formatError(value);
-  }
-
-  // Some type of object without properties can be shortcutted.
-  if (keys.length === 0) {
-    if (isFunction(value)) {
-      var name = value.name ? ': ' + value.name : '';
-      return ctx.stylize('[Function' + name + ']', 'special');
-    }
-    if (isRegExp(value)) {
-      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
-    }
-    if (isDate(value)) {
-      return ctx.stylize(Date.prototype.toString.call(value), 'date');
-    }
-    if (isError(value)) {
-      return formatError(value);
-    }
-  }
-
-  var base = '', array = false, braces = ['{', '}'];
-
-  // Make Array say that they are Array
-  if (isArray(value)) {
-    array = true;
-    braces = ['[', ']'];
-  }
-
-  // Make functions say that they are functions
-  if (isFunction(value)) {
-    var n = value.name ? ': ' + value.name : '';
-    base = ' [Function' + n + ']';
-  }
-
-  // Make RegExps say that they are RegExps
-  if (isRegExp(value)) {
-    base = ' ' + RegExp.prototype.toString.call(value);
-  }
-
-  // Make dates with properties first say the date
-  if (isDate(value)) {
-    base = ' ' + Date.prototype.toUTCString.call(value);
-  }
-
-  // Make error with message first say the error
-  if (isError(value)) {
-    base = ' ' + formatError(value);
-  }
-
-  if (keys.length === 0 && (!array || value.length == 0)) {
-    return braces[0] + base + braces[1];
-  }
-
-  if (recurseTimes < 0) {
-    if (isRegExp(value)) {
-      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
-    } else {
-      return ctx.stylize('[Object]', 'special');
-    }
-  }
-
-  ctx.seen.push(value);
-
-  var output;
-  if (array) {
-    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
-  } else {
-    output = keys.map(function(key) {
-      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
-    });
-  }
-
-  ctx.seen.pop();
-
-  return reduceToSingleString(output, base, braces);
-}
-
-
-function formatPrimitive(ctx, value) {
-  if (isUndefined(value))
-    return ctx.stylize('undefined', 'undefined');
-  if (isString(value)) {
-    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
-                                             .replace(/'/g, "\\'")
-                                             .replace(/\\"/g, '"') + '\'';
-    return ctx.stylize(simple, 'string');
-  }
-  if (isNumber(value))
-    return ctx.stylize('' + value, 'number');
-  if (isBoolean(value))
-    return ctx.stylize('' + value, 'boolean');
-  // For some reason typeof null is "object", so special case here.
-  if (isNull(value))
-    return ctx.stylize('null', 'null');
-}
-
-
-function formatError(value) {
-  return '[' + Error.prototype.toString.call(value) + ']';
-}
-
-
-function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
-  var output = [];
-  for (var i = 0, l = value.length; i < l; ++i) {
-    if (hasOwnProperty(value, String(i))) {
-      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-          String(i), true));
-    } else {
-      output.push('');
-    }
-  }
-  keys.forEach(function(key) {
-    if (!key.match(/^\d+$/)) {
-      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-          key, true));
-    }
-  });
-  return output;
-}
-
-
-function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
-  var name, str, desc;
-  desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
-  if (desc.get) {
-    if (desc.set) {
-      str = ctx.stylize('[Getter/Setter]', 'special');
-    } else {
-      str = ctx.stylize('[Getter]', 'special');
-    }
-  } else {
-    if (desc.set) {
-      str = ctx.stylize('[Setter]', 'special');
-    }
-  }
-  if (!hasOwnProperty(visibleKeys, key)) {
-    name = '[' + key + ']';
-  }
-  if (!str) {
-    if (ctx.seen.indexOf(desc.value) < 0) {
-      if (isNull(recurseTimes)) {
-        str = formatValue(ctx, desc.value, null);
-      } else {
-        str = formatValue(ctx, desc.value, recurseTimes - 1);
-      }
-      if (str.indexOf('\n') > -1) {
-        if (array) {
-          str = str.split('\n').map(function(line) {
-            return '  ' + line;
-          }).join('\n').substr(2);
-        } else {
-          str = '\n' + str.split('\n').map(function(line) {
-            return '   ' + line;
-          }).join('\n');
+    async.times = function (count, iterator, callback) {
+        var counter = [];
+        for (var i = 0; i < count; i++) {
+            counter.push(i);
         }
-      }
-    } else {
-      str = ctx.stylize('[Circular]', 'special');
+        return async.map(counter, iterator, callback);
+    };
+
+    async.timesSeries = function (count, iterator, callback) {
+        var counter = [];
+        for (var i = 0; i < count; i++) {
+            counter.push(i);
+        }
+        return async.mapSeries(counter, iterator, callback);
+    };
+
+    async.seq = function (/* functions... */) {
+        var fns = arguments;
+        return function () {
+            var that = this;
+            var args = Array.prototype.slice.call(arguments);
+            var callback = args.pop();
+            async.reduce(fns, args, function (newargs, fn, cb) {
+                fn.apply(that, newargs.concat([function () {
+                    var err = arguments[0];
+                    var nextargs = Array.prototype.slice.call(arguments, 1);
+                    cb(err, nextargs);
+                }]))
+            },
+            function (err, results) {
+                callback.apply(that, [err].concat(results));
+            });
+        };
+    };
+
+    async.compose = function (/* functions... */) {
+      return async.seq.apply(null, Array.prototype.reverse.call(arguments));
+    };
+
+    var _applyEach = function (eachfn, fns /*args...*/) {
+        var go = function () {
+            var that = this;
+            var args = Array.prototype.slice.call(arguments);
+            var callback = args.pop();
+            return eachfn(fns, function (fn, cb) {
+                fn.apply(that, args.concat([cb]));
+            },
+            callback);
+        };
+        if (arguments.length > 2) {
+            var args = Array.prototype.slice.call(arguments, 2);
+            return go.apply(this, args);
+        }
+        else {
+            return go;
+        }
+    };
+    async.applyEach = doParallel(_applyEach);
+    async.applyEachSeries = doSeries(_applyEach);
+
+    async.forever = function (fn, callback) {
+        function next(err) {
+            if (err) {
+                if (callback) {
+                    return callback(err);
+                }
+                throw err;
+            }
+            fn(next);
+        }
+        next();
+    };
+
+    // Node.js
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = async;
     }
-  }
-  if (isUndefined(name)) {
-    if (array && key.match(/^\d+$/)) {
-      return str;
+    // AMD / RequireJS
+    else if (typeof define !== 'undefined' && define.amd) {
+        define([], function () {
+            return async;
+        });
     }
-    name = JSON.stringify('' + key);
-    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
-      name = name.substr(1, name.length - 2);
-      name = ctx.stylize(name, 'name');
-    } else {
-      name = name.replace(/'/g, "\\'")
-                 .replace(/\\"/g, '"')
-                 .replace(/(^"|"$)/g, "'");
-      name = ctx.stylize(name, 'string');
+    // included directly via <script> tag
+    else {
+        root.async = async;
     }
-  }
 
-  return name + ': ' + str;
-}
+}());
 
-
-function reduceToSingleString(output, base, braces) {
-  var numLinesEst = 0;
-  var length = output.reduce(function(prev, cur) {
-    numLinesEst++;
-    if (cur.indexOf('\n') >= 0) numLinesEst++;
-    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
-  }, 0);
-
-  if (length > 60) {
-    return braces[0] +
-           (base === '' ? '' : base + '\n ') +
-           ' ' +
-           output.join(',\n  ') +
-           ' ' +
-           braces[1];
-  }
-
-  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
-}
-
-
-// NOTE: These type checking functions intentionally don't use `instanceof`
-// because it is fragile and can be easily faked with `Object.create()`.
-function isArray(ar) {
-  return Array.isArray(ar);
-}
-exports.isArray = isArray;
-
-function isBoolean(arg) {
-  return typeof arg === 'boolean';
-}
-exports.isBoolean = isBoolean;
-
-function isNull(arg) {
-  return arg === null;
-}
-exports.isNull = isNull;
-
-function isNullOrUndefined(arg) {
-  return arg == null;
-}
-exports.isNullOrUndefined = isNullOrUndefined;
-
-function isNumber(arg) {
-  return typeof arg === 'number';
-}
-exports.isNumber = isNumber;
-
-function isString(arg) {
-  return typeof arg === 'string';
-}
-exports.isString = isString;
-
-function isSymbol(arg) {
-  return typeof arg === 'symbol';
-}
-exports.isSymbol = isSymbol;
-
-function isUndefined(arg) {
-  return arg === void 0;
-}
-exports.isUndefined = isUndefined;
-
-function isRegExp(re) {
-  return isObject(re) && objectToString(re) === '[object RegExp]';
-}
-exports.isRegExp = isRegExp;
-
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
-}
-exports.isObject = isObject;
-
-function isDate(d) {
-  return isObject(d) && objectToString(d) === '[object Date]';
-}
-exports.isDate = isDate;
-
-function isError(e) {
-  return isObject(e) &&
-      (objectToString(e) === '[object Error]' || e instanceof Error);
-}
-exports.isError = isError;
-
-function isFunction(arg) {
-  return typeof arg === 'function';
-}
-exports.isFunction = isFunction;
-
-function isPrimitive(arg) {
-  return arg === null ||
-         typeof arg === 'boolean' ||
-         typeof arg === 'number' ||
-         typeof arg === 'string' ||
-         typeof arg === 'symbol' ||  // ES6 symbol
-         typeof arg === 'undefined';
-}
-exports.isPrimitive = isPrimitive;
-
-exports.isBuffer = _dereq_('./support/isBuffer');
-
-function objectToString(o) {
-  return Object.prototype.toString.call(o);
-}
-
-
-function pad(n) {
-  return n < 10 ? '0' + n.toString(10) : n.toString(10);
-}
-
-
-var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-              'Oct', 'Nov', 'Dec'];
-
-// 26 Feb 16:19:34
-function timestamp() {
-  var d = new Date();
-  var time = [pad(d.getHours()),
-              pad(d.getMinutes()),
-              pad(d.getSeconds())].join(':');
-  return [d.getDate(), months[d.getMonth()], time].join(' ');
-}
-
-
-// log is just a thin wrapper to console.log that prepends a timestamp
-exports.log = function() {
-  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
-};
-
-
-/**
- * Inherit the prototype methods from one constructor into another.
- *
- * The Function.prototype.inherits from lang.js rewritten as a standalone
- * function (not on Function.prototype). NOTE: If this file is to be loaded
- * during bootstrapping this function needs to be rewritten using some native
- * functions as prototype setup using normal JavaScript does not work as
- * expected during bootstrapping (see mirror.js in r114903).
- *
- * @param {function} ctor Constructor function which needs to inherit the
- *     prototype.
- * @param {function} superCtor Constructor function to inherit prototype from.
- */
-exports.inherits = _dereq_('inherits');
-
-exports._extend = function(origin, add) {
-  // Don't do anything if add isn't an object
-  if (!add || !isObject(add)) return origin;
-
-  var keys = Object.keys(add);
-  var i = keys.length;
-  while (i--) {
-    origin[keys[i]] = add[keys[i]];
-  }
-  return origin;
-};
-
-function hasOwnProperty(obj, prop) {
-  return Object.prototype.hasOwnProperty.call(obj, prop);
-}
-
-}).call(this,_dereq_("g5I+bs"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":77,"g5I+bs":30,"inherits":76}],79:[function(_dereq_,module,exports){
+}).call(this,_dereq_("v3go1D"))
+},{"v3go1D":29}],68:[function(_dereq_,module,exports){
 function DOMParser(options){
 	this.options = options ||{locator:{}};
 	
@@ -30981,7 +27841,7 @@ function appendElement (hander,node) {
 	exports.DOMParser = DOMParser;
 //}
 
-},{"./dom":80,"./sax":81}],80:[function(_dereq_,module,exports){
+},{"./dom":69,"./sax":70}],69:[function(_dereq_,module,exports){
 /*
  * DOM Level 2
  * Object DOMException
@@ -32227,7 +29087,7 @@ try{
 	exports.XMLSerializer = XMLSerializer;
 //}
 
-},{}],81:[function(_dereq_,module,exports){
+},{}],70:[function(_dereq_,module,exports){
 //[4]   	NameStartChar	   ::=   	":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
 //[4a]   	NameChar	   ::=   	NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
 //[5]   	Name	   ::=   	NameStartChar (NameChar)*
@@ -32862,7 +29722,3147 @@ function split(source,start){
 exports.XMLReader = XMLReader;
 
 
-},{}],82:[function(_dereq_,module,exports){
+},{}],71:[function(_dereq_,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// a duplex stream is just a stream that is both readable and writable.
+// Since JS doesn't have multiple prototypal inheritance, this class
+// prototypally inherits from Readable, and then parasitically from
+// Writable.
+
+module.exports = Duplex;
+var inherits = _dereq_('inherits');
+var setImmediate = _dereq_('process/browser.js').nextTick;
+var Readable = _dereq_('./readable.js');
+var Writable = _dereq_('./writable.js');
+
+inherits(Duplex, Readable);
+
+Duplex.prototype.write = Writable.prototype.write;
+Duplex.prototype.end = Writable.prototype.end;
+Duplex.prototype._write = Writable.prototype._write;
+
+function Duplex(options) {
+  if (!(this instanceof Duplex))
+    return new Duplex(options);
+
+  Readable.call(this, options);
+  Writable.call(this, options);
+
+  if (options && options.readable === false)
+    this.readable = false;
+
+  if (options && options.writable === false)
+    this.writable = false;
+
+  this.allowHalfOpen = true;
+  if (options && options.allowHalfOpen === false)
+    this.allowHalfOpen = false;
+
+  this.once('end', onend);
+}
+
+// the no-half-open enforcer
+function onend() {
+  // if we allow half-open state, or if the writable side ended,
+  // then we're ok.
+  if (this.allowHalfOpen || this._writableState.ended)
+    return;
+
+  // no more data can be written.
+  // But allow more writes to happen in this tick.
+  var self = this;
+  setImmediate(function () {
+    self.end();
+  });
+}
+
+},{"./readable.js":75,"./writable.js":77,"inherits":17,"process/browser.js":73}],72:[function(_dereq_,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+module.exports = Stream;
+
+var EE = _dereq_('events').EventEmitter;
+var inherits = _dereq_('inherits');
+
+inherits(Stream, EE);
+Stream.Readable = _dereq_('./readable.js');
+Stream.Writable = _dereq_('./writable.js');
+Stream.Duplex = _dereq_('./duplex.js');
+Stream.Transform = _dereq_('./transform.js');
+Stream.PassThrough = _dereq_('./passthrough.js');
+
+// Backwards-compat with node 0.4.x
+Stream.Stream = Stream;
+
+
+
+// old-style streams.  Note that the pipe method (the only relevant
+// part of this class) is overridden in the Readable class.
+
+function Stream() {
+  EE.call(this);
+}
+
+Stream.prototype.pipe = function(dest, options) {
+  var source = this;
+
+  function ondata(chunk) {
+    if (dest.writable) {
+      if (false === dest.write(chunk) && source.pause) {
+        source.pause();
+      }
+    }
+  }
+
+  source.on('data', ondata);
+
+  function ondrain() {
+    if (source.readable && source.resume) {
+      source.resume();
+    }
+  }
+
+  dest.on('drain', ondrain);
+
+  // If the 'end' option is not supplied, dest.end() will be called when
+  // source gets the 'end' or 'close' events.  Only dest.end() once.
+  if (!dest._isStdio && (!options || options.end !== false)) {
+    source.on('end', onend);
+    source.on('close', onclose);
+  }
+
+  var didOnEnd = false;
+  function onend() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    dest.end();
+  }
+
+
+  function onclose() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    if (typeof dest.destroy === 'function') dest.destroy();
+  }
+
+  // don't leave dangling pipes when there are errors.
+  function onerror(er) {
+    cleanup();
+    if (EE.listenerCount(this, 'error') === 0) {
+      throw er; // Unhandled stream error in pipe.
+    }
+  }
+
+  source.on('error', onerror);
+  dest.on('error', onerror);
+
+  // remove all the event listeners that were added.
+  function cleanup() {
+    source.removeListener('data', ondata);
+    dest.removeListener('drain', ondrain);
+
+    source.removeListener('end', onend);
+    source.removeListener('close', onclose);
+
+    source.removeListener('error', onerror);
+    dest.removeListener('error', onerror);
+
+    source.removeListener('end', cleanup);
+    source.removeListener('close', cleanup);
+
+    dest.removeListener('close', cleanup);
+  }
+
+  source.on('end', cleanup);
+  source.on('close', cleanup);
+
+  dest.on('close', cleanup);
+
+  dest.emit('pipe', source);
+
+  // Allow for unix-like usage: A.pipe(B).pipe(C)
+  return dest;
+};
+
+},{"./duplex.js":71,"./passthrough.js":74,"./readable.js":75,"./transform.js":76,"./writable.js":77,"events":11,"inherits":17}],73:[function(_dereq_,module,exports){
+// shim for using process in browser
+
+var process = module.exports = {};
+
+process.nextTick = (function () {
+    var canSetImmediate = typeof window !== 'undefined'
+    && window.setImmediate;
+    var canPost = typeof window !== 'undefined'
+    && window.postMessage && window.addEventListener
+    ;
+
+    if (canSetImmediate) {
+        return function (f) { return window.setImmediate(f) };
+    }
+
+    if (canPost) {
+        var queue = [];
+        window.addEventListener('message', function (ev) {
+            var source = ev.source;
+            if ((source === window || source === null) && ev.data === 'process-tick') {
+                ev.stopPropagation();
+                if (queue.length > 0) {
+                    var fn = queue.shift();
+                    fn();
+                }
+            }
+        }, true);
+
+        return function nextTick(fn) {
+            queue.push(fn);
+            window.postMessage('process-tick', '*');
+        };
+    }
+
+    return function nextTick(fn) {
+        setTimeout(fn, 0);
+    };
+})();
+
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+}
+
+// TODO(shtylman)
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+
+},{}],74:[function(_dereq_,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// a passthrough stream.
+// basically just the most minimal sort of Transform stream.
+// Every written chunk gets output as-is.
+
+module.exports = PassThrough;
+
+var Transform = _dereq_('./transform.js');
+var inherits = _dereq_('inherits');
+inherits(PassThrough, Transform);
+
+function PassThrough(options) {
+  if (!(this instanceof PassThrough))
+    return new PassThrough(options);
+
+  Transform.call(this, options);
+}
+
+PassThrough.prototype._transform = function(chunk, encoding, cb) {
+  cb(null, chunk);
+};
+
+},{"./transform.js":76,"inherits":17}],75:[function(_dereq_,module,exports){
+(function (process){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+module.exports = Readable;
+Readable.ReadableState = ReadableState;
+
+var EE = _dereq_('events').EventEmitter;
+var Stream = _dereq_('./index.js');
+var Buffer = _dereq_('buffer').Buffer;
+var setImmediate = _dereq_('process/browser.js').nextTick;
+var StringDecoder;
+
+var inherits = _dereq_('inherits');
+inherits(Readable, Stream);
+
+function ReadableState(options, stream) {
+  options = options || {};
+
+  // the point at which it stops calling _read() to fill the buffer
+  // Note: 0 is a valid value, means "don't call _read preemptively ever"
+  var hwm = options.highWaterMark;
+  this.highWaterMark = (hwm || hwm === 0) ? hwm : 16 * 1024;
+
+  // cast to ints.
+  this.highWaterMark = ~~this.highWaterMark;
+
+  this.buffer = [];
+  this.length = 0;
+  this.pipes = null;
+  this.pipesCount = 0;
+  this.flowing = false;
+  this.ended = false;
+  this.endEmitted = false;
+  this.reading = false;
+
+  // In streams that never have any data, and do push(null) right away,
+  // the consumer can miss the 'end' event if they do some I/O before
+  // consuming the stream.  So, we don't emit('end') until some reading
+  // happens.
+  this.calledRead = false;
+
+  // a flag to be able to tell if the onwrite cb is called immediately,
+  // or on a later tick.  We set this to true at first, becuase any
+  // actions that shouldn't happen until "later" should generally also
+  // not happen before the first write call.
+  this.sync = true;
+
+  // whenever we return null, then we set a flag to say
+  // that we're awaiting a 'readable' event emission.
+  this.needReadable = false;
+  this.emittedReadable = false;
+  this.readableListening = false;
+
+
+  // object stream flag. Used to make read(n) ignore n and to
+  // make all the buffer merging and length checks go away
+  this.objectMode = !!options.objectMode;
+
+  // Crypto is kind of old and crusty.  Historically, its default string
+  // encoding is 'binary' so we have to make this configurable.
+  // Everything else in the universe uses 'utf8', though.
+  this.defaultEncoding = options.defaultEncoding || 'utf8';
+
+  // when piping, we only care about 'readable' events that happen
+  // after read()ing all the bytes and not getting any pushback.
+  this.ranOut = false;
+
+  // the number of writers that are awaiting a drain event in .pipe()s
+  this.awaitDrain = 0;
+
+  // if true, a maybeReadMore has been scheduled
+  this.readingMore = false;
+
+  this.decoder = null;
+  this.encoding = null;
+  if (options.encoding) {
+    if (!StringDecoder)
+      StringDecoder = _dereq_('string_decoder').StringDecoder;
+    this.decoder = new StringDecoder(options.encoding);
+    this.encoding = options.encoding;
+  }
+}
+
+function Readable(options) {
+  if (!(this instanceof Readable))
+    return new Readable(options);
+
+  this._readableState = new ReadableState(options, this);
+
+  // legacy
+  this.readable = true;
+
+  Stream.call(this);
+}
+
+// Manually shove something into the read() buffer.
+// This returns true if the highWaterMark has not been hit yet,
+// similar to how Writable.write() returns true if you should
+// write() some more.
+Readable.prototype.push = function(chunk, encoding) {
+  var state = this._readableState;
+
+  if (typeof chunk === 'string' && !state.objectMode) {
+    encoding = encoding || state.defaultEncoding;
+    if (encoding !== state.encoding) {
+      chunk = new Buffer(chunk, encoding);
+      encoding = '';
+    }
+  }
+
+  return readableAddChunk(this, state, chunk, encoding, false);
+};
+
+// Unshift should *always* be something directly out of read()
+Readable.prototype.unshift = function(chunk) {
+  var state = this._readableState;
+  return readableAddChunk(this, state, chunk, '', true);
+};
+
+function readableAddChunk(stream, state, chunk, encoding, addToFront) {
+  var er = chunkInvalid(state, chunk);
+  if (er) {
+    stream.emit('error', er);
+  } else if (chunk === null || chunk === undefined) {
+    state.reading = false;
+    if (!state.ended)
+      onEofChunk(stream, state);
+  } else if (state.objectMode || chunk && chunk.length > 0) {
+    if (state.ended && !addToFront) {
+      var e = new Error('stream.push() after EOF');
+      stream.emit('error', e);
+    } else if (state.endEmitted && addToFront) {
+      var e = new Error('stream.unshift() after end event');
+      stream.emit('error', e);
+    } else {
+      if (state.decoder && !addToFront && !encoding)
+        chunk = state.decoder.write(chunk);
+
+      // update the buffer info.
+      state.length += state.objectMode ? 1 : chunk.length;
+      if (addToFront) {
+        state.buffer.unshift(chunk);
+      } else {
+        state.reading = false;
+        state.buffer.push(chunk);
+      }
+
+      if (state.needReadable)
+        emitReadable(stream);
+
+      maybeReadMore(stream, state);
+    }
+  } else if (!addToFront) {
+    state.reading = false;
+  }
+
+  return needMoreData(state);
+}
+
+
+
+// if it's past the high water mark, we can push in some more.
+// Also, if we have no data yet, we can stand some
+// more bytes.  This is to work around cases where hwm=0,
+// such as the repl.  Also, if the push() triggered a
+// readable event, and the user called read(largeNumber) such that
+// needReadable was set, then we ought to push more, so that another
+// 'readable' event will be triggered.
+function needMoreData(state) {
+  return !state.ended &&
+         (state.needReadable ||
+          state.length < state.highWaterMark ||
+          state.length === 0);
+}
+
+// backwards compatibility.
+Readable.prototype.setEncoding = function(enc) {
+  if (!StringDecoder)
+    StringDecoder = _dereq_('string_decoder').StringDecoder;
+  this._readableState.decoder = new StringDecoder(enc);
+  this._readableState.encoding = enc;
+};
+
+// Don't raise the hwm > 128MB
+var MAX_HWM = 0x800000;
+function roundUpToNextPowerOf2(n) {
+  if (n >= MAX_HWM) {
+    n = MAX_HWM;
+  } else {
+    // Get the next highest power of 2
+    n--;
+    for (var p = 1; p < 32; p <<= 1) n |= n >> p;
+    n++;
+  }
+  return n;
+}
+
+function howMuchToRead(n, state) {
+  if (state.length === 0 && state.ended)
+    return 0;
+
+  if (state.objectMode)
+    return n === 0 ? 0 : 1;
+
+  if (isNaN(n) || n === null) {
+    // only flow one buffer at a time
+    if (state.flowing && state.buffer.length)
+      return state.buffer[0].length;
+    else
+      return state.length;
+  }
+
+  if (n <= 0)
+    return 0;
+
+  // If we're asking for more than the target buffer level,
+  // then raise the water mark.  Bump up to the next highest
+  // power of 2, to prevent increasing it excessively in tiny
+  // amounts.
+  if (n > state.highWaterMark)
+    state.highWaterMark = roundUpToNextPowerOf2(n);
+
+  // don't have that much.  return null, unless we've ended.
+  if (n > state.length) {
+    if (!state.ended) {
+      state.needReadable = true;
+      return 0;
+    } else
+      return state.length;
+  }
+
+  return n;
+}
+
+// you can override either this method, or the async _read(n) below.
+Readable.prototype.read = function(n) {
+  var state = this._readableState;
+  state.calledRead = true;
+  var nOrig = n;
+
+  if (typeof n !== 'number' || n > 0)
+    state.emittedReadable = false;
+
+  // if we're doing read(0) to trigger a readable event, but we
+  // already have a bunch of data in the buffer, then just trigger
+  // the 'readable' event and move on.
+  if (n === 0 &&
+      state.needReadable &&
+      (state.length >= state.highWaterMark || state.ended)) {
+    emitReadable(this);
+    return null;
+  }
+
+  n = howMuchToRead(n, state);
+
+  // if we've ended, and we're now clear, then finish it up.
+  if (n === 0 && state.ended) {
+    if (state.length === 0)
+      endReadable(this);
+    return null;
+  }
+
+  // All the actual chunk generation logic needs to be
+  // *below* the call to _read.  The reason is that in certain
+  // synthetic stream cases, such as passthrough streams, _read
+  // may be a completely synchronous operation which may change
+  // the state of the read buffer, providing enough data when
+  // before there was *not* enough.
+  //
+  // So, the steps are:
+  // 1. Figure out what the state of things will be after we do
+  // a read from the buffer.
+  //
+  // 2. If that resulting state will trigger a _read, then call _read.
+  // Note that this may be asynchronous, or synchronous.  Yes, it is
+  // deeply ugly to write APIs this way, but that still doesn't mean
+  // that the Readable class should behave improperly, as streams are
+  // designed to be sync/async agnostic.
+  // Take note if the _read call is sync or async (ie, if the read call
+  // has returned yet), so that we know whether or not it's safe to emit
+  // 'readable' etc.
+  //
+  // 3. Actually pull the requested chunks out of the buffer and return.
+
+  // if we need a readable event, then we need to do some reading.
+  var doRead = state.needReadable;
+
+  // if we currently have less than the highWaterMark, then also read some
+  if (state.length - n <= state.highWaterMark)
+    doRead = true;
+
+  // however, if we've ended, then there's no point, and if we're already
+  // reading, then it's unnecessary.
+  if (state.ended || state.reading)
+    doRead = false;
+
+  if (doRead) {
+    state.reading = true;
+    state.sync = true;
+    // if the length is currently zero, then we *need* a readable event.
+    if (state.length === 0)
+      state.needReadable = true;
+    // call internal read method
+    this._read(state.highWaterMark);
+    state.sync = false;
+  }
+
+  // If _read called its callback synchronously, then `reading`
+  // will be false, and we need to re-evaluate how much data we
+  // can return to the user.
+  if (doRead && !state.reading)
+    n = howMuchToRead(nOrig, state);
+
+  var ret;
+  if (n > 0)
+    ret = fromList(n, state);
+  else
+    ret = null;
+
+  if (ret === null) {
+    state.needReadable = true;
+    n = 0;
+  }
+
+  state.length -= n;
+
+  // If we have nothing in the buffer, then we want to know
+  // as soon as we *do* get something into the buffer.
+  if (state.length === 0 && !state.ended)
+    state.needReadable = true;
+
+  // If we happened to read() exactly the remaining amount in the
+  // buffer, and the EOF has been seen at this point, then make sure
+  // that we emit 'end' on the very next tick.
+  if (state.ended && !state.endEmitted && state.length === 0)
+    endReadable(this);
+
+  return ret;
+};
+
+function chunkInvalid(state, chunk) {
+  var er = null;
+  if (!Buffer.isBuffer(chunk) &&
+      'string' !== typeof chunk &&
+      chunk !== null &&
+      chunk !== undefined &&
+      !state.objectMode &&
+      !er) {
+    er = new TypeError('Invalid non-string/buffer chunk');
+  }
+  return er;
+}
+
+
+function onEofChunk(stream, state) {
+  if (state.decoder && !state.ended) {
+    var chunk = state.decoder.end();
+    if (chunk && chunk.length) {
+      state.buffer.push(chunk);
+      state.length += state.objectMode ? 1 : chunk.length;
+    }
+  }
+  state.ended = true;
+
+  // if we've ended and we have some data left, then emit
+  // 'readable' now to make sure it gets picked up.
+  if (state.length > 0)
+    emitReadable(stream);
+  else
+    endReadable(stream);
+}
+
+// Don't emit readable right away in sync mode, because this can trigger
+// another read() call => stack overflow.  This way, it might trigger
+// a nextTick recursion warning, but that's not so bad.
+function emitReadable(stream) {
+  var state = stream._readableState;
+  state.needReadable = false;
+  if (state.emittedReadable)
+    return;
+
+  state.emittedReadable = true;
+  if (state.sync)
+    setImmediate(function() {
+      emitReadable_(stream);
+    });
+  else
+    emitReadable_(stream);
+}
+
+function emitReadable_(stream) {
+  stream.emit('readable');
+}
+
+
+// at this point, the user has presumably seen the 'readable' event,
+// and called read() to consume some data.  that may have triggered
+// in turn another _read(n) call, in which case reading = true if
+// it's in progress.
+// However, if we're not ended, or reading, and the length < hwm,
+// then go ahead and try to read some more preemptively.
+function maybeReadMore(stream, state) {
+  if (!state.readingMore) {
+    state.readingMore = true;
+    setImmediate(function() {
+      maybeReadMore_(stream, state);
+    });
+  }
+}
+
+function maybeReadMore_(stream, state) {
+  var len = state.length;
+  while (!state.reading && !state.flowing && !state.ended &&
+         state.length < state.highWaterMark) {
+    stream.read(0);
+    if (len === state.length)
+      // didn't get any data, stop spinning.
+      break;
+    else
+      len = state.length;
+  }
+  state.readingMore = false;
+}
+
+// abstract method.  to be overridden in specific implementation classes.
+// call cb(er, data) where data is <= n in length.
+// for virtual (non-string, non-buffer) streams, "length" is somewhat
+// arbitrary, and perhaps not very meaningful.
+Readable.prototype._read = function(n) {
+  this.emit('error', new Error('not implemented'));
+};
+
+Readable.prototype.pipe = function(dest, pipeOpts) {
+  var src = this;
+  var state = this._readableState;
+
+  switch (state.pipesCount) {
+    case 0:
+      state.pipes = dest;
+      break;
+    case 1:
+      state.pipes = [state.pipes, dest];
+      break;
+    default:
+      state.pipes.push(dest);
+      break;
+  }
+  state.pipesCount += 1;
+
+  var doEnd = (!pipeOpts || pipeOpts.end !== false) &&
+              dest !== process.stdout &&
+              dest !== process.stderr;
+
+  var endFn = doEnd ? onend : cleanup;
+  if (state.endEmitted)
+    setImmediate(endFn);
+  else
+    src.once('end', endFn);
+
+  dest.on('unpipe', onunpipe);
+  function onunpipe(readable) {
+    if (readable !== src) return;
+    cleanup();
+  }
+
+  function onend() {
+    dest.end();
+  }
+
+  // when the dest drains, it reduces the awaitDrain counter
+  // on the source.  This would be more elegant with a .once()
+  // handler in flow(), but adding and removing repeatedly is
+  // too slow.
+  var ondrain = pipeOnDrain(src);
+  dest.on('drain', ondrain);
+
+  function cleanup() {
+    // cleanup event handlers once the pipe is broken
+    dest.removeListener('close', onclose);
+    dest.removeListener('finish', onfinish);
+    dest.removeListener('drain', ondrain);
+    dest.removeListener('error', onerror);
+    dest.removeListener('unpipe', onunpipe);
+    src.removeListener('end', onend);
+    src.removeListener('end', cleanup);
+
+    // if the reader is waiting for a drain event from this
+    // specific writer, then it would cause it to never start
+    // flowing again.
+    // So, if this is awaiting a drain, then we just call it now.
+    // If we don't know, then assume that we are waiting for one.
+    if (!dest._writableState || dest._writableState.needDrain)
+      ondrain();
+  }
+
+  // if the dest has an error, then stop piping into it.
+  // however, don't suppress the throwing behavior for this.
+  // check for listeners before emit removes one-time listeners.
+  var errListeners = EE.listenerCount(dest, 'error');
+  function onerror(er) {
+    unpipe();
+    if (errListeners === 0 && EE.listenerCount(dest, 'error') === 0)
+      dest.emit('error', er);
+  }
+  dest.once('error', onerror);
+
+  // Both close and finish should trigger unpipe, but only once.
+  function onclose() {
+    dest.removeListener('finish', onfinish);
+    unpipe();
+  }
+  dest.once('close', onclose);
+  function onfinish() {
+    dest.removeListener('close', onclose);
+    unpipe();
+  }
+  dest.once('finish', onfinish);
+
+  function unpipe() {
+    src.unpipe(dest);
+  }
+
+  // tell the dest that it's being piped to
+  dest.emit('pipe', src);
+
+  // start the flow if it hasn't been started already.
+  if (!state.flowing) {
+    // the handler that waits for readable events after all
+    // the data gets sucked out in flow.
+    // This would be easier to follow with a .once() handler
+    // in flow(), but that is too slow.
+    this.on('readable', pipeOnReadable);
+
+    state.flowing = true;
+    setImmediate(function() {
+      flow(src);
+    });
+  }
+
+  return dest;
+};
+
+function pipeOnDrain(src) {
+  return function() {
+    var dest = this;
+    var state = src._readableState;
+    state.awaitDrain--;
+    if (state.awaitDrain === 0)
+      flow(src);
+  };
+}
+
+function flow(src) {
+  var state = src._readableState;
+  var chunk;
+  state.awaitDrain = 0;
+
+  function write(dest, i, list) {
+    var written = dest.write(chunk);
+    if (false === written) {
+      state.awaitDrain++;
+    }
+  }
+
+  while (state.pipesCount && null !== (chunk = src.read())) {
+
+    if (state.pipesCount === 1)
+      write(state.pipes, 0, null);
+    else
+      forEach(state.pipes, write);
+
+    src.emit('data', chunk);
+
+    // if anyone needs a drain, then we have to wait for that.
+    if (state.awaitDrain > 0)
+      return;
+  }
+
+  // if every destination was unpiped, either before entering this
+  // function, or in the while loop, then stop flowing.
+  //
+  // NB: This is a pretty rare edge case.
+  if (state.pipesCount === 0) {
+    state.flowing = false;
+
+    // if there were data event listeners added, then switch to old mode.
+    if (EE.listenerCount(src, 'data') > 0)
+      emitDataEvents(src);
+    return;
+  }
+
+  // at this point, no one needed a drain, so we just ran out of data
+  // on the next readable event, start it over again.
+  state.ranOut = true;
+}
+
+function pipeOnReadable() {
+  if (this._readableState.ranOut) {
+    this._readableState.ranOut = false;
+    flow(this);
+  }
+}
+
+
+Readable.prototype.unpipe = function(dest) {
+  var state = this._readableState;
+
+  // if we're not piping anywhere, then do nothing.
+  if (state.pipesCount === 0)
+    return this;
+
+  // just one destination.  most common case.
+  if (state.pipesCount === 1) {
+    // passed in one, but it's not the right one.
+    if (dest && dest !== state.pipes)
+      return this;
+
+    if (!dest)
+      dest = state.pipes;
+
+    // got a match.
+    state.pipes = null;
+    state.pipesCount = 0;
+    this.removeListener('readable', pipeOnReadable);
+    state.flowing = false;
+    if (dest)
+      dest.emit('unpipe', this);
+    return this;
+  }
+
+  // slow case. multiple pipe destinations.
+
+  if (!dest) {
+    // remove all.
+    var dests = state.pipes;
+    var len = state.pipesCount;
+    state.pipes = null;
+    state.pipesCount = 0;
+    this.removeListener('readable', pipeOnReadable);
+    state.flowing = false;
+
+    for (var i = 0; i < len; i++)
+      dests[i].emit('unpipe', this);
+    return this;
+  }
+
+  // try to find the right one.
+  var i = indexOf(state.pipes, dest);
+  if (i === -1)
+    return this;
+
+  state.pipes.splice(i, 1);
+  state.pipesCount -= 1;
+  if (state.pipesCount === 1)
+    state.pipes = state.pipes[0];
+
+  dest.emit('unpipe', this);
+
+  return this;
+};
+
+// set up data events if they are asked for
+// Ensure readable listeners eventually get something
+Readable.prototype.on = function(ev, fn) {
+  var res = Stream.prototype.on.call(this, ev, fn);
+
+  if (ev === 'data' && !this._readableState.flowing)
+    emitDataEvents(this);
+
+  if (ev === 'readable' && this.readable) {
+    var state = this._readableState;
+    if (!state.readableListening) {
+      state.readableListening = true;
+      state.emittedReadable = false;
+      state.needReadable = true;
+      if (!state.reading) {
+        this.read(0);
+      } else if (state.length) {
+        emitReadable(this, state);
+      }
+    }
+  }
+
+  return res;
+};
+Readable.prototype.addListener = Readable.prototype.on;
+
+// pause() and resume() are remnants of the legacy readable stream API
+// If the user uses them, then switch into old mode.
+Readable.prototype.resume = function() {
+  emitDataEvents(this);
+  this.read(0);
+  this.emit('resume');
+};
+
+Readable.prototype.pause = function() {
+  emitDataEvents(this, true);
+  this.emit('pause');
+};
+
+function emitDataEvents(stream, startPaused) {
+  var state = stream._readableState;
+
+  if (state.flowing) {
+    // https://github.com/isaacs/readable-stream/issues/16
+    throw new Error('Cannot switch to old mode now.');
+  }
+
+  var paused = startPaused || false;
+  var readable = false;
+
+  // convert to an old-style stream.
+  stream.readable = true;
+  stream.pipe = Stream.prototype.pipe;
+  stream.on = stream.addListener = Stream.prototype.on;
+
+  stream.on('readable', function() {
+    readable = true;
+
+    var c;
+    while (!paused && (null !== (c = stream.read())))
+      stream.emit('data', c);
+
+    if (c === null) {
+      readable = false;
+      stream._readableState.needReadable = true;
+    }
+  });
+
+  stream.pause = function() {
+    paused = true;
+    this.emit('pause');
+  };
+
+  stream.resume = function() {
+    paused = false;
+    if (readable)
+      setImmediate(function() {
+        stream.emit('readable');
+      });
+    else
+      this.read(0);
+    this.emit('resume');
+  };
+
+  // now make it start, just in case it hadn't already.
+  stream.emit('readable');
+}
+
+// wrap an old-style stream as the async data source.
+// This is *not* part of the readable stream interface.
+// It is an ugly unfortunate mess of history.
+Readable.prototype.wrap = function(stream) {
+  var state = this._readableState;
+  var paused = false;
+
+  var self = this;
+  stream.on('end', function() {
+    if (state.decoder && !state.ended) {
+      var chunk = state.decoder.end();
+      if (chunk && chunk.length)
+        self.push(chunk);
+    }
+
+    self.push(null);
+  });
+
+  stream.on('data', function(chunk) {
+    if (state.decoder)
+      chunk = state.decoder.write(chunk);
+    if (!chunk || !state.objectMode && !chunk.length)
+      return;
+
+    var ret = self.push(chunk);
+    if (!ret) {
+      paused = true;
+      stream.pause();
+    }
+  });
+
+  // proxy all the other methods.
+  // important when wrapping filters and duplexes.
+  for (var i in stream) {
+    if (typeof stream[i] === 'function' &&
+        typeof this[i] === 'undefined') {
+      this[i] = function(method) { return function() {
+        return stream[method].apply(stream, arguments);
+      }}(i);
+    }
+  }
+
+  // proxy certain important events.
+  var events = ['error', 'close', 'destroy', 'pause', 'resume'];
+  forEach(events, function(ev) {
+    stream.on(ev, function (x) {
+      return self.emit.apply(self, ev, x);
+    });
+  });
+
+  // when we try to consume some more bytes, simply unpause the
+  // underlying stream.
+  self._read = function(n) {
+    if (paused) {
+      paused = false;
+      stream.resume();
+    }
+  };
+
+  return self;
+};
+
+
+
+// exposed for testing purposes only.
+Readable._fromList = fromList;
+
+// Pluck off n bytes from an array of buffers.
+// Length is the combined lengths of all the buffers in the list.
+function fromList(n, state) {
+  var list = state.buffer;
+  var length = state.length;
+  var stringMode = !!state.decoder;
+  var objectMode = !!state.objectMode;
+  var ret;
+
+  // nothing in the list, definitely empty.
+  if (list.length === 0)
+    return null;
+
+  if (length === 0)
+    ret = null;
+  else if (objectMode)
+    ret = list.shift();
+  else if (!n || n >= length) {
+    // read it all, truncate the array.
+    if (stringMode)
+      ret = list.join('');
+    else
+      ret = Buffer.concat(list, length);
+    list.length = 0;
+  } else {
+    // read just some of it.
+    if (n < list[0].length) {
+      // just take a part of the first list item.
+      // slice is the same for buffers and strings.
+      var buf = list[0];
+      ret = buf.slice(0, n);
+      list[0] = buf.slice(n);
+    } else if (n === list[0].length) {
+      // first list is a perfect match
+      ret = list.shift();
+    } else {
+      // complex case.
+      // we have enough to cover it, but it spans past the first buffer.
+      if (stringMode)
+        ret = '';
+      else
+        ret = new Buffer(n);
+
+      var c = 0;
+      for (var i = 0, l = list.length; i < l && c < n; i++) {
+        var buf = list[0];
+        var cpy = Math.min(n - c, buf.length);
+
+        if (stringMode)
+          ret += buf.slice(0, cpy);
+        else
+          buf.copy(ret, c, 0, cpy);
+
+        if (cpy < buf.length)
+          list[0] = buf.slice(cpy);
+        else
+          list.shift();
+
+        c += cpy;
+      }
+    }
+  }
+
+  return ret;
+}
+
+function endReadable(stream) {
+  var state = stream._readableState;
+
+  // If we get here before consuming all the bytes, then that is a
+  // bug in node.  Should never happen.
+  if (state.length > 0)
+    throw new Error('endReadable called on non-empty stream');
+
+  if (!state.endEmitted && state.calledRead) {
+    state.ended = true;
+    setImmediate(function() {
+      // Check that we didn't get one last unshift.
+      if (!state.endEmitted && state.length === 0) {
+        state.endEmitted = true;
+        stream.readable = false;
+        stream.emit('end');
+      }
+    });
+  }
+}
+
+function forEach (xs, f) {
+  for (var i = 0, l = xs.length; i < l; i++) {
+    f(xs[i], i);
+  }
+}
+
+function indexOf (xs, x) {
+  for (var i = 0, l = xs.length; i < l; i++) {
+    if (xs[i] === x) return i;
+  }
+  return -1;
+}
+
+}).call(this,_dereq_("v3go1D"))
+},{"./index.js":72,"buffer":7,"events":11,"inherits":17,"process/browser.js":73,"string_decoder":6,"v3go1D":29}],76:[function(_dereq_,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// a transform stream is a readable/writable stream where you do
+// something with the data.  Sometimes it's called a "filter",
+// but that's not a great name for it, since that implies a thing where
+// some bits pass through, and others are simply ignored.  (That would
+// be a valid example of a transform, of course.)
+//
+// While the output is causally related to the input, it's not a
+// necessarily symmetric or synchronous transformation.  For example,
+// a zlib stream might take multiple plain-text writes(), and then
+// emit a single compressed chunk some time in the future.
+//
+// Here's how this works:
+//
+// The Transform stream has all the aspects of the readable and writable
+// stream classes.  When you write(chunk), that calls _write(chunk,cb)
+// internally, and returns false if there's a lot of pending writes
+// buffered up.  When you call read(), that calls _read(n) until
+// there's enough pending readable data buffered up.
+//
+// In a transform stream, the written data is placed in a buffer.  When
+// _read(n) is called, it transforms the queued up data, calling the
+// buffered _write cb's as it consumes chunks.  If consuming a single
+// written chunk would result in multiple output chunks, then the first
+// outputted bit calls the readcb, and subsequent chunks just go into
+// the read buffer, and will cause it to emit 'readable' if necessary.
+//
+// This way, back-pressure is actually determined by the reading side,
+// since _read has to be called to start processing a new chunk.  However,
+// a pathological inflate type of transform can cause excessive buffering
+// here.  For example, imagine a stream where every byte of input is
+// interpreted as an integer from 0-255, and then results in that many
+// bytes of output.  Writing the 4 bytes {ff,ff,ff,ff} would result in
+// 1kb of data being output.  In this case, you could write a very small
+// amount of input, and end up with a very large amount of output.  In
+// such a pathological inflating mechanism, there'd be no way to tell
+// the system to stop doing the transform.  A single 4MB write could
+// cause the system to run out of memory.
+//
+// However, even in such a pathological case, only a single written chunk
+// would be consumed, and then the rest would wait (un-transformed) until
+// the results of the previous transformed chunk were consumed.
+
+module.exports = Transform;
+
+var Duplex = _dereq_('./duplex.js');
+var inherits = _dereq_('inherits');
+inherits(Transform, Duplex);
+
+
+function TransformState(options, stream) {
+  this.afterTransform = function(er, data) {
+    return afterTransform(stream, er, data);
+  };
+
+  this.needTransform = false;
+  this.transforming = false;
+  this.writecb = null;
+  this.writechunk = null;
+}
+
+function afterTransform(stream, er, data) {
+  var ts = stream._transformState;
+  ts.transforming = false;
+
+  var cb = ts.writecb;
+
+  if (!cb)
+    return stream.emit('error', new Error('no writecb in Transform class'));
+
+  ts.writechunk = null;
+  ts.writecb = null;
+
+  if (data !== null && data !== undefined)
+    stream.push(data);
+
+  if (cb)
+    cb(er);
+
+  var rs = stream._readableState;
+  rs.reading = false;
+  if (rs.needReadable || rs.length < rs.highWaterMark) {
+    stream._read(rs.highWaterMark);
+  }
+}
+
+
+function Transform(options) {
+  if (!(this instanceof Transform))
+    return new Transform(options);
+
+  Duplex.call(this, options);
+
+  var ts = this._transformState = new TransformState(options, this);
+
+  // when the writable side finishes, then flush out anything remaining.
+  var stream = this;
+
+  // start out asking for a readable event once data is transformed.
+  this._readableState.needReadable = true;
+
+  // we have implemented the _read method, and done the other things
+  // that Readable wants before the first _read call, so unset the
+  // sync guard flag.
+  this._readableState.sync = false;
+
+  this.once('finish', function() {
+    if ('function' === typeof this._flush)
+      this._flush(function(er) {
+        done(stream, er);
+      });
+    else
+      done(stream);
+  });
+}
+
+Transform.prototype.push = function(chunk, encoding) {
+  this._transformState.needTransform = false;
+  return Duplex.prototype.push.call(this, chunk, encoding);
+};
+
+// This is the part where you do stuff!
+// override this function in implementation classes.
+// 'chunk' is an input chunk.
+//
+// Call `push(newChunk)` to pass along transformed output
+// to the readable side.  You may call 'push' zero or more times.
+//
+// Call `cb(err)` when you are done with this chunk.  If you pass
+// an error, then that'll put the hurt on the whole operation.  If you
+// never call cb(), then you'll never get another chunk.
+Transform.prototype._transform = function(chunk, encoding, cb) {
+  throw new Error('not implemented');
+};
+
+Transform.prototype._write = function(chunk, encoding, cb) {
+  var ts = this._transformState;
+  ts.writecb = cb;
+  ts.writechunk = chunk;
+  ts.writeencoding = encoding;
+  if (!ts.transforming) {
+    var rs = this._readableState;
+    if (ts.needTransform ||
+        rs.needReadable ||
+        rs.length < rs.highWaterMark)
+      this._read(rs.highWaterMark);
+  }
+};
+
+// Doesn't matter what the args are here.
+// _transform does all the work.
+// That we got here means that the readable side wants more data.
+Transform.prototype._read = function(n) {
+  var ts = this._transformState;
+
+  if (ts.writechunk && ts.writecb && !ts.transforming) {
+    ts.transforming = true;
+    this._transform(ts.writechunk, ts.writeencoding, ts.afterTransform);
+  } else {
+    // mark that we need a transform, so that any data that comes in
+    // will get processed, now that we've asked for it.
+    ts.needTransform = true;
+  }
+};
+
+
+function done(stream, er) {
+  if (er)
+    return stream.emit('error', er);
+
+  // if there's nothing in the write buffer, then that means
+  // that nothing more will ever be provided
+  var ws = stream._writableState;
+  var rs = stream._readableState;
+  var ts = stream._transformState;
+
+  if (ws.length)
+    throw new Error('calling transform done when ws.length != 0');
+
+  if (ts.transforming)
+    throw new Error('calling transform done when still transforming');
+
+  return stream.push(null);
+}
+
+},{"./duplex.js":71,"inherits":17}],77:[function(_dereq_,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+// A bit simpler than readable streams.
+// Implement an async ._write(chunk, cb), and it'll handle all
+// the drain event emission and buffering.
+
+module.exports = Writable;
+Writable.WritableState = WritableState;
+
+var isUint8Array = typeof Uint8Array !== 'undefined'
+  ? function (x) { return x instanceof Uint8Array }
+  : function (x) {
+    return x && x.constructor && x.constructor.name === 'Uint8Array'
+  }
+;
+var isArrayBuffer = typeof ArrayBuffer !== 'undefined'
+  ? function (x) { return x instanceof ArrayBuffer }
+  : function (x) {
+    return x && x.constructor && x.constructor.name === 'ArrayBuffer'
+  }
+;
+
+var inherits = _dereq_('inherits');
+var Stream = _dereq_('./index.js');
+var setImmediate = _dereq_('process/browser.js').nextTick;
+var Buffer = _dereq_('buffer').Buffer;
+
+inherits(Writable, Stream);
+
+function WriteReq(chunk, encoding, cb) {
+  this.chunk = chunk;
+  this.encoding = encoding;
+  this.callback = cb;
+}
+
+function WritableState(options, stream) {
+  options = options || {};
+
+  // the point at which write() starts returning false
+  // Note: 0 is a valid value, means that we always return false if
+  // the entire buffer is not flushed immediately on write()
+  var hwm = options.highWaterMark;
+  this.highWaterMark = (hwm || hwm === 0) ? hwm : 16 * 1024;
+
+  // object stream flag to indicate whether or not this stream
+  // contains buffers or objects.
+  this.objectMode = !!options.objectMode;
+
+  // cast to ints.
+  this.highWaterMark = ~~this.highWaterMark;
+
+  this.needDrain = false;
+  // at the start of calling end()
+  this.ending = false;
+  // when end() has been called, and returned
+  this.ended = false;
+  // when 'finish' is emitted
+  this.finished = false;
+
+  // should we decode strings into buffers before passing to _write?
+  // this is here so that some node-core streams can optimize string
+  // handling at a lower level.
+  var noDecode = options.decodeStrings === false;
+  this.decodeStrings = !noDecode;
+
+  // Crypto is kind of old and crusty.  Historically, its default string
+  // encoding is 'binary' so we have to make this configurable.
+  // Everything else in the universe uses 'utf8', though.
+  this.defaultEncoding = options.defaultEncoding || 'utf8';
+
+  // not an actual buffer we keep track of, but a measurement
+  // of how much we're waiting to get pushed to some underlying
+  // socket or file.
+  this.length = 0;
+
+  // a flag to see when we're in the middle of a write.
+  this.writing = false;
+
+  // a flag to be able to tell if the onwrite cb is called immediately,
+  // or on a later tick.  We set this to true at first, becuase any
+  // actions that shouldn't happen until "later" should generally also
+  // not happen before the first write call.
+  this.sync = true;
+
+  // a flag to know if we're processing previously buffered items, which
+  // may call the _write() callback in the same tick, so that we don't
+  // end up in an overlapped onwrite situation.
+  this.bufferProcessing = false;
+
+  // the callback that's passed to _write(chunk,cb)
+  this.onwrite = function(er) {
+    onwrite(stream, er);
+  };
+
+  // the callback that the user supplies to write(chunk,encoding,cb)
+  this.writecb = null;
+
+  // the amount that is being written when _write is called.
+  this.writelen = 0;
+
+  this.buffer = [];
+}
+
+function Writable(options) {
+  // Writable ctor is applied to Duplexes, though they're not
+  // instanceof Writable, they're instanceof Readable.
+  if (!(this instanceof Writable) && !(this instanceof Stream.Duplex))
+    return new Writable(options);
+
+  this._writableState = new WritableState(options, this);
+
+  // legacy.
+  this.writable = true;
+
+  Stream.call(this);
+}
+
+// Otherwise people can pipe Writable streams, which is just wrong.
+Writable.prototype.pipe = function() {
+  this.emit('error', new Error('Cannot pipe. Not readable.'));
+};
+
+
+function writeAfterEnd(stream, state, cb) {
+  var er = new Error('write after end');
+  // TODO: defer error events consistently everywhere, not just the cb
+  stream.emit('error', er);
+  setImmediate(function() {
+    cb(er);
+  });
+}
+
+// If we get something that is not a buffer, string, null, or undefined,
+// and we're not in objectMode, then that's an error.
+// Otherwise stream chunks are all considered to be of length=1, and the
+// watermarks determine how many objects to keep in the buffer, rather than
+// how many bytes or characters.
+function validChunk(stream, state, chunk, cb) {
+  var valid = true;
+  if (!Buffer.isBuffer(chunk) &&
+      'string' !== typeof chunk &&
+      chunk !== null &&
+      chunk !== undefined &&
+      !state.objectMode) {
+    var er = new TypeError('Invalid non-string/buffer chunk');
+    stream.emit('error', er);
+    setImmediate(function() {
+      cb(er);
+    });
+    valid = false;
+  }
+  return valid;
+}
+
+Writable.prototype.write = function(chunk, encoding, cb) {
+  var state = this._writableState;
+  var ret = false;
+
+  if (typeof encoding === 'function') {
+    cb = encoding;
+    encoding = null;
+  }
+
+  if (!Buffer.isBuffer(chunk) && isUint8Array(chunk))
+    chunk = new Buffer(chunk);
+  if (isArrayBuffer(chunk) && typeof Uint8Array !== 'undefined')
+    chunk = new Buffer(new Uint8Array(chunk));
+  
+  if (Buffer.isBuffer(chunk))
+    encoding = 'buffer';
+  else if (!encoding)
+    encoding = state.defaultEncoding;
+
+  if (typeof cb !== 'function')
+    cb = function() {};
+
+  if (state.ended)
+    writeAfterEnd(this, state, cb);
+  else if (validChunk(this, state, chunk, cb))
+    ret = writeOrBuffer(this, state, chunk, encoding, cb);
+
+  return ret;
+};
+
+function decodeChunk(state, chunk, encoding) {
+  if (!state.objectMode &&
+      state.decodeStrings !== false &&
+      typeof chunk === 'string') {
+    chunk = new Buffer(chunk, encoding);
+  }
+  return chunk;
+}
+
+// if we're already writing something, then just put this
+// in the queue, and wait our turn.  Otherwise, call _write
+// If we return false, then we need a drain event, so set that flag.
+function writeOrBuffer(stream, state, chunk, encoding, cb) {
+  chunk = decodeChunk(state, chunk, encoding);
+  var len = state.objectMode ? 1 : chunk.length;
+
+  state.length += len;
+
+  var ret = state.length < state.highWaterMark;
+  state.needDrain = !ret;
+
+  if (state.writing)
+    state.buffer.push(new WriteReq(chunk, encoding, cb));
+  else
+    doWrite(stream, state, len, chunk, encoding, cb);
+
+  return ret;
+}
+
+function doWrite(stream, state, len, chunk, encoding, cb) {
+  state.writelen = len;
+  state.writecb = cb;
+  state.writing = true;
+  state.sync = true;
+  stream._write(chunk, encoding, state.onwrite);
+  state.sync = false;
+}
+
+function onwriteError(stream, state, sync, er, cb) {
+  if (sync)
+    setImmediate(function() {
+      cb(er);
+    });
+  else
+    cb(er);
+
+  stream.emit('error', er);
+}
+
+function onwriteStateUpdate(state) {
+  state.writing = false;
+  state.writecb = null;
+  state.length -= state.writelen;
+  state.writelen = 0;
+}
+
+function onwrite(stream, er) {
+  var state = stream._writableState;
+  var sync = state.sync;
+  var cb = state.writecb;
+
+  onwriteStateUpdate(state);
+
+  if (er)
+    onwriteError(stream, state, sync, er, cb);
+  else {
+    // Check if we're actually ready to finish, but don't emit yet
+    var finished = needFinish(stream, state);
+
+    if (!finished && !state.bufferProcessing && state.buffer.length)
+      clearBuffer(stream, state);
+
+    if (sync) {
+      setImmediate(function() {
+        afterWrite(stream, state, finished, cb);
+      });
+    } else {
+      afterWrite(stream, state, finished, cb);
+    }
+  }
+}
+
+function afterWrite(stream, state, finished, cb) {
+  if (!finished)
+    onwriteDrain(stream, state);
+  cb();
+  if (finished)
+    finishMaybe(stream, state);
+}
+
+// Must force callback to be called on nextTick, so that we don't
+// emit 'drain' before the write() consumer gets the 'false' return
+// value, and has a chance to attach a 'drain' listener.
+function onwriteDrain(stream, state) {
+  if (state.length === 0 && state.needDrain) {
+    state.needDrain = false;
+    stream.emit('drain');
+  }
+}
+
+
+// if there's something in the buffer waiting, then process it
+function clearBuffer(stream, state) {
+  state.bufferProcessing = true;
+
+  for (var c = 0; c < state.buffer.length; c++) {
+    var entry = state.buffer[c];
+    var chunk = entry.chunk;
+    var encoding = entry.encoding;
+    var cb = entry.callback;
+    var len = state.objectMode ? 1 : chunk.length;
+
+    doWrite(stream, state, len, chunk, encoding, cb);
+
+    // if we didn't call the onwrite immediately, then
+    // it means that we need to wait until it does.
+    // also, that means that the chunk and cb are currently
+    // being processed, so move the buffer counter past them.
+    if (state.writing) {
+      c++;
+      break;
+    }
+  }
+
+  state.bufferProcessing = false;
+  if (c < state.buffer.length)
+    state.buffer = state.buffer.slice(c);
+  else
+    state.buffer.length = 0;
+}
+
+Writable.prototype._write = function(chunk, encoding, cb) {
+  cb(new Error('not implemented'));
+};
+
+Writable.prototype.end = function(chunk, encoding, cb) {
+  var state = this._writableState;
+
+  if (typeof chunk === 'function') {
+    cb = chunk;
+    chunk = null;
+    encoding = null;
+  } else if (typeof encoding === 'function') {
+    cb = encoding;
+    encoding = null;
+  }
+
+  if (typeof chunk !== 'undefined' && chunk !== null)
+    this.write(chunk, encoding);
+
+  // ignore unnecessary end() calls.
+  if (!state.ending && !state.finished)
+    endWritable(this, state, cb);
+};
+
+
+function needFinish(stream, state) {
+  return (state.ending &&
+          state.length === 0 &&
+          !state.finished &&
+          !state.writing);
+}
+
+function finishMaybe(stream, state) {
+  var need = needFinish(stream, state);
+  if (need) {
+    state.finished = true;
+    stream.emit('finish');
+  }
+  return need;
+}
+
+function endWritable(stream, state, cb) {
+  state.ending = true;
+  finishMaybe(stream, state);
+  if (cb) {
+    if (state.finished)
+      setImmediate(cb);
+    else
+      stream.once('finish', cb);
+  }
+  state.ended = true;
+}
+
+},{"./index.js":72,"buffer":7,"inherits":17,"process/browser.js":73}],78:[function(_dereq_,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+var punycode = _dereq_('punycode');
+
+exports.parse = urlParse;
+exports.resolve = urlResolve;
+exports.resolveObject = urlResolveObject;
+exports.format = urlFormat;
+
+exports.Url = Url;
+
+function Url() {
+  this.protocol = null;
+  this.slashes = null;
+  this.auth = null;
+  this.host = null;
+  this.port = null;
+  this.hostname = null;
+  this.hash = null;
+  this.search = null;
+  this.query = null;
+  this.pathname = null;
+  this.path = null;
+  this.href = null;
+}
+
+// Reference: RFC 3986, RFC 1808, RFC 2396
+
+// define these here so at least they only have to be
+// compiled once on the first module load.
+var protocolPattern = /^([a-z0-9.+-]+:)/i,
+    portPattern = /:[0-9]*$/,
+
+    // RFC 2396: characters reserved for delimiting URLs.
+    // We actually just auto-escape these.
+    delims = ['<', '>', '"', '`', ' ', '\r', '\n', '\t'],
+
+    // RFC 2396: characters not allowed for various reasons.
+    unwise = ['{', '}', '|', '\\', '^', '`'].concat(delims),
+
+    // Allowed by RFCs, but cause of XSS attacks.  Always escape these.
+    autoEscape = ['\''].concat(unwise),
+    // Characters that are never ever allowed in a hostname.
+    // Note that any invalid chars are also handled, but these
+    // are the ones that are *expected* to be seen, so we fast-path
+    // them.
+    nonHostChars = ['%', '/', '?', ';', '#'].concat(autoEscape),
+    hostEndingChars = ['/', '?', '#'],
+    hostnameMaxLen = 255,
+    hostnamePartPattern = /^[a-z0-9A-Z_-]{0,63}$/,
+    hostnamePartStart = /^([a-z0-9A-Z_-]{0,63})(.*)$/,
+    // protocols that can allow "unsafe" and "unwise" chars.
+    unsafeProtocol = {
+      'javascript': true,
+      'javascript:': true
+    },
+    // protocols that never have a hostname.
+    hostlessProtocol = {
+      'javascript': true,
+      'javascript:': true
+    },
+    // protocols that always contain a // bit.
+    slashedProtocol = {
+      'http': true,
+      'https': true,
+      'ftp': true,
+      'gopher': true,
+      'file': true,
+      'http:': true,
+      'https:': true,
+      'ftp:': true,
+      'gopher:': true,
+      'file:': true
+    },
+    querystring = _dereq_('querystring');
+
+function urlParse(url, parseQueryString, slashesDenoteHost) {
+  if (url && isObject(url) && url instanceof Url) return url;
+
+  var u = new Url;
+  u.parse(url, parseQueryString, slashesDenoteHost);
+  return u;
+}
+
+Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
+  if (!isString(url)) {
+    throw new TypeError("Parameter 'url' must be a string, not " + typeof url);
+  }
+
+  var rest = url;
+
+  // trim before proceeding.
+  // This is to support parse stuff like "  http://foo.com  \n"
+  rest = rest.trim();
+
+  var proto = protocolPattern.exec(rest);
+  if (proto) {
+    proto = proto[0];
+    var lowerProto = proto.toLowerCase();
+    this.protocol = lowerProto;
+    rest = rest.substr(proto.length);
+  }
+
+  // figure out if it's got a host
+  // user@server is *always* interpreted as a hostname, and url
+  // resolution will treat //foo/bar as host=foo,path=bar because that's
+  // how the browser resolves relative URLs.
+  if (slashesDenoteHost || proto || rest.match(/^\/\/[^@\/]+@[^@\/]+/)) {
+    var slashes = rest.substr(0, 2) === '//';
+    if (slashes && !(proto && hostlessProtocol[proto])) {
+      rest = rest.substr(2);
+      this.slashes = true;
+    }
+  }
+
+  if (!hostlessProtocol[proto] &&
+      (slashes || (proto && !slashedProtocol[proto]))) {
+
+    // there's a hostname.
+    // the first instance of /, ?, ;, or # ends the host.
+    //
+    // If there is an @ in the hostname, then non-host chars *are* allowed
+    // to the left of the last @ sign, unless some host-ending character
+    // comes *before* the @-sign.
+    // URLs are obnoxious.
+    //
+    // ex:
+    // http://a@b@c/ => user:a@b host:c
+    // http://a@b?@c => user:a host:c path:/?@c
+
+    // v0.12 TODO(isaacs): This is not quite how Chrome does things.
+    // Review our test case against browsers more comprehensively.
+
+    // find the first instance of any hostEndingChars
+    var hostEnd = -1;
+    for (var i = 0; i < hostEndingChars.length; i++) {
+      var hec = rest.indexOf(hostEndingChars[i]);
+      if (hec !== -1 && (hostEnd === -1 || hec < hostEnd))
+        hostEnd = hec;
+    }
+
+    // at this point, either we have an explicit point where the
+    // auth portion cannot go past, or the last @ char is the decider.
+    var auth, atSign;
+    if (hostEnd === -1) {
+      // atSign can be anywhere.
+      atSign = rest.lastIndexOf('@');
+    } else {
+      // atSign must be in auth portion.
+      // http://a@b/c@d => host:b auth:a path:/c@d
+      atSign = rest.lastIndexOf('@', hostEnd);
+    }
+
+    // Now we have a portion which is definitely the auth.
+    // Pull that off.
+    if (atSign !== -1) {
+      auth = rest.slice(0, atSign);
+      rest = rest.slice(atSign + 1);
+      this.auth = decodeURIComponent(auth);
+    }
+
+    // the host is the remaining to the left of the first non-host char
+    hostEnd = -1;
+    for (var i = 0; i < nonHostChars.length; i++) {
+      var hec = rest.indexOf(nonHostChars[i]);
+      if (hec !== -1 && (hostEnd === -1 || hec < hostEnd))
+        hostEnd = hec;
+    }
+    // if we still have not hit it, then the entire thing is a host.
+    if (hostEnd === -1)
+      hostEnd = rest.length;
+
+    this.host = rest.slice(0, hostEnd);
+    rest = rest.slice(hostEnd);
+
+    // pull out port.
+    this.parseHost();
+
+    // we've indicated that there is a hostname,
+    // so even if it's empty, it has to be present.
+    this.hostname = this.hostname || '';
+
+    // if hostname begins with [ and ends with ]
+    // assume that it's an IPv6 address.
+    var ipv6Hostname = this.hostname[0] === '[' &&
+        this.hostname[this.hostname.length - 1] === ']';
+
+    // validate a little.
+    if (!ipv6Hostname) {
+      var hostparts = this.hostname.split(/\./);
+      for (var i = 0, l = hostparts.length; i < l; i++) {
+        var part = hostparts[i];
+        if (!part) continue;
+        if (!part.match(hostnamePartPattern)) {
+          var newpart = '';
+          for (var j = 0, k = part.length; j < k; j++) {
+            if (part.charCodeAt(j) > 127) {
+              // we replace non-ASCII char with a temporary placeholder
+              // we need this to make sure size of hostname is not
+              // broken by replacing non-ASCII by nothing
+              newpart += 'x';
+            } else {
+              newpart += part[j];
+            }
+          }
+          // we test again with ASCII char only
+          if (!newpart.match(hostnamePartPattern)) {
+            var validParts = hostparts.slice(0, i);
+            var notHost = hostparts.slice(i + 1);
+            var bit = part.match(hostnamePartStart);
+            if (bit) {
+              validParts.push(bit[1]);
+              notHost.unshift(bit[2]);
+            }
+            if (notHost.length) {
+              rest = '/' + notHost.join('.') + rest;
+            }
+            this.hostname = validParts.join('.');
+            break;
+          }
+        }
+      }
+    }
+
+    if (this.hostname.length > hostnameMaxLen) {
+      this.hostname = '';
+    } else {
+      // hostnames are always lower case.
+      this.hostname = this.hostname.toLowerCase();
+    }
+
+    if (!ipv6Hostname) {
+      // IDNA Support: Returns a puny coded representation of "domain".
+      // It only converts the part of the domain name that
+      // has non ASCII characters. I.e. it dosent matter if
+      // you call it with a domain that already is in ASCII.
+      var domainArray = this.hostname.split('.');
+      var newOut = [];
+      for (var i = 0; i < domainArray.length; ++i) {
+        var s = domainArray[i];
+        newOut.push(s.match(/[^A-Za-z0-9_-]/) ?
+            'xn--' + punycode.encode(s) : s);
+      }
+      this.hostname = newOut.join('.');
+    }
+
+    var p = this.port ? ':' + this.port : '';
+    var h = this.hostname || '';
+    this.host = h + p;
+    this.href += this.host;
+
+    // strip [ and ] from the hostname
+    // the host field still retains them, though
+    if (ipv6Hostname) {
+      this.hostname = this.hostname.substr(1, this.hostname.length - 2);
+      if (rest[0] !== '/') {
+        rest = '/' + rest;
+      }
+    }
+  }
+
+  // now rest is set to the post-host stuff.
+  // chop off any delim chars.
+  if (!unsafeProtocol[lowerProto]) {
+
+    // First, make 100% sure that any "autoEscape" chars get
+    // escaped, even if encodeURIComponent doesn't think they
+    // need to be.
+    for (var i = 0, l = autoEscape.length; i < l; i++) {
+      var ae = autoEscape[i];
+      var esc = encodeURIComponent(ae);
+      if (esc === ae) {
+        esc = escape(ae);
+      }
+      rest = rest.split(ae).join(esc);
+    }
+  }
+
+
+  // chop off from the tail first.
+  var hash = rest.indexOf('#');
+  if (hash !== -1) {
+    // got a fragment string.
+    this.hash = rest.substr(hash);
+    rest = rest.slice(0, hash);
+  }
+  var qm = rest.indexOf('?');
+  if (qm !== -1) {
+    this.search = rest.substr(qm);
+    this.query = rest.substr(qm + 1);
+    if (parseQueryString) {
+      this.query = querystring.parse(this.query);
+    }
+    rest = rest.slice(0, qm);
+  } else if (parseQueryString) {
+    // no query string, but parseQueryString still requested
+    this.search = '';
+    this.query = {};
+  }
+  if (rest) this.pathname = rest;
+  if (slashedProtocol[lowerProto] &&
+      this.hostname && !this.pathname) {
+    this.pathname = '/';
+  }
+
+  //to support http.request
+  if (this.pathname || this.search) {
+    var p = this.pathname || '';
+    var s = this.search || '';
+    this.path = p + s;
+  }
+
+  // finally, reconstruct the href based on what has been validated.
+  this.href = this.format();
+  return this;
+};
+
+// format a parsed object into a url string
+function urlFormat(obj) {
+  // ensure it's an object, and not a string url.
+  // If it's an obj, this is a no-op.
+  // this way, you can call url_format() on strings
+  // to clean up potentially wonky urls.
+  if (isString(obj)) obj = urlParse(obj);
+  if (!(obj instanceof Url)) return Url.prototype.format.call(obj);
+  return obj.format();
+}
+
+Url.prototype.format = function() {
+  var auth = this.auth || '';
+  if (auth) {
+    auth = encodeURIComponent(auth);
+    auth = auth.replace(/%3A/i, ':');
+    auth += '@';
+  }
+
+  var protocol = this.protocol || '',
+      pathname = this.pathname || '',
+      hash = this.hash || '',
+      host = false,
+      query = '';
+
+  if (this.host) {
+    host = auth + this.host;
+  } else if (this.hostname) {
+    host = auth + (this.hostname.indexOf(':') === -1 ?
+        this.hostname :
+        '[' + this.hostname + ']');
+    if (this.port) {
+      host += ':' + this.port;
+    }
+  }
+
+  if (this.query &&
+      isObject(this.query) &&
+      Object.keys(this.query).length) {
+    query = querystring.stringify(this.query);
+  }
+
+  var search = this.search || (query && ('?' + query)) || '';
+
+  if (protocol && protocol.substr(-1) !== ':') protocol += ':';
+
+  // only the slashedProtocols get the //.  Not mailto:, xmpp:, etc.
+  // unless they had them to begin with.
+  if (this.slashes ||
+      (!protocol || slashedProtocol[protocol]) && host !== false) {
+    host = '//' + (host || '');
+    if (pathname && pathname.charAt(0) !== '/') pathname = '/' + pathname;
+  } else if (!host) {
+    host = '';
+  }
+
+  if (hash && hash.charAt(0) !== '#') hash = '#' + hash;
+  if (search && search.charAt(0) !== '?') search = '?' + search;
+
+  pathname = pathname.replace(/[?#]/g, function(match) {
+    return encodeURIComponent(match);
+  });
+  search = search.replace('#', '%23');
+
+  return protocol + host + pathname + search + hash;
+};
+
+function urlResolve(source, relative) {
+  return urlParse(source, false, true).resolve(relative);
+}
+
+Url.prototype.resolve = function(relative) {
+  return this.resolveObject(urlParse(relative, false, true)).format();
+};
+
+function urlResolveObject(source, relative) {
+  if (!source) return relative;
+  return urlParse(source, false, true).resolveObject(relative);
+}
+
+Url.prototype.resolveObject = function(relative) {
+  if (isString(relative)) {
+    var rel = new Url();
+    rel.parse(relative, false, true);
+    relative = rel;
+  }
+
+  var result = new Url();
+  Object.keys(this).forEach(function(k) {
+    result[k] = this[k];
+  }, this);
+
+  // hash is always overridden, no matter what.
+  // even href="" will remove it.
+  result.hash = relative.hash;
+
+  // if the relative url is empty, then there's nothing left to do here.
+  if (relative.href === '') {
+    result.href = result.format();
+    return result;
+  }
+
+  // hrefs like //foo/bar always cut to the protocol.
+  if (relative.slashes && !relative.protocol) {
+    // take everything except the protocol from relative
+    Object.keys(relative).forEach(function(k) {
+      if (k !== 'protocol')
+        result[k] = relative[k];
+    });
+
+    //urlParse appends trailing / to urls like http://www.example.com
+    if (slashedProtocol[result.protocol] &&
+        result.hostname && !result.pathname) {
+      result.path = result.pathname = '/';
+    }
+
+    result.href = result.format();
+    return result;
+  }
+
+  if (relative.protocol && relative.protocol !== result.protocol) {
+    // if it's a known url protocol, then changing
+    // the protocol does weird things
+    // first, if it's not file:, then we MUST have a host,
+    // and if there was a path
+    // to begin with, then we MUST have a path.
+    // if it is file:, then the host is dropped,
+    // because that's known to be hostless.
+    // anything else is assumed to be absolute.
+    if (!slashedProtocol[relative.protocol]) {
+      Object.keys(relative).forEach(function(k) {
+        result[k] = relative[k];
+      });
+      result.href = result.format();
+      return result;
+    }
+
+    result.protocol = relative.protocol;
+    if (!relative.host && !hostlessProtocol[relative.protocol]) {
+      var relPath = (relative.pathname || '').split('/');
+      while (relPath.length && !(relative.host = relPath.shift()));
+      if (!relative.host) relative.host = '';
+      if (!relative.hostname) relative.hostname = '';
+      if (relPath[0] !== '') relPath.unshift('');
+      if (relPath.length < 2) relPath.unshift('');
+      result.pathname = relPath.join('/');
+    } else {
+      result.pathname = relative.pathname;
+    }
+    result.search = relative.search;
+    result.query = relative.query;
+    result.host = relative.host || '';
+    result.auth = relative.auth;
+    result.hostname = relative.hostname || relative.host;
+    result.port = relative.port;
+    // to support http.request
+    if (result.pathname || result.search) {
+      var p = result.pathname || '';
+      var s = result.search || '';
+      result.path = p + s;
+    }
+    result.slashes = result.slashes || relative.slashes;
+    result.href = result.format();
+    return result;
+  }
+
+  var isSourceAbs = (result.pathname && result.pathname.charAt(0) === '/'),
+      isRelAbs = (
+          relative.host ||
+          relative.pathname && relative.pathname.charAt(0) === '/'
+      ),
+      mustEndAbs = (isRelAbs || isSourceAbs ||
+                    (result.host && relative.pathname)),
+      removeAllDots = mustEndAbs,
+      srcPath = result.pathname && result.pathname.split('/') || [],
+      relPath = relative.pathname && relative.pathname.split('/') || [],
+      psychotic = result.protocol && !slashedProtocol[result.protocol];
+
+  // if the url is a non-slashed url, then relative
+  // links like ../.. should be able
+  // to crawl up to the hostname, as well.  This is strange.
+  // result.protocol has already been set by now.
+  // Later on, put the first path part into the host field.
+  if (psychotic) {
+    result.hostname = '';
+    result.port = null;
+    if (result.host) {
+      if (srcPath[0] === '') srcPath[0] = result.host;
+      else srcPath.unshift(result.host);
+    }
+    result.host = '';
+    if (relative.protocol) {
+      relative.hostname = null;
+      relative.port = null;
+      if (relative.host) {
+        if (relPath[0] === '') relPath[0] = relative.host;
+        else relPath.unshift(relative.host);
+      }
+      relative.host = null;
+    }
+    mustEndAbs = mustEndAbs && (relPath[0] === '' || srcPath[0] === '');
+  }
+
+  if (isRelAbs) {
+    // it's absolute.
+    result.host = (relative.host || relative.host === '') ?
+                  relative.host : result.host;
+    result.hostname = (relative.hostname || relative.hostname === '') ?
+                      relative.hostname : result.hostname;
+    result.search = relative.search;
+    result.query = relative.query;
+    srcPath = relPath;
+    // fall through to the dot-handling below.
+  } else if (relPath.length) {
+    // it's relative
+    // throw away the existing file, and take the new path instead.
+    if (!srcPath) srcPath = [];
+    srcPath.pop();
+    srcPath = srcPath.concat(relPath);
+    result.search = relative.search;
+    result.query = relative.query;
+  } else if (!isNullOrUndefined(relative.search)) {
+    // just pull out the search.
+    // like href='?foo'.
+    // Put this after the other two cases because it simplifies the booleans
+    if (psychotic) {
+      result.hostname = result.host = srcPath.shift();
+      //occationaly the auth can get stuck only in host
+      //this especialy happens in cases like
+      //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
+      var authInHost = result.host && result.host.indexOf('@') > 0 ?
+                       result.host.split('@') : false;
+      if (authInHost) {
+        result.auth = authInHost.shift();
+        result.host = result.hostname = authInHost.shift();
+      }
+    }
+    result.search = relative.search;
+    result.query = relative.query;
+    //to support http.request
+    if (!isNull(result.pathname) || !isNull(result.search)) {
+      result.path = (result.pathname ? result.pathname : '') +
+                    (result.search ? result.search : '');
+    }
+    result.href = result.format();
+    return result;
+  }
+
+  if (!srcPath.length) {
+    // no path at all.  easy.
+    // we've already handled the other stuff above.
+    result.pathname = null;
+    //to support http.request
+    if (result.search) {
+      result.path = '/' + result.search;
+    } else {
+      result.path = null;
+    }
+    result.href = result.format();
+    return result;
+  }
+
+  // if a url ENDs in . or .., then it must get a trailing slash.
+  // however, if it ends in anything else non-slashy,
+  // then it must NOT get a trailing slash.
+  var last = srcPath.slice(-1)[0];
+  var hasTrailingSlash = (
+      (result.host || relative.host) && (last === '.' || last === '..') ||
+      last === '');
+
+  // strip single dots, resolve double dots to parent dir
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = srcPath.length; i >= 0; i--) {
+    last = srcPath[i];
+    if (last == '.') {
+      srcPath.splice(i, 1);
+    } else if (last === '..') {
+      srcPath.splice(i, 1);
+      up++;
+    } else if (up) {
+      srcPath.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (!mustEndAbs && !removeAllDots) {
+    for (; up--; up) {
+      srcPath.unshift('..');
+    }
+  }
+
+  if (mustEndAbs && srcPath[0] !== '' &&
+      (!srcPath[0] || srcPath[0].charAt(0) !== '/')) {
+    srcPath.unshift('');
+  }
+
+  if (hasTrailingSlash && (srcPath.join('/').substr(-1) !== '/')) {
+    srcPath.push('');
+  }
+
+  var isAbsolute = srcPath[0] === '' ||
+      (srcPath[0] && srcPath[0].charAt(0) === '/');
+
+  // put the host back
+  if (psychotic) {
+    result.hostname = result.host = isAbsolute ? '' :
+                                    srcPath.length ? srcPath.shift() : '';
+    //occationaly the auth can get stuck only in host
+    //this especialy happens in cases like
+    //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
+    var authInHost = result.host && result.host.indexOf('@') > 0 ?
+                     result.host.split('@') : false;
+    if (authInHost) {
+      result.auth = authInHost.shift();
+      result.host = result.hostname = authInHost.shift();
+    }
+  }
+
+  mustEndAbs = mustEndAbs || (result.host && srcPath.length);
+
+  if (mustEndAbs && !isAbsolute) {
+    srcPath.unshift('');
+  }
+
+  if (!srcPath.length) {
+    result.pathname = null;
+    result.path = null;
+  } else {
+    result.pathname = srcPath.join('/');
+  }
+
+  //to support request.http
+  if (!isNull(result.pathname) || !isNull(result.search)) {
+    result.path = (result.pathname ? result.pathname : '') +
+                  (result.search ? result.search : '');
+  }
+  result.auth = relative.auth || result.auth;
+  result.slashes = result.slashes || relative.slashes;
+  result.href = result.format();
+  return result;
+};
+
+Url.prototype.parseHost = function() {
+  var host = this.host;
+  var port = portPattern.exec(host);
+  if (port) {
+    port = port[0];
+    if (port !== ':') {
+      this.port = port.substr(1);
+    }
+    host = host.substr(0, host.length - port.length);
+  }
+  if (host) this.hostname = host;
+};
+
+function isString(arg) {
+  return typeof arg === "string";
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isNull(arg) {
+  return arg === null;
+}
+function isNullOrUndefined(arg) {
+  return  arg == null;
+}
+
+},{"punycode":5,"querystring":32}],79:[function(_dereq_,module,exports){
+module.exports=_dereq_(17)
+},{}],80:[function(_dereq_,module,exports){
+module.exports = function isBuffer(arg) {
+  return arg && typeof arg === 'object'
+    && typeof arg.copy === 'function'
+    && typeof arg.fill === 'function'
+    && typeof arg.readUInt8 === 'function';
+}
+},{}],81:[function(_dereq_,module,exports){
+(function (process,global){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+var formatRegExp = /%[sdj%]/g;
+exports.format = function(f) {
+  if (!isString(f)) {
+    var objects = [];
+    for (var i = 0; i < arguments.length; i++) {
+      objects.push(inspect(arguments[i]));
+    }
+    return objects.join(' ');
+  }
+
+  var i = 1;
+  var args = arguments;
+  var len = args.length;
+  var str = String(f).replace(formatRegExp, function(x) {
+    if (x === '%%') return '%';
+    if (i >= len) return x;
+    switch (x) {
+      case '%s': return String(args[i++]);
+      case '%d': return Number(args[i++]);
+      case '%j':
+        try {
+          return JSON.stringify(args[i++]);
+        } catch (_) {
+          return '[Circular]';
+        }
+      default:
+        return x;
+    }
+  });
+  for (var x = args[i]; i < len; x = args[++i]) {
+    if (isNull(x) || !isObject(x)) {
+      str += ' ' + x;
+    } else {
+      str += ' ' + inspect(x);
+    }
+  }
+  return str;
+};
+
+
+// Mark that a method should not be used.
+// Returns a modified function which warns once by default.
+// If --no-deprecation is set, then it is a no-op.
+exports.deprecate = function(fn, msg) {
+  // Allow for deprecating things in the process of starting up.
+  if (isUndefined(global.process)) {
+    return function() {
+      return exports.deprecate(fn, msg).apply(this, arguments);
+    };
+  }
+
+  if (process.noDeprecation === true) {
+    return fn;
+  }
+
+  var warned = false;
+  function deprecated() {
+    if (!warned) {
+      if (process.throwDeprecation) {
+        throw new Error(msg);
+      } else if (process.traceDeprecation) {
+        console.trace(msg);
+      } else {
+        console.error(msg);
+      }
+      warned = true;
+    }
+    return fn.apply(this, arguments);
+  }
+
+  return deprecated;
+};
+
+
+var debugs = {};
+var debugEnviron;
+exports.debuglog = function(set) {
+  if (isUndefined(debugEnviron))
+    debugEnviron = process.env.NODE_DEBUG || '';
+  set = set.toUpperCase();
+  if (!debugs[set]) {
+    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
+      var pid = process.pid;
+      debugs[set] = function() {
+        var msg = exports.format.apply(exports, arguments);
+        console.error('%s %d: %s', set, pid, msg);
+      };
+    } else {
+      debugs[set] = function() {};
+    }
+  }
+  return debugs[set];
+};
+
+
+/**
+ * Echos the value of a value. Trys to print the value out
+ * in the best way possible given the different types.
+ *
+ * @param {Object} obj The object to print out.
+ * @param {Object} opts Optional options object that alters the output.
+ */
+/* legacy: obj, showHidden, depth, colors*/
+function inspect(obj, opts) {
+  // default options
+  var ctx = {
+    seen: [],
+    stylize: stylizeNoColor
+  };
+  // legacy...
+  if (arguments.length >= 3) ctx.depth = arguments[2];
+  if (arguments.length >= 4) ctx.colors = arguments[3];
+  if (isBoolean(opts)) {
+    // legacy...
+    ctx.showHidden = opts;
+  } else if (opts) {
+    // got an "options" object
+    exports._extend(ctx, opts);
+  }
+  // set default options
+  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
+  if (isUndefined(ctx.depth)) ctx.depth = 2;
+  if (isUndefined(ctx.colors)) ctx.colors = false;
+  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
+  if (ctx.colors) ctx.stylize = stylizeWithColor;
+  return formatValue(ctx, obj, ctx.depth);
+}
+exports.inspect = inspect;
+
+
+// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+inspect.colors = {
+  'bold' : [1, 22],
+  'italic' : [3, 23],
+  'underline' : [4, 24],
+  'inverse' : [7, 27],
+  'white' : [37, 39],
+  'grey' : [90, 39],
+  'black' : [30, 39],
+  'blue' : [34, 39],
+  'cyan' : [36, 39],
+  'green' : [32, 39],
+  'magenta' : [35, 39],
+  'red' : [31, 39],
+  'yellow' : [33, 39]
+};
+
+// Don't use 'blue' not visible on cmd.exe
+inspect.styles = {
+  'special': 'cyan',
+  'number': 'yellow',
+  'boolean': 'yellow',
+  'undefined': 'grey',
+  'null': 'bold',
+  'string': 'green',
+  'date': 'magenta',
+  // "name": intentionally not styling
+  'regexp': 'red'
+};
+
+
+function stylizeWithColor(str, styleType) {
+  var style = inspect.styles[styleType];
+
+  if (style) {
+    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
+           '\u001b[' + inspect.colors[style][1] + 'm';
+  } else {
+    return str;
+  }
+}
+
+
+function stylizeNoColor(str, styleType) {
+  return str;
+}
+
+
+function arrayToHash(array) {
+  var hash = {};
+
+  array.forEach(function(val, idx) {
+    hash[val] = true;
+  });
+
+  return hash;
+}
+
+
+function formatValue(ctx, value, recurseTimes) {
+  // Provide a hook for user-specified inspect functions.
+  // Check that value is an object with an inspect function on it
+  if (ctx.customInspect &&
+      value &&
+      isFunction(value.inspect) &&
+      // Filter out the util module, it's inspect function is special
+      value.inspect !== exports.inspect &&
+      // Also filter out any prototype objects using the circular check.
+      !(value.constructor && value.constructor.prototype === value)) {
+    var ret = value.inspect(recurseTimes, ctx);
+    if (!isString(ret)) {
+      ret = formatValue(ctx, ret, recurseTimes);
+    }
+    return ret;
+  }
+
+  // Primitive types cannot have properties
+  var primitive = formatPrimitive(ctx, value);
+  if (primitive) {
+    return primitive;
+  }
+
+  // Look up the keys of the object.
+  var keys = Object.keys(value);
+  var visibleKeys = arrayToHash(keys);
+
+  if (ctx.showHidden) {
+    keys = Object.getOwnPropertyNames(value);
+  }
+
+  // IE doesn't make error fields non-enumerable
+  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
+  if (isError(value)
+      && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
+    return formatError(value);
+  }
+
+  // Some type of object without properties can be shortcutted.
+  if (keys.length === 0) {
+    if (isFunction(value)) {
+      var name = value.name ? ': ' + value.name : '';
+      return ctx.stylize('[Function' + name + ']', 'special');
+    }
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    }
+    if (isDate(value)) {
+      return ctx.stylize(Date.prototype.toString.call(value), 'date');
+    }
+    if (isError(value)) {
+      return formatError(value);
+    }
+  }
+
+  var base = '', array = false, braces = ['{', '}'];
+
+  // Make Array say that they are Array
+  if (isArray(value)) {
+    array = true;
+    braces = ['[', ']'];
+  }
+
+  // Make functions say that they are functions
+  if (isFunction(value)) {
+    var n = value.name ? ': ' + value.name : '';
+    base = ' [Function' + n + ']';
+  }
+
+  // Make RegExps say that they are RegExps
+  if (isRegExp(value)) {
+    base = ' ' + RegExp.prototype.toString.call(value);
+  }
+
+  // Make dates with properties first say the date
+  if (isDate(value)) {
+    base = ' ' + Date.prototype.toUTCString.call(value);
+  }
+
+  // Make error with message first say the error
+  if (isError(value)) {
+    base = ' ' + formatError(value);
+  }
+
+  if (keys.length === 0 && (!array || value.length == 0)) {
+    return braces[0] + base + braces[1];
+  }
+
+  if (recurseTimes < 0) {
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    } else {
+      return ctx.stylize('[Object]', 'special');
+    }
+  }
+
+  ctx.seen.push(value);
+
+  var output;
+  if (array) {
+    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
+  } else {
+    output = keys.map(function(key) {
+      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
+    });
+  }
+
+  ctx.seen.pop();
+
+  return reduceToSingleString(output, base, braces);
+}
+
+
+function formatPrimitive(ctx, value) {
+  if (isUndefined(value))
+    return ctx.stylize('undefined', 'undefined');
+  if (isString(value)) {
+    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
+                                             .replace(/'/g, "\\'")
+                                             .replace(/\\"/g, '"') + '\'';
+    return ctx.stylize(simple, 'string');
+  }
+  if (isNumber(value))
+    return ctx.stylize('' + value, 'number');
+  if (isBoolean(value))
+    return ctx.stylize('' + value, 'boolean');
+  // For some reason typeof null is "object", so special case here.
+  if (isNull(value))
+    return ctx.stylize('null', 'null');
+}
+
+
+function formatError(value) {
+  return '[' + Error.prototype.toString.call(value) + ']';
+}
+
+
+function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
+  var output = [];
+  for (var i = 0, l = value.length; i < l; ++i) {
+    if (hasOwnProperty(value, String(i))) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          String(i), true));
+    } else {
+      output.push('');
+    }
+  }
+  keys.forEach(function(key) {
+    if (!key.match(/^\d+$/)) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          key, true));
+    }
+  });
+  return output;
+}
+
+
+function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
+  var name, str, desc;
+  desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
+  if (desc.get) {
+    if (desc.set) {
+      str = ctx.stylize('[Getter/Setter]', 'special');
+    } else {
+      str = ctx.stylize('[Getter]', 'special');
+    }
+  } else {
+    if (desc.set) {
+      str = ctx.stylize('[Setter]', 'special');
+    }
+  }
+  if (!hasOwnProperty(visibleKeys, key)) {
+    name = '[' + key + ']';
+  }
+  if (!str) {
+    if (ctx.seen.indexOf(desc.value) < 0) {
+      if (isNull(recurseTimes)) {
+        str = formatValue(ctx, desc.value, null);
+      } else {
+        str = formatValue(ctx, desc.value, recurseTimes - 1);
+      }
+      if (str.indexOf('\n') > -1) {
+        if (array) {
+          str = str.split('\n').map(function(line) {
+            return '  ' + line;
+          }).join('\n').substr(2);
+        } else {
+          str = '\n' + str.split('\n').map(function(line) {
+            return '   ' + line;
+          }).join('\n');
+        }
+      }
+    } else {
+      str = ctx.stylize('[Circular]', 'special');
+    }
+  }
+  if (isUndefined(name)) {
+    if (array && key.match(/^\d+$/)) {
+      return str;
+    }
+    name = JSON.stringify('' + key);
+    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
+      name = name.substr(1, name.length - 2);
+      name = ctx.stylize(name, 'name');
+    } else {
+      name = name.replace(/'/g, "\\'")
+                 .replace(/\\"/g, '"')
+                 .replace(/(^"|"$)/g, "'");
+      name = ctx.stylize(name, 'string');
+    }
+  }
+
+  return name + ': ' + str;
+}
+
+
+function reduceToSingleString(output, base, braces) {
+  var numLinesEst = 0;
+  var length = output.reduce(function(prev, cur) {
+    numLinesEst++;
+    if (cur.indexOf('\n') >= 0) numLinesEst++;
+    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
+  }, 0);
+
+  if (length > 60) {
+    return braces[0] +
+           (base === '' ? '' : base + '\n ') +
+           ' ' +
+           output.join(',\n  ') +
+           ' ' +
+           braces[1];
+  }
+
+  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
+}
+
+
+// NOTE: These type checking functions intentionally don't use `instanceof`
+// because it is fragile and can be easily faked with `Object.create()`.
+function isArray(ar) {
+  return Array.isArray(ar);
+}
+exports.isArray = isArray;
+
+function isBoolean(arg) {
+  return typeof arg === 'boolean';
+}
+exports.isBoolean = isBoolean;
+
+function isNull(arg) {
+  return arg === null;
+}
+exports.isNull = isNull;
+
+function isNullOrUndefined(arg) {
+  return arg == null;
+}
+exports.isNullOrUndefined = isNullOrUndefined;
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+exports.isNumber = isNumber;
+
+function isString(arg) {
+  return typeof arg === 'string';
+}
+exports.isString = isString;
+
+function isSymbol(arg) {
+  return typeof arg === 'symbol';
+}
+exports.isSymbol = isSymbol;
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+exports.isUndefined = isUndefined;
+
+function isRegExp(re) {
+  return isObject(re) && objectToString(re) === '[object RegExp]';
+}
+exports.isRegExp = isRegExp;
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+exports.isObject = isObject;
+
+function isDate(d) {
+  return isObject(d) && objectToString(d) === '[object Date]';
+}
+exports.isDate = isDate;
+
+function isError(e) {
+  return isObject(e) &&
+      (objectToString(e) === '[object Error]' || e instanceof Error);
+}
+exports.isError = isError;
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+exports.isFunction = isFunction;
+
+function isPrimitive(arg) {
+  return arg === null ||
+         typeof arg === 'boolean' ||
+         typeof arg === 'number' ||
+         typeof arg === 'string' ||
+         typeof arg === 'symbol' ||  // ES6 symbol
+         typeof arg === 'undefined';
+}
+exports.isPrimitive = isPrimitive;
+
+exports.isBuffer = _dereq_('./support/isBuffer');
+
+function objectToString(o) {
+  return Object.prototype.toString.call(o);
+}
+
+
+function pad(n) {
+  return n < 10 ? '0' + n.toString(10) : n.toString(10);
+}
+
+
+var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec'];
+
+// 26 Feb 16:19:34
+function timestamp() {
+  var d = new Date();
+  var time = [pad(d.getHours()),
+              pad(d.getMinutes()),
+              pad(d.getSeconds())].join(':');
+  return [d.getDate(), months[d.getMonth()], time].join(' ');
+}
+
+
+// log is just a thin wrapper to console.log that prepends a timestamp
+exports.log = function() {
+  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
+};
+
+
+/**
+ * Inherit the prototype methods from one constructor into another.
+ *
+ * The Function.prototype.inherits from lang.js rewritten as a standalone
+ * function (not on Function.prototype). NOTE: If this file is to be loaded
+ * during bootstrapping this function needs to be rewritten using some native
+ * functions as prototype setup using normal JavaScript does not work as
+ * expected during bootstrapping (see mirror.js in r114903).
+ *
+ * @param {function} ctor Constructor function which needs to inherit the
+ *     prototype.
+ * @param {function} superCtor Constructor function to inherit prototype from.
+ */
+exports.inherits = _dereq_('inherits');
+
+exports._extend = function(origin, add) {
+  // Don't do anything if add isn't an object
+  if (!add || !isObject(add)) return origin;
+
+  var keys = Object.keys(add);
+  var i = keys.length;
+  while (i--) {
+    origin[keys[i]] = add[keys[i]];
+  }
+  return origin;
+};
+
+function hasOwnProperty(obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
+}
+
+}).call(this,_dereq_("v3go1D"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"./support/isBuffer":80,"inherits":79,"v3go1D":29}],82:[function(_dereq_,module,exports){
 (function (process,Buffer){
 /**
  * Wrapper for built-in http.js to emulate the browser XMLHttpRequest object.
@@ -33485,8 +33485,8 @@ exports.XMLHttpRequest = function() {
   };
 };
 
-}).call(this,_dereq_("g5I+bs"),_dereq_("buffer").Buffer)
-},{"buffer":8,"child_process":5,"fs":5,"g5I+bs":30,"http":13,"https":16,"url":75}],83:[function(_dereq_,module,exports){
+}).call(this,_dereq_("v3go1D"),_dereq_("buffer").Buffer)
+},{"buffer":7,"child_process":4,"fs":4,"http":12,"https":15,"url":78,"v3go1D":29}],83:[function(_dereq_,module,exports){
 // Functions implementing the validators of SHACL-JS
 // Also include validators for the constraint components of the DASH namespace
 
@@ -33636,6 +33636,13 @@ var registerDASH = function(context) {
         return results;
     };
 
+    var validateCoExistsWith = function($this, $path, $coExistsWith) {
+        var path = rdfquery.toRDFQueryPath($path);
+        var has1 = context.$data.query().path($this, path, null).getCount() > 0;
+        var has2 = context.$data.query().match($this, $coExistsWith, null).getCount() > 0;
+        return has1 === has2;
+    }
+
     var validateDatatype = function ($value, $datatype) {
         if ($value.isLiteral()) {
             return $datatype.equals($value.datatype) && isValidForDatatype($value.lex, $datatype);
@@ -33698,6 +33705,15 @@ var registerDASH = function(context) {
     var validateHasValueProperty = function ($this, $path, $hasValue) {
         var count = context.$data.query().path($this, rdfquery.toRDFQueryPath($path, context), $hasValue).getCount();
         return count > 0;
+    };
+
+    var validateHasValueWithClass = function($this, $path, $hasValueWithClass) {
+        return context.$data.query().
+        path($this, rdfquery.toRDFQueryPath($path), "?value").
+        filter(function(sol) {
+            return rdfquery.isInstanceOf(sol.value, $hasValueWithClass, context);
+        }).
+        hasSolution();
     };
 
     var validateIn = function ($value, $in) {
@@ -33966,11 +33982,13 @@ var registerDASH = function(context) {
     context.functionRegistry.validateClosed = validateClosed;
     context.functionRegistry.validateClosedByTypesNode = validateClosedByTypesNode;
     context.functionRegistry.validateDatatype = validateDatatype;
+    context.functionRegistry.validateCoExistsWith = validateCoExistsWith;
     context.functionRegistry.validateDisjoint = validateDisjoint;
     context.functionRegistry.validateEqualsProperty = validateEqualsProperty;
     context.functionRegistry.validateEqualsNode = validateEqualsNode;
     context.functionRegistry.validateHasValueNode = validateHasValueNode;
     context.functionRegistry.validateHasValueProperty = validateHasValueProperty;
+    context.functionRegistry.validateHasValueWithClass = validateHasValueWithClass;
     context.functionRegistry.validateIn = validateIn;
     context.functionRegistry.validateLanguageIn = validateLanguageIn;
     context.functionRegistry.validateLessThanProperty = validateLessThanProperty;
@@ -34137,7 +34155,7 @@ var loadGraph = function(str, store, graphURI, mimeType, andThen, handleError) {
 module.exports.RDFLibGraph = RDFLibGraph;
 module.exports.RDFLibGraphIterator = RDFLibGraphIterator;
 module.exports.loadGraph = loadGraph;
-},{"./rdfquery":85,"debug":9,"rdflib":43}],85:[function(_dereq_,module,exports){
+},{"./rdfquery":85,"debug":8,"rdflib":42}],85:[function(_dereq_,module,exports){
 // rdfquery.js
 // A simple RDF query library for JavaScript
 //
@@ -35344,11 +35362,7 @@ var TermFactory = {
 };
 
 module.exports = TermFactory;
-},{"rdflib":43}],88:[function(_dereq_,module,exports){
-/* Copyright (C) TopQuadrant, Inc - licensed under AGPL
- * Written by Holger Knublauch <holger@topquadrant.com>, 2017
- */
-
+},{"rdflib":42}],88:[function(_dereq_,module,exports){
 // A simple SHACL validator in JavaScript based on SHACL-JS.
 
 // Design:
@@ -35890,7 +35904,7 @@ var rdfquery = _dereq_("./rdfquery");
 var debug = _dereq_("debug")("validation-function");
 
 
-var globalObject = typeof(window) != null ? window : global;
+var globalObject = typeof window !== 'undefined' ? window : global;
 
 
 var ValidationFunction = function (functionName, parameters, functionRegistry) {
@@ -35968,7 +35982,7 @@ ValidationFunction.prototype.execute = function (focusNode, valueNode, constrain
 
 module.exports = ValidationFunction;
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./rdfquery":85,"debug":9}],91:[function(_dereq_,module,exports){
+},{"./rdfquery":85,"debug":8}],91:[function(_dereq_,module,exports){
 
 
 var extractValue = function(node, property) {
@@ -36062,7 +36076,7 @@ ValidationReport.prototype.findNode = function(id) {
 
 module.exports = ValidationReport;
 },{}],92:[function(_dereq_,module,exports){
-module.exports = {"dash":"# baseURI: http://datashapes.org/dash\n# imports: http://topbraid.org/tosh\n# imports: http://www.w3.org/ns/shacl#\n# prefix: dash\n\n@prefix dash: <http://datashapes.org/dash#> .\n@prefix owl: <http://www.w3.org/2002/07/owl#> .\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n@prefix sh: <http://www.w3.org/ns/shacl#> .\n@prefix swa: <http://topbraid.org/swa#> .\n@prefix tosh: <http://topbraid.org/tosh#> .\n@prefix vs: <http://www.w3.org/2003/06/sw-vocab-status/ns#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\n<http://datashapes.org/dash>\n  rdf:type owl:Ontology ;\n  rdfs:comment \"\"\"DASH defines SPARQL-based validators for many SHACL Core constraint components. These are (among others) utilized by TopBraid and its API. Note that constraint components that require validation of nested shapes (such as sh:node) are not implementable without a function such as tosh:hasShape.\n\nDASH is also a SHACL library for frequently needed features and design patterns. All features in this library are 100% standards compliant and will work on any engine that fully supports SHACL.\"\"\" ;\n  rdfs:label \"DASH Data Shapes Library\" ;\n  owl:imports <http://topbraid.org/tosh> ;\n  owl:imports sh: ;\n  sh:declare [\n      sh:namespace \"http://datashapes.org/dash#\"^^xsd:anyURI ;\n      sh:prefix \"dash\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://purl.org/dc/terms/\"^^xsd:anyURI ;\n      sh:prefix \"dcterms\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"^^xsd:anyURI ;\n      sh:prefix \"rdf\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://www.w3.org/2000/01/rdf-schema#\"^^xsd:anyURI ;\n      sh:prefix \"rdfs\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://www.w3.org/2001/XMLSchema#\"^^xsd:anyURI ;\n      sh:prefix \"xsd\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://www.w3.org/2002/07/owl#\"^^xsd:anyURI ;\n      sh:prefix \"owl\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://www.w3.org/2004/02/skos/core#\"^^xsd:anyURI ;\n      sh:prefix \"skos\" ;\n    ] ;\n.\ndash:AllObjects\n  rdf:type dash:AllObjectsTarget ;\n  rdfs:comment \"A reusable instance of dash:AllObjectsTarget.\" ;\n  rdfs:label \"All objects\" ;\n.\ndash:AllObjectsTarget\n  rdf:type sh:SPARQLTargetType ;\n  rdfs:comment \"A target containing all objects in the data graph as focus nodes.\" ;\n  rdfs:label \"All objects target\" ;\n  rdfs:subClassOf sh:Target ;\n  sh:labelTemplate \"All objects\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:select \"\"\"SELECT DISTINCT ?this\nWHERE {\n    ?anyS ?anyP ?this .\n}\"\"\" ;\n.\ndash:AllSubjects\n  rdf:type dash:AllSubjectsTarget ;\n  rdfs:comment \"A reusable instance of dash:AllSubjectsTarget.\" ;\n  rdfs:label \"All subjects\" ;\n.\ndash:AllSubjectsTarget\n  rdf:type sh:SPARQLTargetType ;\n  rdfs:comment \"A target containing all subjects in the data graph as focus nodes.\" ;\n  rdfs:label \"All subjects target\" ;\n  rdfs:subClassOf sh:Target ;\n  sh:labelTemplate \"All subjects\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:select \"\"\"SELECT DISTINCT ?this\nWHERE {\n    ?this ?anyP ?anyO .\n}\"\"\" ;\n.\ndash:ClosedByTypesConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  rdfs:comment \"A constraint component that can be used to declare that focus nodes are \\\"closed\\\" based on their rdf:types, meaning that focus nodes may only have values for the properties that are explicitly enumerated via sh:property/sh:path in property constraints at their rdf:types and the superclasses of those. This assumes that the type classes are also shapes.\" ;\n  rdfs:label \"Closed by types constraint component\" ;\n  sh:nodeValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateClosedByTypesNode\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n      sh:message \"Property is not among those permitted for any of the types\" ;\n    ] ;\n  sh:nodeValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:message \"Property {?path} is not among those permitted for any of the types\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"SELECT $this (?predicate AS ?path) ?value\nWHERE {\n\tFILTER ($closedByTypes) .\n    $this ?predicate ?value .\n\tFILTER (?predicate != rdf:type) .\n\tFILTER NOT EXISTS {\n\t\t$this rdf:type ?type .\n\t\t?type rdfs:subClassOf* ?class .\n\t\tGRAPH $shapesGraph {\n\t\t\t?class sh:property/sh:path ?predicate .\n\t\t}\n\t}\n}\"\"\" ;\n    ] ;\n  sh:parameter dash:ClosedByTypesConstraintComponent-closedByTypes ;\n  sh:targetClass sh:Shape ;\n.\ndash:ClosedByTypesConstraintComponent-closedByTypes\n  rdf:type sh:Parameter ;\n  sh:path dash:closedByTypes ;\n  sh:datatype xsd:boolean ;\n  sh:description \"True to indicate that the focus nodes are closed by their types. A constraint violation is reported for each property value of the focus node where the property is not among those that are explicitly declared via sh:property/sh:path in any of the rdf:types of the focus node (and their superclasses). The property rdf:type is always permitted.\" ;\n.\ndash:DASHJSLibrary\n  rdf:type sh:JSLibrary ;\n  rdfs:label \"DASH JavaScript library\" ;\n  sh:jsLibrary dash:RDFQueryJSLibrary ;\n  sh:jsLibraryURL \"http://datashapes.org/js/dash.js\"^^xsd:anyURI ;\n.\ndash:DateOrDateTime\n  rdf:type rdf:List ;\n  rdf:first xsd:date ;\n  rdf:rest (\n      xsd:dateTime\n    ) ;\n  rdfs:comment \"An rdf:List that can be used in property constraints as value for sh:or to indicate that all values of a property must be either xsd:date or xsd:dateTime.\" ;\n  rdfs:label \"Date or date time\" ;\n.\ndash:DefaultValueTypeRule\n  rdf:type sh:SPARQLConstructExecutable ;\n  rdfs:comment \"\"\"\n\t\tA resource encapsulating a query that can be used to construct rdf:type triples for certain untyped nodes\n\t\tthat are an object in a triple where the predicate has a sh:defaultValueType.\n\t\tThis can be used as a pre-processor for shape graphs before they are validated.\n\t\t\"\"\"^^rdf:HTML ;\n  rdfs:label \"default value type inference rule\" ;\n  sh:construct \"\"\"\n\t\tCONSTRUCT {\n\t\t\t?node a ?defaultValueType .\n\t\t}\n\t\tWHERE {\n\t\t\t?predicate sh:defaultValueType ?defaultValueType .\n\t\t\t?anySubject ?predicate ?node .\n\t\t\tFILTER (NOT EXISTS { ?node a ?anyType }) .\n\t\t}\n\t\t\"\"\" ;\n.\ndash:FailureResult\n  rdf:type rdfs:Class ;\n  rdf:type sh:Shape ;\n  rdfs:comment \"A result representing a validation failure such as an unsupported recursion.\" ;\n  rdfs:label \"Failure result\" ;\n  rdfs:subClassOf sh:AbstractResult ;\n.\ndash:FailureTestCaseResult\n  rdf:type rdfs:Class ;\n  rdf:type sh:Shape ;\n  rdfs:comment \"Represents a failure of a test case.\" ;\n  rdfs:label \"Failure test case result\" ;\n  rdfs:subClassOf dash:TestCaseResult ;\n.\ndash:FunctionTestCase\n  rdf:type rdfs:Class ;\n  rdf:type sh:Shape ;\n  rdfs:comment \"A test case that verifies that a given SPARQL expression produces a given, expected result.\" ;\n  rdfs:label \"Function test case\" ;\n  rdfs:subClassOf dash:TestCase ;\n  sh:property [\n      sh:path dash:expectedResult ;\n      sh:description \"The expected result of a function call.\" ;\n      sh:maxCount 1 ;\n      sh:name \"expected result\" ;\n    ] ;\n  sh:property [\n      sh:path dash:expression ;\n      sh:description \"A valid SPARQL expression calling the function to test.\" ;\n      sh:maxCount 1 ;\n      sh:minCount 1 ;\n      sh:name \"expression\" ;\n    ] ;\n.\ndash:GraphUpdate\n  rdf:type rdfs:Class ;\n  rdf:type sh:Shape ;\n  rdfs:label \"Graph update\" ;\n  rdfs:subClassOf dash:Suggestion ;\n.\ndash:GraphValidationTestCase\n  rdf:type rdfs:Class ;\n  rdf:type sh:Shape ;\n  rdfs:comment \"A test case that performs SHACL constraint validation on the whole graph and compares the results with the expected validation results stored with the test case. By default this excludes meta-validation (i.e. the validation of the shape definitions themselves). If that's desired, set dash:validateShapes to true.\" ;\n  rdfs:label \"Graph validation test case\" ;\n  rdfs:subClassOf dash:ValidationTestCase ;\n.\ndash:InferencingTestCase\n  rdf:type rdfs:Class ;\n  rdf:type sh:Shape ;\n  rdfs:comment \"A test case to verify whether an inferencing engine is producing identical results to those stored as expected results.\" ;\n  rdfs:label \"Inferencing test case\" ;\n  rdfs:subClassOf dash:TestCase ;\n  sh:property [\n      sh:path dash:expectedResult ;\n      sh:description \"The expected inferred triples, represented by instances of rdfs:Statement.\" ;\n      sh:name \"expected result\" ;\n    ] ;\n.\ndash:JSTestCase\n  rdf:type rdfs:Class ;\n  rdfs:comment \"A test case that calls a given JavaScript function like a sh:JSFunction and compares its result with the dash:expectedResult.\" ;\n  rdfs:label \"JavaScript test case\" ;\n  rdfs:subClassOf dash:TestCase ;\n  rdfs:subClassOf sh:JSFunction ;\n  sh:property [\n      sh:path dash:expectedResult ;\n      sh:description \"The expected result of the JavaScript function call, as an RDF node.\" ;\n      sh:maxCount 1 ;\n      sh:name \"expected result\" ;\n    ] ;\n.\ndash:ListNodeShape\n  rdf:type sh:NodeShape ;\n  rdfs:comment \"Defines constraints on what it means for a node to be a node within a well-formed RDF list. Note that this does not check whether the rdf:rest items are also well-formed lists as this would lead to unsupported recursion.\" ;\n  rdfs:label \"List node shape\" ;\n  sh:or (\n      [\n        sh:hasValue () ;\n        sh:property [\n            sh:path rdf:first ;\n            sh:maxCount 0 ;\n          ] ;\n        sh:property [\n            sh:path rdf:rest ;\n            sh:maxCount 0 ;\n          ] ;\n      ]\n      [\n        sh:not [\n            sh:hasValue () ;\n          ] ;\n        sh:property [\n            sh:path rdf:first ;\n            sh:maxCount 1 ;\n            sh:minCount 1 ;\n          ] ;\n        sh:property [\n            sh:path rdf:rest ;\n            sh:maxCount 1 ;\n            sh:minCount 1 ;\n          ] ;\n      ]\n    ) ;\n.\ndash:ListShape\n  rdf:type sh:NodeShape ;\n  rdfs:comment \"\"\"Defines constraints on what it means for a node to be a well-formed RDF list.\n\nThe focus node must either be rdf:nil or not recursive. Furthermore, this shape uses dash:ListNodeShape as a \\\"helper\\\" to walk through all members of the whole list (including itself).\"\"\" ;\n  rdfs:label \"List shape\" ;\n  sh:or (\n      [\n        sh:hasValue () ;\n      ]\n      [\n        sh:not [\n            sh:hasValue () ;\n          ] ;\n        sh:property [\n            sh:path [\n                sh:oneOrMorePath rdf:rest ;\n              ] ;\n            dash:nonRecursive \"true\"^^xsd:boolean ;\n          ] ;\n      ]\n    ) ;\n  sh:property [\n      sh:path [\n          sh:zeroOrMorePath rdf:rest ;\n        ] ;\n      rdfs:comment \"Each list member (including this node) must be have the shape dash:ListNodeShape.\" ;\n      sh:node dash:ListNodeShape ;\n    ] ;\n.\ndash:NonRecursiveConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  rdfs:comment \"\"\"Used to state that a property or path must not point back to itself.\n\nFor example, \\\"a person cannot have itself as parent\\\" can be expressed by setting dash:nonRecursive=true for a given sh:path.\n\nTo express that a person cannot have itself among any of its (recursive) parents, use a sh:path with the + operator such as ex:parent+.\"\"\" ;\n  rdfs:label \"Non-recursive constraint component\" ;\n  sh:message \"Points back at itself (recursively)\" ;\n  sh:parameter dash:NonRecursiveConstraintComponent-nonRecursive ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateNonRecursiveProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"SELECT DISTINCT $this ($this AS ?value)\nWHERE {\n\t{\n\t\tFILTER (?nonRecursive)\n\t}\n    $this $PATH $this .\n}\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\ndash:NonRecursiveConstraintComponent-nonRecursive\n  rdf:type sh:Parameter ;\n  sh:path dash:nonRecursive ;\n  sh:datatype xsd:boolean ;\n  sh:maxCount 1 ;\n  sh:name \"non-recursive\" ;\n.\ndash:None\n  rdf:type sh:NodeShape ;\n  rdfs:comment \"A Shape that is no node can conform to.\" ;\n  rdfs:label \"None\" ;\n  sh:in () ;\n.\ndash:ParameterConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  rdfs:comment \"A constraint component that can be used to verify that all value nodes conform to the given Parameter.\"@en ;\n  rdfs:label \"Parameter constraint component\"@en ;\n  sh:parameter dash:ParameterConstraintComponent-parameter ;\n.\ndash:ParameterConstraintComponent-parameter\n  rdf:type sh:Parameter ;\n  sh:path sh:parameter ;\n.\ndash:PrimaryKeyConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  rdfs:comment \"Enforces a constraint that the given property (sh:path) serves as primary key for all resources in the target of the shape. If a property has been declared to be the primary key then each resource must have exactly one value for that property. Furthermore, the URIs of those resources must start with a given string (dash:uriStart), followed by the URL-encoded primary key value. For example if dash:uriStart is \\\"http://example.org/country-\\\" and the primary key for an instance is \\\"de\\\" then the URI must be \\\"http://example.org/country-de\\\". Finally, as a result of the URI policy, there can not be any other resource with the same value under the same primary key policy.\" ;\n  rdfs:label \"Primary key constraint component\" ;\n  sh:labelTemplate \"The property {?predicate} is the primary key and URIs start with {?uriStart}\" ;\n  sh:message \"Violation of primary key constraint\" ;\n  sh:parameter dash:PrimaryKeyConstraintComponent-uriStart ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validatePrimaryKeyProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"SELECT DISTINCT $this\nWHERE {\n        FILTER (\n\t\t\t# Must have a value for the primary key\n\t\t\tNOT EXISTS { ?this $PATH ?any }\n\t\t\t||\n\t\t\t# Must have no more than one value for the primary key\n\t\t\tEXISTS {\n\t\t\t\t?this $PATH ?value1 .\n\t\t\t\t?this $PATH ?value2 .\n\t\t\t\tFILTER (?value1 != ?value2) .\n\t\t\t}\n\t\t\t||\n\t\t\t# The value of the primary key must align with the derived URI\n\t\t\tEXISTS {\n\t\t\t\t{\n        \t\t\t?this $PATH ?value .\n\t\t\t\t\tFILTER NOT EXISTS { ?this $PATH ?value2 . FILTER (?value != ?value2) }\n\t\t\t\t}\n        \t\tBIND (CONCAT($uriStart, ENCODE_FOR_URI(str(?value))) AS ?uri) .\n        \t\tFILTER (str(?this) != ?uri) .\n    \t\t} \n\t\t)\n}\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\ndash:PrimaryKeyConstraintComponent-uriStart\n  rdf:type sh:Parameter ;\n  sh:path dash:uriStart ;\n  sh:datatype xsd:string ;\n  sh:description \"The start of the URIs of well-formed resources.\" ;\n  sh:name \"URI start\" ;\n.\ndash:QueryTestCase\n  rdf:type rdfs:Class ;\n  rdf:type sh:Shape ;\n  rdfs:comment \"A test case running a given SPARQL SELECT query and comparing its results with those stored as JSON Result Set in the expected result property.\" ;\n  rdfs:label \"Query test case\" ;\n  rdfs:subClassOf dash:TestCase ;\n  rdfs:subClassOf sh:SPARQLSelectExecutable ;\n  sh:property [\n      sh:path dash:expectedResult ;\n      sh:datatype xsd:string ;\n      sh:description \"The expected result set, as a JSON string.\" ;\n      sh:maxCount 1 ;\n      sh:minCount 1 ;\n      sh:name \"expected result\" ;\n    ] ;\n  sh:property [\n      sh:path sh:select ;\n      sh:datatype xsd:string ;\n      sh:description \"The SPARQL SELECT query to execute.\" ;\n      sh:maxCount 1 ;\n      sh:minCount 1 ;\n      sh:name \"SPARQL query\" ;\n    ] ;\n.\ndash:RDFQueryJSLibrary\n  rdf:type sh:JSLibrary ;\n  rdfs:label \"rdfQuery JavaScript Library\" ;\n  sh:jsLibraryURL \"http://datashapes.org/js/rdfquery.js\"^^xsd:anyURI ;\n.\ndash:RootClassConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  rdfs:comment \"A constraint component defining the parameter dash:rootClass, which restricts the values to be either the root class itself or one of its subclasses. This is typically used in conjunction with properties that have rdfs:Class as their type.\" ;\n  rdfs:label \"Root class constraint component\" ;\n  sh:labelTemplate \"Root class {$rootClass}\" ;\n  sh:message \"Value must be subclass of {$rootClass}\" ;\n  sh:parameter dash:RootClassConstraintComponent-rootClass ;\n  sh:targetClass sh:PropertyShape ;\n  sh:validator dash:hasRootClass ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateRootClass\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\ndash:RootClassConstraintComponent-rootClass\n  rdf:type sh:Parameter ;\n  sh:path dash:rootClass ;\n  sh:class rdfs:Class ;\n  sh:description \"The root class.\" ;\n  sh:name \"root class\" ;\n  sh:nodeKind sh:IRI ;\n.\ndash:SPARQLUpdateSuggestionGenerator\n  rdf:type rdfs:Class ;\n  rdfs:comment \"\"\"A SuggestionGenerator based on a SPARQL UPDATE query (sh:update), producing an instance of dash:GraphUpdate. The INSERTs become dash:addedTriple and the DELETEs become dash:deletedTriple. The WHERE clause operates on the data graph with the pre-bound variables $subject, $predicate and $object, as well as the other pre-bound variables for the parameters of the constraint.\n\nIn many cases, there may be multiple possible suggestions to fix a problem. For example, with sh:maxLength there are many ways to slice a string. In those cases, the system will first iterate through the result variables from a SELECT query (sh:select) and apply these results as pre-bound variables into the UPDATE query.\"\"\" ;\n  rdfs:label \"SPARQL UPDATE suggestion generator\" ;\n  rdfs:subClassOf dash:SuggestionGenerator ;\n  rdfs:subClassOf sh:SPARQLSelectExecutable ;\n  rdfs:subClassOf sh:SPARQLUpdateExecutable ;\n.\ndash:StemConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  rdfs:comment \"A constraint component that can be used to verify that every value node is an IRI and the IRI starts with a given string value.\"@en ;\n  rdfs:label \"Stem constraint component\"@en ;\n  sh:message \"Value does not have stem {$stem}\" ;\n  sh:parameter dash:StemConstraintComponent-stem ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasStem ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateStem\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\ndash:StemConstraintComponent-stem\n  rdf:type sh:Parameter ;\n  sh:path dash:stem ;\n  sh:datatype xsd:string ;\n.\ndash:StringOrLangString\n  rdf:type rdf:List ;\n  rdf:first xsd:string ;\n  rdf:rest (\n      rdf:langString\n    ) ;\n  rdfs:comment \"An rdf:List that can be used in property constraints as value for sh:or to indicate that all values of a property must be either xsd:string or rdf:langString.\" ;\n  rdfs:label \"String or langString\" ;\n.\ndash:SubSetOfConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  rdfs:label \"Sub set of constraint component\" ;\n  sh:message \"Must be one of the values of {$subSetOf}\" ;\n  sh:parameter dash:SubSetOfConstraintComponent-subSetOf ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLAskValidator ;\n      sh:ask \"\"\"ASK {\n    $this $subSetOf $value .\n}\"\"\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateSubSetOf\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\ndash:SubSetOfConstraintComponent-subSetOf\n  rdf:type sh:Parameter ;\n  sh:path dash:subSetOf ;\n  sh:class rdf:Property ;\n  sh:description \"A property (of the focus node) that must (at least) have all values from the set of value nodes.\" ;\n.\ndash:SuccessResult\n  rdf:type rdfs:Class ;\n  rdfs:comment \"A result representing a successfully validated constraint.\" ;\n  rdfs:label \"Success result\" ;\n  rdfs:subClassOf sh:AbstractResult ;\n.\ndash:SuccessTestCaseResult\n  rdf:type rdfs:Class ;\n  rdfs:comment \"Represents a successful run of a test case.\" ;\n  rdfs:label \"Success test case result\" ;\n  rdfs:subClassOf dash:TestCaseResult ;\n.\ndash:Suggestion\n  rdf:type rdfs:Class ;\n  rdfs:comment \"Base class of suggestions that modify a graph to \\\"fix\\\" the source of a validation result.\" ;\n  rdfs:label \"Suggestion\" ;\n  rdfs:subClassOf rdfs:Resource ;\n.\ndash:SuggestionGenerator\n  rdf:type rdfs:Class ;\n  rdfs:comment \"Base class of objects that can generate suggestions (added or deleted triples) for a validation result of a given constraint component.\" ;\n  rdfs:label \"Suggestion generator\" ;\n  rdfs:subClassOf rdfs:Resource ;\n.\ndash:TestCase\n  rdf:type rdfs:Class ;\n  dash:abstract \"true\"^^xsd:boolean ;\n  rdfs:comment \"A test case to verify that a (SHACL-based) feature works as expected.\" ;\n  rdfs:label \"Test case\" ;\n  rdfs:subClassOf rdfs:Resource ;\n.\ndash:TestCaseResult\n  rdf:type rdfs:Class ;\n  rdf:type sh:Shape ;\n  rdfs:comment \"Base class for results produced by running test cases.\" ;\n  rdfs:label \"Test case result\" ;\n  rdfs:subClassOf sh:AbstractResult ;\n  sh:property [\n      sh:path dash:testCase ;\n      sh:class dash:TestCase ;\n      sh:description \"The dash:TestCase that was executed.\" ;\n      sh:maxCount 1 ;\n      sh:minCount 1 ;\n      sh:name \"test case\" ;\n    ] ;\n  sh:property [\n      sh:path dash:testGraph ;\n      sh:class rdfs:Resource ;\n      sh:description \"The graph containing the test case.\" ;\n      sh:maxCount 1 ;\n      sh:minCount 1 ;\n      sh:name \"test graph\" ;\n      sh:nodeKind sh:IRI ;\n    ] ;\n.\ndash:TestEnvironment\n  rdf:type rdfs:Class ;\n  rdf:type sh:Shape ;\n  dash:abstract \"true\"^^xsd:boolean ;\n  rdfs:comment \"Abstract base class for test environments, holding information on how to set up a test case.\" ;\n  rdfs:label \"Test environment\" ;\n  rdfs:subClassOf rdfs:Resource ;\n.\ndash:ValidationTestCase\n  rdf:type rdfs:Class ;\n  rdf:type sh:Shape ;\n  dash:abstract \"true\"^^xsd:boolean ;\n  rdfs:comment \"Abstract superclass for test cases concerning SHACL constraint validation. Future versions may add new kinds of validatin test cases, e.g. to validate a single resource only.\" ;\n  rdfs:label \"Validation test case\" ;\n  rdfs:subClassOf dash:TestCase ;\n  sh:property [\n      sh:path dash:expectedResult ;\n      sh:class sh:ValidationReport ;\n      sh:description \"The expected validation report.\" ;\n      sh:name \"expected result\" ;\n    ] ;\n.\ndash:abstract\n  rdf:type rdf:Property ;\n  rdfs:comment \"Indicates that a class is \\\"abstract\\\" and cannot be used in asserted rdf:type triples. Only non-abstract subclasses of abstract classes should be instantiated directly.\" ;\n  rdfs:domain rdfs:Class ;\n  rdfs:label \"abstract\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:addedTriple\n  rdf:type rdf:Property ;\n  rdfs:comment \"May link a dash:GraphUpdate with one or more triples (represented as instances of rdf:Statement) that should be added to fix the source of the result.\" ;\n  rdfs:domain dash:GraphUpdate ;\n  rdfs:label \"added triple\" ;\n  rdfs:range rdf:Statement ;\n.\ndash:closedByTypes\n  rdf:type rdf:Property ;\n  rdfs:label \"closed by types\" ;\n.\ndash:composite\n  rdf:type rdf:Property ;\n  rdfs:comment \"Can be used to indicate that a property/path represented by a property constraint represents a composite relationship. In a composite relationship, the life cycle of a \\\"child\\\" object (value of the property/path) depends on the \\\"parent\\\" object (focus node). If the parent gets deleted, then the child objects should be deleted, too. Tools may use dash:composite (if set to true) to implement cascading delete operations.\" ;\n  rdfs:domain sh:PropertyShape ;\n  rdfs:label \"composite\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:defaultValueType\n  rdf:type rdf:Property ;\n  rdfs:comment \"\"\"\n\t\tLinks a property with a default value type.\n\t\tThe default value type is assumed to be the <code>rdf:type</code> of values of the property\n\t\tthat declare no type on their own.\n\t\tAn example use of <code>sh:defaultValueType</code> is <code>sh:property</code>,\n\t\tthe values of which are assumed to be instances of <code>sh:PropertyShape</code>\n\t\teven if they are untyped (blank) nodes.\n\t\t\"\"\"^^rdf:HTML ;\n  rdfs:domain rdf:Property ;\n  rdfs:label \"default value type\" ;\n  rdfs:range rdfs:Class ;\n  owl:versionInfo \"Note this property may get removed in future versions. It is a left-over from a previous design in SHACL.\" ;\n.\ndash:deletedTriple\n  rdf:type rdf:Property ;\n  rdfs:comment \"May link a dash:GraphUpdate result with one or more triples (represented as instances of rdf:Statement) that should be deleted to fix the source of the result.\" ;\n  rdfs:domain dash:GraphUpdate ;\n  rdfs:label \"deleted triple\" ;\n  rdfs:range rdf:Statement ;\n.\ndash:hasClass\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:label \"has class\" ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\t$value rdf:type/rdfs:subClassOf* $class .\n\t\t}\n\t\t\"\"\" ;\n  sh:message \"Value does not have class {$class}\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMaxExclusive\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node (?value) has value less than (<) the provided ?maxExclusive. Returns false if this cannot be determined, e.g. because values do not have comparable types.\" ;\n  rdfs:label \"has max exclusive\" ;\n  sh:ask \"ASK { FILTER ($value < $maxExclusive) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMaxInclusive\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node (?value) has value less than or equal to (<=) the provided ?maxInclusive. Returns false if this cannot be determined, e.g. because values do not have comparable types.\" ;\n  rdfs:label \"has max inclusive\" ;\n  sh:ask \"ASK { FILTER ($value <= $maxInclusive) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMaxLength\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given string (?value) has a length within a given maximum string length.\" ;\n  rdfs:label \"has max length\" ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\tFILTER (STRLEN(str($value)) <= $maxLength) .\n\t\t}\n\t\t\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMinExclusive\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node (?value) has value greater than (>) the provided ?minExclusive. Returns false if this cannot be determined, e.g. because values do not have comparable types.\" ;\n  rdfs:label \"has min exclusive\" ;\n  sh:ask \"ASK { FILTER ($value > $minExclusive) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMinInclusive\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node (?value) has value greater than or equal to (>=) the provided ?minInclusive. Returns false if this cannot be determined, e.g. because values do not have comparable types.\" ;\n  rdfs:label \"has min inclusive\" ;\n  sh:ask \"ASK { FILTER ($value >= $minInclusive) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMinLength\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given string (?value) has a length within a given minimum string length.\" ;\n  rdfs:label \"has min length\" ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\tFILTER (STRLEN(str($value)) >= $minLength) .\n\t\t}\n\t\t\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasNodeKind\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node (?value) has a given sh:NodeKind (?nodeKind). For example, sh:hasNodeKind(42, sh:Literal) = true.\" ;\n  rdfs:label \"has node kind\" ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\tFILTER ((isIRI($value) && $nodeKind IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) ||\n\t\t\t\t(isLiteral($value) && $nodeKind IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ) ) ||\n\t\t\t\t(isBlank($value)   && $nodeKind IN ( sh:BlankNode, sh:BlankNodeOrIRI, sh:BlankNodeOrLiteral ) )) .\n\t\t}\n\t\t\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasPattern\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether the string representation of a given node (?value) matches a given regular expression (?pattern). Returns false if the value is a blank node.\" ;\n  rdfs:label \"has pattern\" ;\n  sh:ask \"ASK { FILTER (!isBlank($value) && IF(bound($flags), regex(str($value), $pattern, $flags), regex(str($value), $pattern))) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasRootClass\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:label \"has root class\" ;\n  sh:ask \"\"\"ASK {\n    $value rdfs:subClassOf* $rootClass .\n}\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasStem\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node is an IRI starting with a given stem.\" ;\n  rdfs:label \"has stem\" ;\n  sh:ask \"ASK { FILTER (isIRI($value) && STRSTARTS(str($value), $stem)) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:isDeactivated\n  rdf:type sh:SPARQLFunction ;\n  rdfs:comment \"Checks whether a given shape or constraint has been marked as \\\"deactivated\\\" using sh:deactivated.\" ;\n  sh:ask \"\"\"ASK {\n    ?constraintOrShape sh:deactivated true .\n}\"\"\" ;\n  sh:parameter [\n      sh:path dash:constraintOrShape ;\n      sh:description \"The sh:Constraint or sh:Shape to test.\" ;\n      sh:name \"constraint or shape\" ;\n    ] ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:returnType xsd:boolean ;\n.\ndash:isIn\n  rdf:type sh:SPARQLAskValidator ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\tGRAPH $shapesGraph {\n\t\t\t\t$in (rdf:rest*)/rdf:first $value .\n\t\t\t}\n\t\t}\n\t\t\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:isLanguageIn\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:label \"is language in\" ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\tBIND (lang($value) AS ?valueLang) .\n\t\t\tFILTER EXISTS {\n\t\t\t\tGRAPH $shapesGraph {\n\t\t\t\t\t$languageIn (rdf:rest*)/rdf:first ?lang .\n\t\t\t\t    FILTER (langMatches(?valueLang, ?lang))\n\t\t\t\t} }\n\t\t}\n\t\t\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:isNodeKindBlankNode\n  rdf:type sh:SPARQLFunction ;\n  dash:cachable \"true\"^^xsd:boolean ;\n  rdfs:comment \"Checks if a given sh:NodeKind is one that includes BlankNodes.\" ;\n  rdfs:label \"is NodeKind BlankNode\" ;\n  sh:ask \"\"\"ASK {\n\tFILTER ($nodeKind IN ( sh:BlankNode, sh:BlankNodeOrIRI, sh:BlankNodeOrLiteral ))\n}\"\"\" ;\n  sh:parameter [\n      sh:path dash:nodeKind ;\n      sh:class sh:NodeKind ;\n      sh:description \"The sh:NodeKind to check.\" ;\n      sh:name \"node kind\" ;\n      sh:nodeKind sh:IRI ;\n    ] ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:returnType xsd:boolean ;\n.\ndash:isNodeKindIRI\n  rdf:type sh:SPARQLFunction ;\n  dash:cachable \"true\"^^xsd:boolean ;\n  rdfs:comment \"Checks if a given sh:NodeKind is one that includes IRIs.\" ;\n  rdfs:label \"is NodeKind IRI\" ;\n  sh:ask \"\"\"ASK {\n\tFILTER ($nodeKind IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ))\n}\"\"\" ;\n  sh:parameter [\n      sh:path dash:nodeKind ;\n      sh:class sh:NodeKind ;\n      sh:description \"The sh:NodeKind to check.\" ;\n      sh:name \"node kind\" ;\n      sh:nodeKind sh:IRI ;\n    ] ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:returnType xsd:boolean ;\n.\ndash:isNodeKindLiteral\n  rdf:type sh:SPARQLFunction ;\n  dash:cachable \"true\"^^xsd:boolean ;\n  rdfs:comment \"Checks if a given sh:NodeKind is one that includes Literals.\" ;\n  rdfs:label \"is NodeKind Literal\" ;\n  sh:ask \"\"\"ASK {\n\tFILTER ($nodeKind IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ))\n}\"\"\" ;\n  sh:parameter [\n      sh:path dash:nodeKind ;\n      sh:class sh:NodeKind ;\n      sh:description \"The sh:NodeKind to check.\" ;\n      sh:name \"node kind\" ;\n      sh:nodeKind sh:IRI ;\n    ] ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:returnType xsd:boolean ;\n.\ndash:localConstraint\n  rdf:type rdf:Property ;\n  rdfs:comment \"\"\"Can be set to true for those constraint components where the validation does not require to visit any other triples than the shape definitions and the direct property values of the focus node mentioned in the property constraints. Examples of this include sh:minCount and sh:hasValue.\n\nConstraint components that are marked as such can be optimized by engines, e.g. they can be evaluated client-side at form submission time, without having to make a round-trip to a server, assuming the client has downloaded a complete snapshot of the resource.\n\nAny component marked with dash:staticConstraint is also a dash:localConstraint.\"\"\" ;\n  rdfs:domain sh:ConstraintComponent ;\n  rdfs:label \"local constraint\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:propertySuggestionGenerator\n  rdf:type rdf:Property ;\n  rdfs:comment \"Links the constraint component with instances of dash:SuggestionGenerator that may be used to produce suggestions for a given validation result that was produced by a property constraint.\" ;\n  rdfs:domain sh:ConstraintComponent ;\n  rdfs:label \"property suggestion generator\" ;\n  rdfs:range dash:SuggestionGenerator ;\n.\ndash:rootClass\n  rdf:type rdf:Property ;\n  rdfs:label \"root class\" ;\n.\ndash:staticConstraint\n  rdf:type rdf:Property ;\n  rdfs:comment \"\"\"Can be set to true for those constraint components where the validation does not require to visit any other triples than the parameters. Examples of this include sh:datatype or sh:nodeKind, where no further triples need to be queried to determine the result.\n\nConstraint components that are marked as such can be optimized by engines, e.g. they can be evaluated client-side at form submission time, without having to make a round-trip to a server.\"\"\" ;\n  rdfs:domain sh:ConstraintComponent ;\n  rdfs:label \"static constraint\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:stem\n  rdf:type rdf:Property ;\n  rdfs:comment \"Specifies a string value that the IRI of the value nodes must start with.\"@en ;\n  rdfs:label \"stem\"@en ;\n  rdfs:range xsd:string ;\n.\ndash:subSetOf\n  rdf:type rdf:Property ;\n  rdfs:label \"sub set of\" ;\n.\ndash:suggestion\n  rdf:type rdf:Property ;\n  rdfs:comment \"Can be used to link a validation result with one or more suggestions on how to fix the underlying issue.\" ;\n  rdfs:domain sh:ValidationResult ;\n  rdfs:label \"suggestion\" ;\n  rdfs:range dash:Suggestion ;\n.\ndash:suggestionGenerator\n  rdf:type rdf:Property ;\n  rdfs:comment \"Links a sh:SPARQLConstraint with instances of dash:SuggestionGenerator that may be used to produce suggestions for a given validation result that was produced by the constraint.\" ;\n  rdfs:domain sh:SPARQLConstraint ;\n  rdfs:label \"suggestion generator\" ;\n  rdfs:range dash:SuggestionGenerator ;\n.\ndash:testEnvironment\n  rdf:type rdf:Property ;\n  rdfs:comment \"Can be used by TestCases to point at a resource with information on how to set up the execution environment prior to execution.\" ;\n  rdfs:domain dash:TestCase ;\n  rdfs:label \"test environment\" ;\n  rdfs:range dash:TestEnvironment ;\n.\ndash:testModifiesEnvironment\n  rdf:type rdf:Property ;\n  rdfs:comment \"Indicates whether this test modifies the specified dash:testEnvironment. If set to true then a test runner can make sure to wipe out the previous environment, while leaving it false (or undefined) means that the test runner can reuse the environment from the previous test case. As setting up and tearing down tests is sometimes slow, this flag can significantly accelerate test execution.\" ;\n  rdfs:domain dash:TestCase ;\n  rdfs:label \"test modifies environment\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:validateShapes\n  rdf:type rdf:Property ;\n  rdfs:comment \"True to also validate the shapes itself (i.e. parameter declarations).\" ;\n  rdfs:domain dash:GraphValidationTestCase ;\n  rdfs:label \"validate shapes\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:valueCount\n  rdf:type sh:SPARQLFunction ;\n  rdfs:comment \"Computes the number of objects for a given subject/predicate combination.\" ;\n  rdfs:label \"value count\" ;\n  sh:parameter [\n      sh:path dash:predicate ;\n      sh:class rdfs:Resource ;\n      sh:description \"The predicate to get the number of objects of.\" ;\n      sh:name \"predicate\" ;\n      sh:order 1 ;\n    ] ;\n  sh:parameter [\n      sh:path dash:subject ;\n      sh:class rdfs:Resource ;\n      sh:description \"The subject to get the number of objects of.\" ;\n      sh:name \"subject\" ;\n      sh:order 0 ;\n    ] ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:returnType xsd:integer ;\n  sh:select \"\"\"\n\t\tSELECT (COUNT(?object) AS ?result)\n\t\tWHERE {\n    \t\t$subject $predicate ?object .\n\t\t}\n\"\"\" ;\n.\nowl:Class\n  rdf:type rdfs:Class ;\n  rdfs:subClassOf rdfs:Class ;\n.\nsh:AndConstraintComponent\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateAnd\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:ClassConstraintComponent\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasClass ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateClass\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:ClosedConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:nodeValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:message \"Predicate {?path} is not allowed (closed shape)\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT $this (?predicate AS ?path) ?value\n\t\tWHERE {\n\t\t\t{\n\t\t\t\tFILTER ($closed) .\n\t\t\t}\n\t\t\t$this ?predicate ?value .\n\t\t\tFILTER (NOT EXISTS {\n\t\t\t\tGRAPH $shapesGraph {\n\t\t\t\t\t$currentShape sh:property/sh:path ?predicate .\n\t\t\t\t}\n\t\t\t} && (!bound($ignoredProperties) || NOT EXISTS {\n\t\t\t\tGRAPH $shapesGraph {\n\t\t\t\t\t$ignoredProperties rdf:rest*/rdf:first ?predicate .\n\t\t\t\t}\n\t\t\t}))\n\t\t}\n\"\"\" ;\n    ] ;\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateClosed\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n      sh:message \"Predicate is not allowed (closed shape)\" ;\n    ] ;\n.\nsh:DatatypeConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value does not have datatype {$datatype}\" ;\n  sh:targetClass sh:PropertyShape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateDatatype\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:DerivedValuesConstraintComponent\n  sh:targetClass sh:PropertyShape ;\n.\nsh:DisjointConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateDisjoint\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n      sh:message \"Value node must not also be one of the values of {$disjoint}\" ;\n    ] ;\n  sh:validator [\n      rdf:type sh:SPARQLAskValidator ;\n      sh:ask \"\"\"\n\t\tASK {\n\t\t\tFILTER NOT EXISTS {\n\t\t\t\t$this $disjoint $value .\n\t\t\t}\n\t\t}\n\t\t\"\"\" ;\n      sh:message \"Property must not share any values with {$disjoint}\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n    ] ;\n.\nsh:EqualsConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Must have same values as {$equals}\" ;\n  sh:nodeValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT DISTINCT $this ?value\n\t\tWHERE {\n\t\t\t{\n\t\t\t\tFILTER NOT EXISTS { $this $equals $this }\n\t\t\t\tBIND ($this AS ?value) .\n\t\t\t}\n\t\t\tUNION\n\t\t\t{\n\t\t\t\t$this $equals ?value .\n\t\t\t\tFILTER (?value != $this) .\n\t\t\t}\n\t\t}\n\t\t\"\"\" ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateEqualsProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:nodeValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateEqualsNode\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT DISTINCT $this ?value\n\t\tWHERE {\n\t\t\t{\n\t\t\t\t$this $PATH ?value .\n\t\t\t\tMINUS {\n\t\t\t\t\t$this $equals ?value .\n\t\t\t\t}\n\t\t\t}\n\t\t\tUNION\n\t\t\t{\n\t\t\t\t$this $equals ?value .\n\t\t\t\tMINUS {\n\t\t\t\t\t$this $PATH ?value .\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:Shape ;\n.\nsh:Function\n  sh:property [\n      sh:path dash:cachable ;\n      sh:datatype xsd:boolean ;\n      sh:description \"True to indicate that this function will always return the same values for the same combination of arguments, regardless of the query graphs. Engines can use this information to cache and reuse previous function calls.\" ;\n      sh:maxCount 1 ;\n      sh:name \"cachable\" ;\n    ] ;\n.\nsh:HasValueConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:nodeValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateHasValueNode\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n      sh:message \"Value must be {$hasValue}\" ;\n    ] ;\n  sh:nodeValidator [\n      rdf:type sh:SPARQLAskValidator ;\n      sh:ask \"\"\"ASK {\n    FILTER ($value = $hasValue)\n}\"\"\" ;\n      sh:message \"Value must be {$hasValue}\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateHasValueProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n      sh:message \"Missing expected value {$hasValue}\" ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:message \"Missing expected value {$hasValue}\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT $this\n\t\tWHERE {\n\t\t\tFILTER NOT EXISTS { $this $PATH $hasValue }\n\t\t}\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:Shape ;\n.\nsh:InConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not in {$in}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:isIn ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateIn\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:LanguageInConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Language does not match any of {$languageIn}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:isLanguageIn ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateLanguageIn\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:LessThanConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not < value of {$lessThan}\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateLessThanProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT $this ?value\n\t\tWHERE {\n\t\t\t$this $PATH ?value .\n\t\t\t$this $lessThan ?otherValue .\n\t\t\tBIND (?value < ?otherValue AS ?result) .\n\t\t\tFILTER (!bound(?result) || !(?result)) .\n\t\t}\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:LessThanOrEqualsConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not <= value of {$lessThanOrEquals}\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateLessThanOrEqualsProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT DISTINCT $this ?value\n\t\tWHERE {\n\t\t\t$this $PATH ?value .\n\t\t\t$this $lessThanOrEquals ?otherValue .\n\t\t\tBIND (?value <= ?otherValue AS ?result) .\n\t\t\tFILTER (!bound(?result) || !(?result)) .\n\t\t}\n\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:MaxCountConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"More than {$maxCount} values\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMaxCountProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT $this\n\t\tWHERE {\n\t\t\t$this $PATH ?value .\n\t\t}\n\t\tGROUP BY $this\n\t\tHAVING (COUNT(DISTINCT ?value) > $maxCount)\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:MaxExclusiveConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not < {$maxExclusive}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMaxExclusive ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMaxExclusive\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:MaxInclusiveConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not <= {$maxInclusive}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMaxInclusive ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMaxInclusive\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:MaxLengthConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value has more than {$maxLength} characters\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMaxLength ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMaxLength\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:MinCountConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Less than {$minCount} values\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMinCountProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT $this\n\t\tWHERE {\n\t\t\tOPTIONAL {\n\t\t\t\t$this $PATH ?value .\n\t\t\t}\n\t\t} \n\t\tGROUP BY $this\n\t\tHAVING (COUNT(DISTINCT ?value) < $minCount)\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:MinExclusiveConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not > {$minExclusive}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMinExclusive ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMinExclusive\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:MinInclusiveConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not >= {$minInclusive}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMinInclusive ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMinInclusive\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:MinLengthConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value has less than {$minLength} characters\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMinLength ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMinLength\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:NodeConstraintComponent\n  sh:message \"Value does not have shape {$node}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateNode\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:NodeKindConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value does not have node kind {$nodeKind}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasNodeKind ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateNodeKind\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:NotConstraintComponent\n  sh:message \"Value does have shape {$not}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateNot\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:OrConstraintComponent\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateOr\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:PatternConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value does not match pattern \\\"{$pattern}\\\"\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasPattern ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validatePattern\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:QualifiedMaxCountConstraintComponent\n  sh:message \"More than {$qualifiedMaxCount} values have shape {$qualifiedValueShape}\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateQualifiedMaxCountProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:QualifiedMinCountConstraintComponent\n  sh:message \"Less than {$qualifiedMinCount} values have shape {$qualifiedValueShape}\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateQualifiedMinCountProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:UniqueLangConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Language \\\"{?lang}\\\" used more than once\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateUniqueLangProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT DISTINCT $this ?lang\n\t\tWHERE {\n\t\t\t{\n\t\t\t\tFILTER ($uniqueLang) .\n\t\t\t}\n\t\t\t$this $PATH ?value .\n\t\t\tBIND (lang(?value) AS ?lang) .\n\t\t\tFILTER (bound(?lang) && ?lang != \\\"\\\") . \n\t\t\tFILTER EXISTS {\n\t\t\t\t$this $PATH ?otherValue .\n\t\t\t\tFILTER (?otherValue != ?value && ?lang = lang(?otherValue)) .\n\t\t\t}\n\t\t}\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:XoneConstraintComponent\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateXone\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:derivedValues\n  dash:defaultValueType sh:SPARQLValuesDeriver ;\n.\nsh:node\n  dash:defaultValueType sh:NodeShape ;\n.\nsh:not\n  dash:defaultValueType sh:Shape ;\n.\nsh:order\n  rdfs:range xsd:decimal ;\n.\nsh:parameter\n  dash:defaultValueType sh:Parameter ;\n.\nsh:property\n  dash:defaultValueType sh:PropertyShape ;\n.\nsh:qualifiedValueShape\n  dash:defaultValueType sh:Shape ;\n.\nsh:sparql\n  dash:defaultValueType sh:SPARQLConstraint ;\n.\n","shacl":"# W3C Shapes Constraint Language (SHACL) Vocabulary\n# Draft last edited 2017-04-28\n\n@prefix owl:  <http://www.w3.org/2002/07/owl#> .\n@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .\n\n@prefix sh:   <http://www.w3.org/ns/shacl#> .\n\nsh:\n\ta owl:Ontology ;\n\trdfs:label \"W3C Shapes Constraint Language (SHACL) Vocabulary\"@en ;\n\trdfs:comment \"This vocabulary defines terms used in SHACL, the W3C Shapes Constraint Language.\"@en ;\n\tsh:declare [\n\t\tsh:prefix \"sh\" ;\n\t\tsh:namespace \"http://www.w3.org/ns/shacl#\" ;\n\t] ;\n\tsh:suggestedShapesGraph <http://www.w3.org/ns/shacl-shacl#> .\n\n\n# Shapes vocabulary -----------------------------------------------------------\n\nsh:Shape\n\ta rdfs:Class ;\n\trdfs:label \"Shape\"@en ;\n\trdfs:comment \"A shape is a collection of constraints that may be targeted for certain nodes.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:NodeShape\n\ta rdfs:Class ;\n\trdfs:label \"Node shape\"@en ;\n\trdfs:comment \"A node shape is a shape that specifies constraint that need to be met with respect to focus nodes.\"@en ;\n\trdfs:subClassOf sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:PropertyShape\n\ta rdfs:Class ;\n\trdfs:label \"Property shape\"@en ;\n\trdfs:comment \"A property shape is a shape that specifies constraints on the values of a focus node for a given property or path.\"@en ;\n\trdfs:subClassOf sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:deactivated\n\ta rdf:Property ;\n\trdfs:label \"deactivated\"@en ;\n\trdfs:comment \"If set to true for a shape then the shape is deactivated and all nodes conform to it.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\nsh:targetClass \n\ta rdf:Property ;\n\trdfs:label \"target class\"@en ;\n\trdfs:comment \"Links a shape to a class, indicating that all instances of the class must conform to the shape.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range rdfs:Class ;\n\trdfs:isDefinedBy sh: .\n\nsh:targetNode \n\ta rdf:Property ;\n\trdfs:label \"target node\"@en ;\n\trdfs:comment \"Links a shape to individual nodes, indicating that these nodes must conform to the shape.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:targetObjectsOf\n\ta rdf:Property ;\n\trdfs:label \"target objects of\"@en ;\n\trdfs:comment \"Links a shape to a property, indicating that all all objects of triples that have the given property as their predicate must conform to the shape.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\nsh:targetSubjectsOf\n\ta rdf:Property ;\n\trdfs:label \"target subjects of\"@en ;\n\trdfs:comment \"Links a shape to a property, indicating that all subjects of triples that have the given property as their predicate must conform to the shape.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\nsh:message\n\ta rdf:Property ;\n\t# domain: sh:Shape or sh:SPARQLConstraint or sh:SPARQLSelectValidator or sh:SPARQLAskValidator\n\t# range: xsd:string or rdf:langString\n\trdfs:label \"message\"@en ;\n\trdfs:comment \"A human-readable message (possibly with placeholders for variables) explaining the cause of the result.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:severity\n\ta rdf:Property ;\n\trdfs:label \"severity\"@en ;\n\trdfs:comment \"Defines the severity that validation results produced by a shape must have. Defaults to sh:Violation.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range sh:Severity ;\n\trdfs:isDefinedBy sh: .\n\n\n# Node kind vocabulary --------------------------------------------------------\n\nsh:NodeKind\n\ta rdfs:Class ;\n\trdfs:label \"Node kind\"@en ;\n\trdfs:comment \"The class of all node kinds, including sh:BlankNode, sh:IRI, sh:Literal or the combinations of these: sh:BlankNodeOrIRI, sh:BlankNodeOrLiteral, sh:IRIOrLiteral.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:BlankNode\n\ta sh:NodeKind ;\n\trdfs:label \"Blank node\"@en ;\n\trdfs:comment \"The node kind of all blank nodes.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:BlankNodeOrIRI\n\ta sh:NodeKind ;\n\trdfs:label \"Blank node or IRI\"@en ;\n\trdfs:comment \"The node kind of all blank nodes or IRIs.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:BlankNodeOrLiteral\n\ta sh:NodeKind ;\n\trdfs:label \"Blank node or literal\"@en ;\n\trdfs:comment \"The node kind of all blank nodes or literals.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:IRI\n\ta sh:NodeKind ;\n\trdfs:label \"IRI\"@en ;\n\trdfs:comment \"The node kind of all IRIs.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:IRIOrLiteral\n\ta sh:NodeKind ;\n\trdfs:label \"IRI or literal\"@en ;\n\trdfs:comment \"The node kind of all IRIs or literals.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:Literal\n\ta sh:NodeKind ;\n\trdfs:label \"Literal\"@en ;\n\trdfs:comment \"The node kind of all literals.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\n# Results vocabulary ----------------------------------------------------------\n\nsh:ValidationReport\n\ta rdfs:Class ;\n\trdfs:label \"Validation report\"@en ;\n\trdfs:comment \"The class of SHACL validation reports.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:conforms\n\ta rdf:Property ;\n\trdfs:label \"conforms\"@en ;\n\trdfs:comment \"True if the validation did not produce any validation results, and false otherwise.\"@en ;\n\trdfs:domain sh:ValidationReport ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\nsh:result\n\ta rdf:Property ;\n\trdfs:label \"result\"@en ;\n\trdfs:comment \"The validation results contained in a validation report.\"@en ;\n\trdfs:domain sh:ValidationReport ;\n\trdfs:range sh:ValidationResult ;\n\trdfs:isDefinedBy sh: .\n\nsh:shapesGraphWellFormed\n\ta rdf:Property ;\n\trdfs:label \"shapes graph well-formed\"@en ;\n\trdfs:comment \"If true then the validation engine was certain that the shapes graph has passed all SHACL syntax requirements during the validation process.\"@en ;\n\trdfs:domain sh:ValidationReport ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\nsh:AbstractResult\n\ta rdfs:Class ;\n\trdfs:label \"Abstract result\"@en ;\n\trdfs:comment \"The base class of validation results, typically not instantiated directly.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:ValidationResult\n\ta rdfs:Class ;\n\trdfs:label \"Validation result\"@en ;\n\trdfs:comment \"The class of validation results.\"@en ;\n\trdfs:subClassOf sh:AbstractResult ;\n\trdfs:isDefinedBy sh: .\n\nsh:Severity\n\ta rdfs:Class ;\n\trdfs:label \"Severity\"@en ;\n\trdfs:comment \"The class of validation result severity levels, including violation and warning levels.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:Info\n\ta sh:Severity ;\n\trdfs:label \"Info\"@en ;\n\trdfs:comment \"The severity for an informational validation result.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:Violation\n\ta sh:Severity ;\n\trdfs:label \"Violation\"@en ;\n\trdfs:comment \"The severity for a violation validation result.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:Warning\n\ta sh:Severity ;\n\trdfs:label \"Warning\"@en ;\n\trdfs:comment \"The severity for a warning validation result.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:detail\n\ta rdf:Property ;\n\trdfs:label \"detail\"@en ;\n\trdfs:comment \"Links a result with other results that provide more details, for example to describe violations against nested shapes.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:range sh:AbstractResult ;\n\trdfs:isDefinedBy sh: .\n\nsh:focusNode\n\ta rdf:Property ;\n\trdfs:label \"focus node\"@en ;\n\trdfs:comment \"The focus node that was validated when the result was produced.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:isDefinedBy sh: .\n\nsh:resultMessage\n\ta rdf:Property ;\n\trdfs:label \"result message\"@en ;\n\trdfs:comment \"Human-readable messages explaining the cause of the result.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\t# range: xsd:string or rdf:langString\n\trdfs:isDefinedBy sh: .\n\nsh:resultPath\n\ta rdf:Property ;\n\trdfs:label \"result path\"@en ;\n\trdfs:comment \"The path of a validation result, based on the path of the validated property shape.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:resultSeverity\n\ta rdf:Property ;\n\trdfs:label \"result severity\"@en ;\n\trdfs:comment \"The severity of the result, e.g. warning.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:range sh:Severity ;\n\trdfs:isDefinedBy sh: .\n\nsh:sourceConstraint\n\ta rdf:Property ;\n\trdfs:label \"source constraint\"@en ;\n\trdfs:comment \"The constraint that was validated when the result was produced.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:isDefinedBy sh: .\n\nsh:sourceShape\n\ta rdf:Property ;\n\trdfs:label \"source shape\"@en ;\n\trdfs:comment \"The shape that is was validated when the result was produced.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:range sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:sourceConstraintComponent\n\ta rdf:Property ;\n\trdfs:label \"source constraint component\"@en ;\n\trdfs:comment \"The constraint component that is the source of the result.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:range sh:ConstraintComponent ;\n\trdfs:isDefinedBy sh: .\n\nsh:value\n\ta rdf:Property ;\n\trdfs:label \"value\"@en ;\n\trdfs:comment \"An RDF node that has caused the result.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:isDefinedBy sh: .\n\n\t\n# Graph properties ------------------------------------------------------------\n\nsh:shapesGraph\n\ta rdf:Property ;\n\trdfs:label \"shapes graph\"@en ;\n\trdfs:comment \"Shapes graphs that should be used when validating this data graph.\"@en ;\n\trdfs:domain owl:Ontology ;\n\trdfs:range owl:Ontology ;\n\trdfs:isDefinedBy sh: .\n\nsh:suggestedShapesGraph\n\ta rdf:Property ;\n\trdfs:label \"suggested shapes graph\"@en ;\n\trdfs:comment \"Suggested shapes graphs for this ontology. The values of this property may be used in the absence of specific sh:shapesGraph statements.\"@en ;\n\trdfs:domain owl:Ontology ;\n\trdfs:range owl:Ontology ;\n\trdfs:isDefinedBy sh: .\n\nsh:entailment\n\ta rdf:Property ;\n\trdfs:label \"entailment\"@en ;\n\trdfs:comment \"An entailment regime that indicates what kind of inferencing is required by a shapes graph.\"@en ;\n\trdfs:domain owl:Ontology ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\n\n# Path vocabulary -------------------------------------------------------------\n\nsh:path\n\ta rdf:Property ;\n\trdfs:label \"path\"@en ;\n\trdfs:comment \"Specifies the property path of a property shape.\"@en ;\n\trdfs:domain sh:PropertyShape ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:inversePath\n\ta rdf:Property ;\n\trdfs:label \"inverse path\"@en ;\n\trdfs:comment \"The (single) value of this property represents an inverse path (object to subject).\"@en ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:alternativePath\n\ta rdf:Property ;\n\trdfs:label \"alternative path\"@en ;\n\trdfs:comment \"The (single) value of this property must be a list of path elements, representing the elements of alternative paths.\"@en ;\n\trdfs:range rdf:List ;\n\trdfs:isDefinedBy sh: .\n\nsh:zeroOrMorePath\n\ta rdf:Property ;\n\trdfs:label \"zero or more path\"@en ;\n\trdfs:comment \"The (single) value of this property represents a path that is matched zero or more times.\"@en ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:oneOrMorePath\n\ta rdf:Property ;\n\trdfs:label \"one or more path\"@en ;\n\trdfs:comment \"The (single) value of this property represents a path that is matched one or more times.\"@en ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:zeroOrOnePath\n\ta rdf:Property ;\n\trdfs:label \"zero or one path\"@en ;\n\trdfs:comment \"The (single) value of this property represents a path that is matched zero or one times.\"@en ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\n\n# Parameters metamodel --------------------------------------------------------\n\nsh:Parameterizable\n\ta rdfs:Class ;\n\trdfs:label \"Parameterizable\"@en ;\n\trdfs:comment \"Superclass of components that can take parameters, especially functions and constraint components.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:parameter\n\ta rdf:Property ;\n\trdfs:label \"parameter\"@en ;\n\trdfs:comment \"The parameters of a function or constraint component.\"@en ;\n\trdfs:domain sh:Parameterizable ;\n\trdfs:range sh:Parameter ;\n\trdfs:isDefinedBy sh: .\n\nsh:labelTemplate\n\ta rdf:Property ;\n\trdfs:label \"label template\"@en ;\n\trdfs:comment \"Outlines how human-readable labels of instances of the associated Parameterizable shall be produced. The values can contain {?paramName} as placeholders for the actual values of the given parameter.\"@en ;\n\trdfs:domain sh:Parameterizable ;\n\t# range: xsd:string or rdf:langString\n\trdfs:isDefinedBy sh: .\n\nsh:Parameter\n\ta rdfs:Class ;\n\trdfs:label \"Parameter\"@en ;\n\trdfs:comment \"The class of parameter declarations, consisting of a path predicate and (possibly) information about allowed value type, cardinality and other characteristics.\"@en ;\n\trdfs:subClassOf sh:PropertyShape ;\n\trdfs:isDefinedBy sh: .\n\nsh:optional\n\ta rdf:Property ;\n\trdfs:label \"optional\"@en ;\n\trdfs:comment \"Indicates whether a parameter is optional.\"@en ;\n\trdfs:domain sh:Parameter ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\n\n# Constraint components metamodel ---------------------------------------------\n\nsh:ConstraintComponent\n\ta rdfs:Class ;\n\trdfs:label \"Constraint component\"@en ;\n\trdfs:comment \"The class of constraint components.\"@en ;\n\trdfs:subClassOf sh:Parameterizable ;\n\trdfs:isDefinedBy sh: .\n\nsh:validator\n\ta rdf:Property ;\n\trdfs:label \"validator\"@en ;\n\trdfs:comment \"The validator(s) used to evaluate constraints of either node or property shapes.\"@en ;\n\trdfs:domain sh:ConstraintComponent ;\n\trdfs:range sh:Validator ;\n\trdfs:isDefinedBy sh: .\n\nsh:nodeValidator\n\ta rdf:Property ;\n\trdfs:label \"shape validator\"@en ;\n\trdfs:comment \"The validator(s) used to evaluate a constraint in the context of a node shape.\"@en ;\n\trdfs:domain sh:ConstraintComponent ;\n\trdfs:range sh:Validator ;\n\trdfs:isDefinedBy sh: .\n\nsh:propertyValidator\n\ta rdf:Property ;\n\trdfs:label \"property validator\"@en ;\n\trdfs:comment \"The validator(s) used to evaluate a constraint in the context of a property shape.\"@en ;\n\trdfs:domain sh:ConstraintComponent ;\n\trdfs:range sh:Validator ;\n\trdfs:isDefinedBy sh: .\n\nsh:Validator\n\ta rdfs:Class ;\n\trdfs:label \"Validator\"@en ;\n\trdfs:comment \"The class of validators, which provide instructions on how to process a constraint definition. This class serves as base class for the SPARQL-based validators and other possible implementations.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLAskValidator\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL ASK validator\"@en ;\n\trdfs:comment \"The class of validators based on SPARQL ASK queries. The queries are evaluated for each value node and are supposed to return true if the given node conforms.\"@en ;\n\trdfs:subClassOf sh:Validator ;\n\trdfs:subClassOf sh:SPARQLAskExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLSelectValidator\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL SELECT validator\"@en ;\n\trdfs:comment \"The class of validators based on SPARQL SELECT queries. The queries are evaluated for each focus node and are supposed to produce bindings for all focus nodes that do not conform.\"@en ;\n\trdfs:subClassOf sh:Validator ;\n\trdfs:subClassOf sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\n\n# Library of Core Constraint Components and their properties ------------------\n\nsh:AndConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"And constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to test whether a value node conforms to all members of a provided list of shapes.\"@en ;\n\tsh:parameter sh:AndConstraintComponent-and ;\n\trdfs:isDefinedBy sh: .\n\nsh:AndConstraintComponent-and\n\ta sh:Parameter ;\n\tsh:path sh:and ;\n\trdfs:isDefinedBy sh: .\n\nsh:and\n\ta rdf:Property ;\n\trdfs:label \"and\"@en ;\n\trdfs:comment \"RDF list of shapes to validate the value nodes against.\"@en ;\n\trdfs:range rdf:List ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:ClassConstraintComponent \n\ta sh:ConstraintComponent ;\n\trdfs:label \"Class constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that each value node is an instance of a given type.\"@en ;\n\tsh:parameter sh:ClassConstraintComponent-class ;\n\trdfs:isDefinedBy sh: .\n\nsh:ClassConstraintComponent-class\n\ta sh:Parameter ;\n\tsh:path sh:class ;\n\tsh:nodeKind sh:IRI ;\n\trdfs:isDefinedBy sh: .\n\nsh:class\n\ta rdf:Property ;\n\trdfs:label \"class\"@en ;\n\trdfs:comment \"The type that all value nodes must have.\"@en ;\n\trdfs:range rdfs:Class ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:ClosedConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Closed constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to indicate that focus nodes must only have values for those properties that have been explicitly enumerated via sh:property/sh:path.\"@en ;\n\tsh:parameter sh:ClosedConstraintComponent-closed ;\n\tsh:parameter sh:ClosedConstraintComponent-ignoredProperties ;\n\trdfs:isDefinedBy sh: .\n\nsh:ClosedConstraintComponent-closed\n\ta sh:Parameter ; \n\tsh:path sh:closed ;\n\tsh:datatype xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\nsh:ClosedConstraintComponent-ignoredProperties\n\ta sh:Parameter ;\n\tsh:path sh:ignoredProperties ;\n\tsh:optional true ;\n\trdfs:isDefinedBy sh: .\n\nsh:closed\n\ta rdf:Property ;\n\trdfs:label \"closed\"@en ;\n\trdfs:comment \"If set to true then the shape is closed.\"@en ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\nsh:ignoredProperties\n\ta rdf:Property ;\n\trdfs:label \"ignored properties\"@en ;\n\trdfs:comment \"An optional RDF list of properties that are also permitted in addition to those explicitly enumerated via sh:property/sh:path.\"@en ;\n\trdfs:range rdf:List ;    # members: rdf:Property\n\trdfs:isDefinedBy sh: .\n\n\nsh:DatatypeConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Datatype constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the datatype of all value nodes.\"@en ;\n\tsh:parameter sh:DatatypeConstraintComponent-datatype ;\n\trdfs:isDefinedBy sh: .\n\nsh:DatatypeConstraintComponent-datatype\n\ta sh:Parameter ;\n\tsh:path sh:datatype ;\n\tsh:nodeKind sh:IRI ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:datatype\n\ta rdf:Property ;\n\trdfs:label \"datatype\"@en ;\n\trdfs:comment \"Specifies an RDF datatype that all value nodes must have.\"@en ;\n\trdfs:range rdfs:Datatype ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:DisjointConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Disjoint constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that the set of value nodes is disjoint with the the set of nodes that have the focus node as subject and the value of a given property as predicate.\"@en ;\n\tsh:parameter sh:DisjointConstraintComponent-disjoint ;\n\trdfs:isDefinedBy sh: .\n\nsh:DisjointConstraintComponent-disjoint\n\ta sh:Parameter ;\n\tsh:path sh:disjoint ;\n\tsh:nodeKind sh:IRI ;\n\trdfs:isDefinedBy sh: .\n\nsh:disjoint\n\ta rdf:Property ;\n\trdfs:label \"disjoint\"@en ;\n\trdfs:comment \"Specifies a property where the set of values must be disjoint with the value nodes.\"@en ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:EqualsConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Equals constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that the set of value nodes is equal to the set of nodes that have the focus node as subject and the value of a given property as predicate.\"@en ;\n\tsh:parameter sh:EqualsConstraintComponent-equals ;\n\trdfs:isDefinedBy sh: .\n\nsh:EqualsConstraintComponent-equals\n\ta sh:Parameter ;\n\tsh:path sh:equals ;\n\tsh:nodeKind sh:IRI ;\n\trdfs:isDefinedBy sh: .\n\nsh:equals\n\ta rdf:Property ;\n\trdfs:label \"equals\"@en ;\n\trdfs:comment \"Specifies a property that must have the same values as the value nodes.\"@en ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:HasValueConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Has-value constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that one of the value nodes is a given RDF node.\"@en ;\n\tsh:parameter sh:HasValueConstraintComponent-hasValue ;\n\trdfs:isDefinedBy sh: .\n\nsh:HasValueConstraintComponent-hasValue\n\ta sh:Parameter ;\n\tsh:path sh:hasValue ;\n\trdfs:isDefinedBy sh: .\n\nsh:hasValue\n\ta rdf:Property ;\n\trdfs:label \"has value\"@en ;\n\trdfs:comment \"Specifies a value that must be among the value nodes.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:InConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"In constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to exclusively enumerate the permitted value nodes.\"@en ;\n\tsh:parameter sh:InConstraintComponent-in ;\n\trdfs:isDefinedBy sh: .\n\nsh:InConstraintComponent-in\n\ta sh:Parameter ;\n\tsh:path sh:in ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:in\n\ta rdf:Property ;\n\trdfs:label \"in\"@en ;\n\trdfs:comment \"Specifies a list of allowed values so that each value node must be among the members of the given list.\"@en ;\n\trdfs:range rdf:List ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:LanguageInConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Language-in constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to enumerate language tags that all value nodes must have.\"@en ;\n\tsh:parameter sh:LanguageInConstraintComponent-languageIn ;\n\trdfs:isDefinedBy sh: .\n\nsh:LanguageInConstraintComponent-languageIn\n\ta sh:Parameter ;\n\tsh:path sh:languageIn ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:languageIn\n\ta rdf:Property ;\n\trdfs:label \"language in\"@en ;\n\trdfs:comment \"Specifies a list of language tags that all value nodes must have.\"@en ;\n\trdfs:range rdf:List ;   # members: xsd:string\n\trdfs:isDefinedBy sh: .\n\n\nsh:LessThanConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Less-than constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that each value node is smaller than all the nodes that have the focus node as subject and the value of a given property as predicate.\"@en ;\n\tsh:parameter sh:LessThanConstraintComponent-lessThan ;\n\trdfs:isDefinedBy sh: .\n\nsh:LessThanConstraintComponent-lessThan\n\ta sh:Parameter ;\n\tsh:path sh:lessThan ;\n\tsh:nodeKind sh:IRI ;\n\trdfs:isDefinedBy sh: .\n\nsh:lessThan\n\ta rdf:Property ;\n\trdfs:label \"less than\"@en ;\n\trdfs:comment \"Specifies a property that must have smaller values than the value nodes.\"@en ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:LessThanOrEqualsConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"less-than-or-equals constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that every value node is smaller than all the nodes that have the focus node as subject and the value of a given property as predicate.\"@en ;\n\tsh:parameter sh:LessThanOrEqualsConstraintComponent-lessThanOrEquals ;\n\trdfs:isDefinedBy sh: .\n\nsh:LessThanOrEqualsConstraintComponent-lessThanOrEquals\n\ta sh:Parameter ;\n\tsh:path sh:lessThanOrEquals ;\n\tsh:nodeKind sh:IRI ;\n\trdfs:isDefinedBy sh: .\n\nsh:lessThanOrEquals\n\ta rdf:Property ;\n\trdfs:label \"less than or equals\"@en ;\n\trdfs:comment \"Specifies a property that must have smaller or equal values than the value nodes.\"@en ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MaxCountConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Max-count constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the maximum number of value nodes.\"@en ;\n\tsh:parameter sh:MaxCountConstraintComponent-maxCount ;\n\trdfs:isDefinedBy sh: .\n\nsh:MaxCountConstraintComponent-maxCount\n\ta sh:Parameter ;\n\tsh:path sh:maxCount ;\n\tsh:datatype xsd:integer ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:maxCount\n\ta rdf:Property ;\n\trdfs:label \"max count\"@en ;\n\trdfs:comment \"Specifies the maximum number of values in the set of value nodes.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MaxExclusiveConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Max-exclusive constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the range of value nodes with a maximum exclusive value.\"@en ;\n\tsh:parameter sh:MaxExclusiveConstraintComponent-maxExclusive ;\n\trdfs:isDefinedBy sh: .\n\nsh:MaxExclusiveConstraintComponent-maxExclusive\n\ta sh:Parameter ;\n\tsh:path sh:maxExclusive ;\n\tsh:maxCount 1 ;\n\tsh:nodeKind sh:Literal ;\n\trdfs:isDefinedBy sh: .\n\nsh:maxExclusive\n\ta rdf:Property ;\n\trdfs:label \"max exclusive\"@en ;\n\trdfs:comment \"Specifies the maximum exclusive value of each value node.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MaxInclusiveConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Max-inclusive constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the range of value nodes with a maximum inclusive value.\"@en ;\n\tsh:parameter sh:MaxInclusiveConstraintComponent-maxInclusive ;\n\trdfs:isDefinedBy sh: .\n\nsh:MaxInclusiveConstraintComponent-maxInclusive\n\ta sh:Parameter ;\n\tsh:path sh:maxInclusive ;\n\tsh:maxCount 1 ;\n\tsh:nodeKind sh:Literal ;\n\trdfs:isDefinedBy sh: .\n\nsh:maxInclusive\n\ta rdf:Property ;\n\trdfs:label \"max inclusive\"@en ;\n\trdfs:comment \"Specifies the maximum inclusive value of each value node.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MaxLengthConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Max-length constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the maximum string length of value nodes.\"@en ;\n\tsh:parameter sh:MaxLengthConstraintComponent-maxLength ;\n\trdfs:isDefinedBy sh: .\n\nsh:MaxLengthConstraintComponent-maxLength\n\ta sh:Parameter ;\n\tsh:path sh:maxLength ;\n\tsh:datatype xsd:integer ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:maxLength\n\ta rdf:Property ;\n\trdfs:label \"max length\"@en ;\n\trdfs:comment \"Specifies the maximum string length of each value node.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MinCountConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Min-count constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the minimum number of value nodes.\"@en ;\n\tsh:parameter sh:MinCountConstraintComponent-minCount ;\n\trdfs:isDefinedBy sh: .\n\nsh:MinCountConstraintComponent-minCount\n\ta sh:Parameter ;\n\tsh:path sh:minCount ;\n\tsh:datatype xsd:integer ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:minCount\n\ta rdf:Property ;\n\trdfs:label \"min count\"@en ;\n\trdfs:comment \"Specifies the minimum number of values in the set of value nodes.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MinExclusiveConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Min-exclusive constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the range of value nodes with a minimum exclusive value.\"@en ;\n\tsh:parameter sh:MinExclusiveConstraintComponent-minExclusive ;\n\trdfs:isDefinedBy sh: .\n\nsh:MinExclusiveConstraintComponent-minExclusive\n\ta sh:Parameter ;\n\tsh:path sh:minExclusive ;\n\tsh:maxCount 1 ;\n\tsh:nodeKind sh:Literal ;\n\trdfs:isDefinedBy sh: .\n\nsh:minExclusive\n\ta rdf:Property ;\n\trdfs:label \"min exclusive\"@en ;\n\trdfs:comment \"Specifies the minimum exclusive value of each value node.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MinInclusiveConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Min-inclusive constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the range of value nodes with a minimum inclusive value.\"@en ;\n\tsh:parameter sh:MinInclusiveConstraintComponent-minInclusive ;\n\trdfs:isDefinedBy sh: .\n\nsh:MinInclusiveConstraintComponent-minInclusive\n\ta sh:Parameter ;\n\tsh:path sh:minInclusive ;\n\tsh:maxCount 1 ;\n\tsh:nodeKind sh:Literal ;\n\trdfs:isDefinedBy sh: .\n\nsh:minInclusive\n\ta rdf:Property ;\n\trdfs:label \"min inclusive\"@en ;\n\trdfs:comment \"Specifies the minimum inclusive value of each value node.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MinLengthConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Min-length constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the minimum string length of value nodes.\"@en ;\n\tsh:parameter sh:MinLengthConstraintComponent-minLength ;\n\trdfs:isDefinedBy sh: .\n\nsh:MinLengthConstraintComponent-minLength\n\ta sh:Parameter ;\n\tsh:path sh:minLength ;\n\tsh:datatype xsd:integer ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:minLength\n\ta rdf:Property ;\n\trdfs:label \"min length\"@en ;\n\trdfs:comment \"Specifies the minimum string length of each value node.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:NodeConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Node constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that all value nodes conform to the given node shape.\"@en ;\n\tsh:parameter sh:NodeConstraintComponent-node ;\n\trdfs:isDefinedBy sh: .\n\nsh:NodeConstraintComponent-node\n\ta sh:Parameter ;\n\tsh:path sh:node ;\n\trdfs:isDefinedBy sh: .\n\nsh:node\n\ta rdf:Property ;\n\trdfs:label \"node\"@en ;\n\trdfs:comment \"Specifies the node shape that all value nodes must conform to.\"@en ;\n\trdfs:range sh:NodeShape ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:NodeKindConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Node-kind constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the RDF node kind of each value node.\"@en ;\n\tsh:parameter sh:NodeKindConstraintComponent-nodeKind ;\n\trdfs:isDefinedBy sh: .\n\nsh:NodeKindConstraintComponent-nodeKind\n\ta sh:Parameter ;\n\tsh:path sh:nodeKind ;\n\tsh:in ( sh:BlankNode sh:IRI sh:Literal sh:BlankNodeOrIRI sh:BlankNodeOrLiteral sh:IRIOrLiteral ) ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:nodeKind\n\ta rdf:Property ;\n\trdfs:label \"node kind\"@en ;\n\trdfs:comment \"Specifies the node kind (e.g. IRI or literal) each value node.\"@en ;\n\trdfs:range sh:NodeKind ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:NotConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Not constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that value nodes do not conform to a given shape.\"@en ;\n\tsh:parameter sh:NotConstraintComponent-not ;\n\trdfs:isDefinedBy sh: .\n\nsh:NotConstraintComponent-not\n\ta sh:Parameter ;\n\tsh:path sh:not ;\n\trdfs:isDefinedBy sh: .\n\nsh:not\n\ta rdf:Property ;\n\trdfs:label \"not\"@en ;\n\trdfs:comment \"Specifies a shape that the value nodes must not conform to.\"@en ;\n\trdfs:range sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:OrConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Or constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the value nodes so that they conform to at least one out of several provided shapes.\"@en ;\n\tsh:parameter sh:OrConstraintComponent-or ;\n\trdfs:isDefinedBy sh: .\n\nsh:OrConstraintComponent-or\n\ta sh:Parameter ;\n\tsh:path sh:or ;\n\trdfs:isDefinedBy sh: .\n\nsh:or\n\ta rdf:Property ;\n\trdfs:label \"or\"@en ;\n\trdfs:comment \"Specifies a list of shapes so that the value nodes must conform to at least one of the shapes.\"@en ;\n\trdfs:range rdf:List ;    # members: sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:PatternConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Pattern constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that every value node matches a given regular expression.\"@en ;\n\tsh:parameter sh:PatternConstraintComponent-pattern ;\n\tsh:parameter sh:PatternConstraintComponent-flags ;\n\trdfs:isDefinedBy sh: .\n\nsh:PatternConstraintComponent-pattern\n\ta sh:Parameter ;\n\tsh:path sh:pattern ;\n\tsh:datatype xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:PatternConstraintComponent-flags\n\ta sh:Parameter ;\n\tsh:path sh:flags ;\n\tsh:datatype xsd:string ;\n\tsh:optional true ;\n\trdfs:isDefinedBy sh: .\n\nsh:flags\n\ta rdf:Property ;\n\trdfs:label \"flags\"@en ;\n\trdfs:comment \"An optional flag to be used with regular expression pattern matching.\"@en ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:pattern\n\ta rdf:Property ;\n\trdfs:label \"pattern\"@en ;\n\trdfs:comment \"Specifies a regular expression pattern that the string representations of the value nodes must match.\"@en ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:PropertyConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Property constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that all value nodes conform to the given property shape.\"@en ;\n\tsh:parameter sh:PropertyConstraintComponent-property ;\n\trdfs:isDefinedBy sh: .\n\nsh:PropertyConstraintComponent-property\n\ta sh:Parameter ;\n\tsh:path sh:property ;\n\trdfs:isDefinedBy sh: .\n\nsh:property\n\ta rdf:Property ;\n\trdfs:label \"property\"@en ;\n\trdfs:comment \"Links a shape to its property shapes.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range sh:PropertyShape ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:QualifiedMaxCountConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Qualified-max-count constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that a specified maximum number of value nodes conforms to a given shape.\"@en ;\n\tsh:parameter sh:QualifiedMaxCountConstraintComponent-qualifiedMaxCount ;\n\tsh:parameter sh:QualifiedMaxCountConstraintComponent-qualifiedValueShape ;\n\tsh:parameter sh:QualifiedMaxCountConstraintComponent-qualifiedValueShapesDisjoint ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMaxCountConstraintComponent-qualifiedMaxCount\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedMaxCount ;\n\tsh:datatype xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMaxCountConstraintComponent-qualifiedValueShape\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedValueShape ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMaxCountConstraintComponent-qualifiedValueShapesDisjoint\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedValueShapesDisjoint ;\n\tsh:datatype xsd:boolean ;\n\tsh:optional true ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:QualifiedMinCountConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Qualified-min-count constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that a specified minimum number of value nodes conforms to a given shape.\"@en ;\n\tsh:parameter sh:QualifiedMinCountConstraintComponent-qualifiedMinCount ;\n\tsh:parameter sh:QualifiedMinCountConstraintComponent-qualifiedValueShape ;\n\tsh:parameter sh:QualifiedMinCountConstraintComponent-qualifiedValueShapesDisjoint ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMinCountConstraintComponent-qualifiedMinCount\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedMinCount ;\n\tsh:datatype xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMinCountConstraintComponent-qualifiedValueShape\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedValueShape ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMinCountConstraintComponent-qualifiedValueShapesDisjoint\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedValueShapesDisjoint ;\n\tsh:datatype xsd:boolean ;\n\tsh:optional true ;\n\trdfs:isDefinedBy sh: .\n\nsh:qualifiedMaxCount\n\ta rdf:Property ;\n\trdfs:label \"qualified max count\"@en ;\n\trdfs:comment \"The maximum number of value nodes that can conform to the shape.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\nsh:qualifiedMinCount\n\ta rdf:Property ;\n\trdfs:label \"qualified min count\"@en ;\n\trdfs:comment \"The minimum number of value nodes that must conform to the shape.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\nsh:qualifiedValueShape\n\ta rdf:Property ;\n\trdfs:label \"qualified value shape\"@en ;\n\trdfs:comment \"The shape that a specified number of values must conform to.\"@en ;\n\trdfs:range sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\t\nsh:qualifiedValueShapesDisjoint\n\ta rdf:Property ;\n\trdfs:label \"qualified value shapes disjoint\"@en ;\n\trdfs:comment \"Can be used to mark the qualified value shape to be disjoint with its sibling shapes.\"@en ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:UniqueLangConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Unique-languages constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to specify that no pair of value nodes may use the same language tag.\"@en ;\n\tsh:parameter sh:UniqueLangConstraintComponent-uniqueLang ;\n\trdfs:isDefinedBy sh: .\n\nsh:UniqueLangConstraintComponent-uniqueLang\n\ta sh:Parameter ;\n\tsh:path sh:uniqueLang ;\n\tsh:datatype xsd:boolean ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:uniqueLang\n\ta rdf:Property ;\n\trdfs:label \"unique languages\"@en ;\n\trdfs:comment \"Specifies whether all node values must have a unique (or no) language tag.\"@en ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:XoneConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Exactly one constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the value nodes so that they conform to exactly one out of several provided shapes.\"@en ;\n\tsh:parameter sh:XoneConstraintComponent-xone ;\n\trdfs:isDefinedBy sh: .\n\nsh:XoneConstraintComponent-xone\n\ta sh:Parameter ;\n\tsh:path sh:xone ;\n\trdfs:isDefinedBy sh: .\n\nsh:xone\n\ta rdf:Property ;\n\trdfs:label \"exactly one\"@en ;\n\trdfs:comment \"Specifies a list of shapes so that the value nodes must conform to exactly one of the shapes.\"@en ;\n\trdfs:range rdf:List ;    # members: sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\n\n# General SPARQL execution support --------------------------------------------\n\nsh:SPARQLExecutable\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL executable\"@en ;\n\trdfs:comment \"The class of resources that encapsulate a SPARQL query.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLAskExecutable\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL ASK executable\"@en ;\n\trdfs:comment \"The class of SPARQL executables that are based on an ASK query.\"@en ;\n\trdfs:subClassOf sh:SPARQLExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:ask\n\ta rdf:Property ;\n\trdfs:label \"ask\"@en ;\n\trdfs:comment \"The SPARQL ASK query to execute.\"@en ;\n\trdfs:domain sh:SPARQLAskExecutable ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLConstructExecutable\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL CONSTRUCT executable\"@en ;\n\trdfs:comment \"The class of SPARQL executables that are based on a CONSTRUCT query.\"@en ;\n\trdfs:subClassOf sh:SPARQLExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:construct\n\ta rdf:Property ;\n\trdfs:label \"construct\"@en ;\n\trdfs:comment \"The SPARQL CONSTRUCT query to execute.\"@en ;\n\trdfs:domain sh:SPARQLConstructExecutable ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLSelectExecutable\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL SELECT executable\"@en ;\n\trdfs:comment \"The class of SPARQL executables based on a SELECT query.\"@en ;\n\trdfs:subClassOf sh:SPARQLExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:select\n\ta rdf:Property ;\n\trdfs:label \"select\"@en ;\n\trdfs:comment \"The SPARQL SELECT query to execute.\"@en ;\n\trdfs:range xsd:string ;\n\trdfs:domain sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLUpdateExecutable\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL UPDATE executable\"@en ;\n\trdfs:comment \"The class of SPARQL executables based on a SPARQL UPDATE.\"@en ;\n\trdfs:subClassOf sh:SPARQLExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:update\n\ta rdf:Property ;\n\trdfs:label \"update\"@en ;\n\trdfs:comment \"The SPARQL UPDATE to execute.\"@en ;\n\trdfs:domain sh:SPARQLUpdateExecutable ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:prefixes\n\ta rdf:Property ;\n\trdfs:label \"prefixes\"@en ;\n\trdfs:comment \"The prefixes that shall be applied before parsing the associated SPARQL query.\"@en ;\n\trdfs:domain sh:SPARQLExecutable ;\n\trdfs:range owl:Ontology ;\n\trdfs:isDefinedBy sh: .\n\nsh:PrefixDeclaration\n\ta rdfs:Class ;\n\trdfs:label \"Prefix declaration\"@en ;\n\trdfs:comment \"The class of prefix declarations, consisting of pairs of a prefix with a namespace.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:declare\n\ta rdf:Property ;\n\trdfs:label \"declare\"@en ;\n\trdfs:comment \"Links a resource with its namespace prefix declarations.\"@en ;\n\trdfs:domain owl:Ontology ;\n\trdfs:range sh:PrefixDeclaration ;\n\trdfs:isDefinedBy sh: .\n\nsh:prefix\n\ta rdf:Property ;\n\trdfs:label \"prefix\"@en ;\n\trdfs:comment \"The prefix of a prefix declaration.\"@en ;\n\trdfs:domain sh:PrefixDeclaration ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:namespace\n\ta rdf:Property ;\n\trdfs:label \"namespace\"@en ;\n\trdfs:comment \"The namespace associated with a prefix in a prefix declaration.\"@en ;\n\trdfs:domain sh:PrefixDeclaration ;\n\trdfs:range xsd:anyURI ;\n\trdfs:isDefinedBy sh: .\n\t\n\n# SPARQL-based Constraints support --------------------------------------------\n\nsh:SPARQLConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"SPARQL constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to define constraints based on SPARQL queries.\"@en ;\n\tsh:parameter sh:SPARQLConstraintComponent-sparql ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLConstraintComponent-sparql\n\ta sh:Parameter ;\n\tsh:path sh:sparql ;\n\trdfs:isDefinedBy sh: .\n\nsh:sparql\n\ta rdf:Property ;\n\trdfs:label \"constraint (in SPARQL)\"@en ;\n\trdfs:comment \"Links a shape with SPARQL constraints.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range sh:SPARQLConstraint ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLConstraint\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL constraint\"@en ;\n\trdfs:comment \"The class of constraints based on SPARQL SELECT queries.\"@en ;\n\trdfs:subClassOf sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\n\n# Non-validating constraint properties ----------------------------------------\n\nsh:defaultValue\n\ta rdf:Property ;\n\trdfs:label \"default value\"@en ;\n\trdfs:comment \"A default value for a property, for example for user interface tools to pre-populate input fields.\"@en ;\n\trdfs:domain sh:PropertyShape ;\n\trdfs:isDefinedBy sh: .\n\nsh:description\n\ta rdf:Property ;\n\trdfs:label \"description\"@en ;\n\trdfs:comment \"Human-readable descriptions for the property in the context of the surrounding shape.\"@en ;\n\trdfs:domain sh:PropertyShape ;\n\t# range: xsd:string or rdf:langString\n\trdfs:isDefinedBy sh: .\n\nsh:group\n\ta rdf:Property ;\n\trdfs:label \"group\"@en ;\n\trdfs:comment \"Can be used to link to a property group to indicate that a property shape belongs to a group of related property shapes.\"@en ;\n\trdfs:domain sh:PropertyShape ;\n\trdfs:range sh:PropertyGroup ;\n\trdfs:isDefinedBy sh: .\n\nsh:name\n\ta rdf:Property ;\n\trdfs:label \"name\"@en ;\n\trdfs:comment \"Human-readable labels for the property in the context of the surrounding shape.\"@en ;\n\trdfs:domain sh:PropertyShape ;\n\t# range: xsd:string or rdf:langString\n\trdfs:isDefinedBy sh: .\n\nsh:order\n\ta rdf:Property ;\n\trdfs:label \"order\"@en ;\n\trdfs:comment \"Specifies the relative order of this compared to its siblings. For example use 0 for the first, 1 for the second.\"@en ;\n\t# range: xsd:decimal or xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\nsh:PropertyGroup\n\ta rdfs:Class ;\n\trdfs:label \"Property group\"@en ;\n\trdfs:comment \"Instances of this class represent groups of property shapes that belong together.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\n\n# -----------------------------------------------------------------------------\n# SHACL ADVANCED FEATURES -----------------------------------------------------\n# -----------------------------------------------------------------------------\n\t\n\n# Advanced Target vocabulary --------------------------------------------------\n\nsh:target\n\ta rdf:Property ;\n\trdfs:label \"target\"@en ;\n\trdfs:comment \"Links a shape to a target specified by an extension language, for example instances of sh:SPARQLTarget.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range sh:Target ;\n\trdfs:isDefinedBy sh: .\n\nsh:Target\n\ta rdfs:Class ;\n\trdfs:label \"Target\"@en ;\n\trdfs:comment \"The base class of targets such as those based on SPARQL queries.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:TargetType\n\ta rdfs:Class ;\n\trdfs:label \"Target type\"@en ;\n\trdfs:comment \"The (meta) class for parameterizable targets.\tInstances of this are instantiated as values of the sh:target property.\"@en ;\n\trdfs:subClassOf rdfs:Class ;\n\trdfs:subClassOf sh:Parameterizable ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLTarget\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL target\"@en ;\n\trdfs:comment \"The class of targets that are based on SPARQL queries.\"@en ;\n\trdfs:subClassOf sh:Target ;\n\trdfs:subClassOf sh:SPARQLAskExecutable ;\n\trdfs:subClassOf sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLTargetType\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL target type\"@en ;\n\trdfs:comment \"The (meta) class for parameterizable targets that are based on SPARQL queries.\"@en ;\n\trdfs:subClassOf sh:TargetType ;\n\trdfs:subClassOf sh:SPARQLAskExecutable ;\n\trdfs:subClassOf sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\n\n# Functions Vocabulary --------------------------------------------------------\n\nsh:Function\n\ta rdfs:Class ;\n\trdfs:label \"Function\"@en ;\n\trdfs:comment \"The class of SHACL functions.\"@en ;\n\trdfs:subClassOf sh:Parameterizable ;\n\trdfs:isDefinedBy sh: .\n\nsh:returnType\n\ta rdf:Property ;\n\trdfs:label \"return type\"@en ;\n\trdfs:comment \"The expected type of values returned by the associated function.\"@en ;\n\trdfs:domain sh:Function ;\n\trdfs:range rdfs:Class ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLFunction\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL function\"@en ;\n\trdfs:comment \"A function backed by a SPARQL query - either ASK or SELECT.\"@en ;\n\trdfs:subClassOf sh:Function ;\n\trdfs:subClassOf sh:SPARQLAskExecutable ;\n\trdfs:subClassOf sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\n\n# Result Annotations ----------------------------------------------------------\n\nsh:resultAnnotation\n\ta rdf:Property ;\n\trdfs:label \"result annotation\"@en ;\n\trdfs:comment \"Links a SPARQL validator with zero or more sh:ResultAnnotation instances, defining how to derive additional result properties based on the variables of the SELECT query.\"@en ;\n\trdfs:domain sh:SPARQLSelectValidator ;\n\trdfs:range sh:ResultAnnotation ;\n\trdfs:isDefinedBy sh: .\n\nsh:ResultAnnotation\n\ta rdfs:Class ;\n\trdfs:label \"Result annotation\"@en ;\n\trdfs:comment \"A class of result annotations, which define the rules to derive the values of a given annotation property as extra values for a validation result.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:annotationProperty\n\ta rdf:Property ;\n\trdfs:label \"annotation property\"@en ;\n\trdfs:comment \"The annotation property that shall be set.\"@en ;\n\trdfs:domain sh:ResultAnnotation ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\nsh:annotationValue\n\ta rdf:Property ;\n\trdfs:label \"annotation value\"@en ;\n\trdfs:comment \"The (default) values of the annotation property.\"@en ;\n\trdfs:domain sh:ResultAnnotation ;\n\trdfs:isDefinedBy sh: .\n\nsh:annotationVarName\n\ta rdf:Property ;\n\trdfs:label \"annotation variable name\"@en ;\n\trdfs:comment \"The name of the SPARQL variable from the SELECT clause that shall be used for the values.\"@en ;\n\trdfs:domain sh:ResultAnnotation ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\n\t\n# Node Expressions ------------------------------------------------------------\n\nsh:this\n\ta rdfs:Resource ;\n\trdfs:label \"this\"@en ;\n\trdfs:comment \"A node expression that represents the current focus node.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:filterShape\n\ta rdf:Property ;\n\trdfs:label \"filter shape\"@en ;\n\trdfs:comment \"The shape that all input nodes of the expression need to conform to.\"@en ;\n\trdfs:range sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:nodes\n\ta rdf:Property ;\n\trdfs:label \"nodes\"@en ;\n\trdfs:comment \"The node expression producing the input nodes of a filter shape expression.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:intersection\n\ta rdf:Property ;\n\trdfs:label \"intersection\"@en ;\n\trdfs:comment \"A list of node expressions that shall be intersected.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:union\n\ta rdf:Property ;\n\trdfs:label \"union\"@en ;\n\trdfs:comment \"A list of node expressions that shall be used together.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\n# Expression Constraints ------------------------------------------------------\n\nsh:ExpressionConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Expression constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that a given node expression produces true for all value nodes.\"@en ;\n\tsh:parameter sh:ExpressionConstraintComponent-expression ;\n\trdfs:isDefinedBy sh: .\n\nsh:ExpressionConstraintComponent-expression\n\ta sh:Parameter ;\n\tsh:path sh:expression ;\n\trdfs:isDefinedBy sh: .\n\nsh:expression\n\ta rdf:Property ;\n\trdfs:label \"expression\"@en ;\n\trdfs:comment \"The node expression that must return true for the value nodes.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\n# Rules -----------------------------------------------------------------------\n\nsh:Rule\n\ta rdfs:Class ;\n\trdfs:label \"Rule\"@en ;\n\trdfs:comment \"The class of SHACL rules. Never instantiated directly.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:rule\n\ta rdf:Property ;\n\trdfs:label \"rule\"@en ;\n\trdfs:comment \"The rules linked to a shape.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range sh:Rule ;\n\trdfs:isDefinedBy sh:  .\n\nsh:condition\n\ta rdf:Property ;\n\trdfs:label \"condition\"@en ;\n\trdfs:comment \"The shapes that the focus nodes need to conform to before a rule is executed on them.\"@en ;\n\trdfs:domain sh:Rule ;\n\trdfs:range sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:TripleRule\n\ta rdfs:Class ;\n\trdfs:label \"A rule based on triple (subject, predicate, object) pattern.\"@en ;\n\trdfs:subClassOf sh:Rule ;\n\trdfs:isDefinedBy sh: .\n\nsh:subject\n\ta rdf:Property ;\n\trdfs:label \"subject\"@en ;\n\trdfs:comment \"An expression producing the resources that shall be inferred as subjects.\"@en ;\n\trdfs:domain sh:TripleRule ;\n\trdfs:isDefinedBy sh: .\n\nsh:predicate\n\ta rdf:Property ;\n\trdfs:label \"predicate\"@en ;\n\trdfs:comment \"An expression producing the properties that shall be inferred as predicates.\"@en ;\n\trdfs:domain sh:TripleRule ;\n\trdfs:isDefinedBy sh: .\n\nsh:object\n\ta rdf:Property ;\n\trdfs:label \"object\"@en ;\n\trdfs:comment \"An expression producing the nodes that shall be inferred as objects.\"@en ;\n\trdfs:domain sh:TripleRule ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLRule\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL CONSTRUCT rule\"@en ;\n\trdfs:comment \"The class of SHACL rules based on SPARQL CONSTRUCT queries.\"@en ;\n\trdfs:subClassOf sh:Rule ;\n\trdfs:subClassOf sh:SPARQLConstructExecutable ;\n\trdfs:isDefinedBy sh: .\n\n\n# SHACL-JS --------------------------------------------------------------------\n\nsh:JSExecutable\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript executable\"@en ;\n\trdfs:comment \"Abstract base class of resources that declare an executable JavaScript.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSTarget\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript target\"@en ;\n\trdfs:comment \"The class of targets that are based on JavaScript functions.\"@en ;\n\trdfs:subClassOf sh:Target ;\n\trdfs:subClassOf sh:JSExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSTargetType\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript target type\"@en ;\n\trdfs:comment \"The (meta) class for parameterizable targets that are based on JavaScript functions.\"@en ;\n\trdfs:subClassOf sh:TargetType ;\n\trdfs:subClassOf sh:JSExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSConstraint\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript-based constraint\"@en ;\n\trdfs:comment \"The class of constraints backed by a JavaScript function.\"@en ;\n\trdfs:subClassOf sh:JSExecutable ;\n\trdfs:isDefinedBy sh: .\n\t\nsh:JSConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"JavaScript constraint component\"@en ;\n\trdfs:comment \"A constraint component with the parameter sh:js linking to a sh:JSConstraint containing a sh:script.\"@en ;\n  \tsh:parameter sh:JSConstraint-js ;\n\trdfs:isDefinedBy sh: .\n \nsh:JSConstraint-js\n\ta sh:Parameter ;\n\tsh:path sh:js ;\n\trdfs:isDefinedBy sh: .\n\t\nsh:js\n\ta rdf:Property ;\n\trdfs:label \"JavaScript constraint\"@en ;\n\trdfs:comment \"Constraints expressed in JavaScript.\" ;\n  \trdfs:range sh:JSConstraint ;\n\trdfs:isDefinedBy sh: .\n\nsh:jsFunctionName\n\ta rdf:Property ;\n\trdfs:label \"JavaScript function name\"@en ;\n\trdfs:comment \"The name of the JavaScript function to execute.\"@en ;\n\trdfs:domain sh:JSExecutable ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:jsLibrary\n\ta rdf:Property ;\n\trdfs:label \"JavaScript library\"@en ;\n  \trdfs:comment \"Declares which JavaScript libraries are needed to execute this.\"@en ;\n\trdfs:range sh:JSLibrary ;\n\trdfs:isDefinedBy sh: .\n\nsh:jsLibraryURL\n\ta rdf:Property ;\n\trdfs:label \"JavaScript library URL\"@en ;\n\trdfs:comment \"Declares the URLs of a JavaScript library. This should be the absolute URL of a JavaScript file. Implementations may redirect those to local files.\"@en ;\n\trdfs:domain sh:JSLibrary ;\n\trdfs:range xsd:anyURI ;\n\trdfs:isDefinedBy sh: .\n\t\nsh:JSFunction\n\ta rdfs:Class ;\n  \trdfs:label \"JavaScript function\"@en ;\n\trdfs:comment \"The class of SHACL functions that execute a JavaScript function when called.\"@en ;\n\trdfs:subClassOf sh:Function ;\n\trdfs:subClassOf sh:JSExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSLibrary\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript library\"@en ;\n\trdfs:comment \"Represents a JavaScript library, typically identified by one or more URLs of files to include.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSRule\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript rule\"@en ;\n\trdfs:comment \"The class of SHACL rules expressed using JavaScript.\"@en ;\n\trdfs:subClassOf sh:JSExecutable ;\n\trdfs:subClassOf sh:Rule ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSValidator\n\ta rdfs:Class ;\n  \trdfs:label \"JavaScript validator\"@en ;\n\trdfs:comment \"A SHACL validator based on JavaScript. This can be used to declare SHACL constraint components that perform JavaScript-based validation when used.\"@en ;\n  \trdfs:subClassOf sh:JSExecutable ;\n  \trdfs:subClassOf sh:Validator ;\n  \trdfs:isDefinedBy sh: .\n"}
+module.exports = {"dash":"# baseURI: http://datashapes.org/dash\n# imports: http://topbraid.org/tosh\n# imports: http://www.w3.org/ns/shacl#\n# prefix: dash\n\n@prefix dash: <http://datashapes.org/dash#> .\n@prefix owl: <http://www.w3.org/2002/07/owl#> .\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n@prefix sh: <http://www.w3.org/ns/shacl#> .\n@prefix swa: <http://topbraid.org/swa#> .\n@prefix tosh: <http://topbraid.org/tosh#> .\n@prefix vs: <http://www.w3.org/2003/06/sw-vocab-status/ns#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\n<http://datashapes.org/dash>\n  rdf:type owl:Ontology ;\n  rdfs:comment \"\"\"DASH defines SPARQL-based validators for many SHACL Core constraint components. These are (among others) utilized by TopBraid and its API. Note that constraint components that require validation of nested shapes (such as sh:node) are not implementable without a function such as tosh:hasShape.\n\nDASH is also a SHACL library for frequently needed features and design patterns. All features in this library are 100% standards compliant and will work on any engine that fully supports SHACL.\"\"\" ;\n  rdfs:label \"DASH Data Shapes Library\" ;\n  owl:imports <http://topbraid.org/tosh> ;\n  owl:imports sh: ;\n  sh:declare [\n      sh:namespace \"http://datashapes.org/dash#\"^^xsd:anyURI ;\n      sh:prefix \"dash\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://purl.org/dc/terms/\"^^xsd:anyURI ;\n      sh:prefix \"dcterms\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"^^xsd:anyURI ;\n      sh:prefix \"rdf\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://www.w3.org/2000/01/rdf-schema#\"^^xsd:anyURI ;\n      sh:prefix \"rdfs\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://www.w3.org/2001/XMLSchema#\"^^xsd:anyURI ;\n      sh:prefix \"xsd\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://www.w3.org/2002/07/owl#\"^^xsd:anyURI ;\n      sh:prefix \"owl\" ;\n    ] ;\n  sh:declare [\n      sh:namespace \"http://www.w3.org/2004/02/skos/core#\"^^xsd:anyURI ;\n      sh:prefix \"skos\" ;\n    ] ;\n.\ndash:AllObjects\n  rdf:type dash:AllObjectsTarget ;\n  rdfs:comment \"A reusable instance of dash:AllObjectsTarget.\" ;\n  rdfs:label \"All objects\" ;\n.\ndash:AllObjectsTarget\n  rdf:type sh:JSTargetType ;\n  rdf:type sh:SPARQLTargetType ;\n  rdfs:comment \"A target containing all objects in the data graph as focus nodes.\" ;\n  rdfs:label \"All objects target\" ;\n  rdfs:subClassOf sh:Target ;\n  sh:jsFunctionName \"dash_allObjects\" ;\n  sh:jsLibrary dash:DASHJSLibrary ;\n  sh:labelTemplate \"All objects\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:select \"\"\"SELECT DISTINCT ?this\nWHERE {\n    ?anyS ?anyP ?this .\n}\"\"\" ;\n.\ndash:AllSubjects\n  rdf:type dash:AllSubjectsTarget ;\n  rdfs:comment \"A reusable instance of dash:AllSubjectsTarget.\" ;\n  rdfs:label \"All subjects\" ;\n.\ndash:AllSubjectsTarget\n  rdf:type sh:JSTargetType ;\n  rdf:type sh:SPARQLTargetType ;\n  rdfs:comment \"A target containing all subjects in the data graph as focus nodes.\" ;\n  rdfs:label \"All subjects target\" ;\n  rdfs:subClassOf sh:Target ;\n  sh:jsFunctionName \"dash_allSubjects\" ;\n  sh:jsLibrary dash:DASHJSLibrary ;\n  sh:labelTemplate \"All subjects\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:select \"\"\"SELECT DISTINCT ?this\nWHERE {\n    ?this ?anyP ?anyO .\n}\"\"\" ;\n.\ndash:ClosedByTypesConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  rdfs:comment \"A constraint component that can be used to declare that focus nodes are \\\"closed\\\" based on their rdf:types, meaning that focus nodes may only have values for the properties that are explicitly enumerated via sh:property/sh:path in property constraints at their rdf:types and the superclasses of those. This assumes that the type classes are also shapes.\" ;\n  rdfs:label \"Closed by types constraint component\" ;\n  sh:nodeValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateClosedByTypesNode\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n      sh:message \"Property is not among those permitted for any of the types\" ;\n    ] ;\n  sh:nodeValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:message \"Property {?path} is not among those permitted for any of the types\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"SELECT $this (?predicate AS ?path) ?value\nWHERE {\n\tFILTER ($closedByTypes) .\n    $this ?predicate ?value .\n\tFILTER (?predicate != rdf:type) .\n\tFILTER NOT EXISTS {\n\t\t$this rdf:type ?type .\n\t\t?type rdfs:subClassOf* ?class .\n\t\tGRAPH $shapesGraph {\n\t\t\t?class sh:property/sh:path ?predicate .\n\t\t}\n\t}\n}\"\"\" ;\n    ] ;\n  sh:parameter dash:ClosedByTypesConstraintComponent-closedByTypes ;\n  sh:targetClass sh:NodeShape ;\n.\ndash:ClosedByTypesConstraintComponent-closedByTypes\n  rdf:type sh:Parameter ;\n  sh:path dash:closedByTypes ;\n  sh:datatype xsd:boolean ;\n  sh:description \"True to indicate that the focus nodes are closed by their types. A constraint violation is reported for each property value of the focus node where the property is not among those that are explicitly declared via sh:property/sh:path in any of the rdf:types of the focus node (and their superclasses). The property rdf:type is always permitted.\" ;\n.\ndash:CoExistsWithConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  rdfs:comment \"A constraint component that can be used to express a constraint on property shapes so that if the property path has any value then the given property must also have a value, and vice versa.\" ;\n  rdfs:label \"Co-exists-with constraint component\" ;\n  sh:message \"Values must co-exist with values of {$coExistsWith}\" ;\n  sh:parameter [\n      sh:path dash:coExistsWith ;\n      sh:class rdf:Property ;\n      sh:group tosh:PropertyPairConstraintPropertyGroup ;\n      sh:nodeKind sh:IRI ;\n      sh:order \"10\"^^xsd:decimal ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateCoExistsWith\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"SELECT $this\nWHERE {\n\t{\n    \tFILTER (EXISTS { $this $PATH ?any } && NOT EXISTS { $this $coExistsWith ?any })\n\t}\n\tUNION\n\t{\n    \tFILTER (NOT EXISTS { $this $PATH ?any } && EXISTS { $this $coExistsWith ?any })\n\t}\n}\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\ndash:DASHJSLibrary\n  rdf:type sh:JSLibrary ;\n  rdfs:label \"DASH JavaScript library\" ;\n  sh:jsLibrary dash:RDFQueryJSLibrary ;\n  sh:jsLibraryURL \"http://datashapes.org/js/dash.js\"^^xsd:anyURI ;\n.\ndash:DateOrDateTime\n  rdf:type rdf:List ;\n  rdf:first xsd:date ;\n  rdf:rest (\n      xsd:dateTime\n    ) ;\n  rdfs:comment \"An rdf:List that can be used in property constraints as value for sh:or to indicate that all values of a property must be either xsd:date or xsd:dateTime.\" ;\n  rdfs:label \"Date or date time\" ;\n.\ndash:DefaultValueTypeRule\n  rdf:type sh:SPARQLConstructExecutable ;\n  rdfs:comment \"\"\"\n\t\tA resource encapsulating a query that can be used to construct rdf:type triples for certain untyped nodes\n\t\tthat are an object in a triple where the predicate has a sh:defaultValueType.\n\t\tThis can be used as a pre-processor for shape graphs before they are validated.\n\t\t\"\"\"^^rdf:HTML ;\n  rdfs:label \"default value type inference rule\" ;\n  sh:construct \"\"\"\n\t\tCONSTRUCT {\n\t\t\t?node a ?defaultValueType .\n\t\t}\n\t\tWHERE {\n\t\t\t?predicate sh:defaultValueType ?defaultValueType .\n\t\t\t?anySubject ?predicate ?node .\n\t\t\tFILTER (NOT EXISTS { ?node a ?anyType }) .\n\t\t}\n\t\t\"\"\" ;\n.\ndash:FailureResult\n  rdf:type rdfs:Class ;\n  rdfs:comment \"A result representing a validation failure such as an unsupported recursion.\" ;\n  rdfs:label \"Failure result\" ;\n  rdfs:subClassOf sh:AbstractResult ;\n.\ndash:FailureTestCaseResult\n  rdf:type rdfs:Class ;\n  rdfs:comment \"Represents a failure of a test case.\" ;\n  rdfs:label \"Failure test case result\" ;\n  rdfs:subClassOf dash:TestCaseResult ;\n.\ndash:FunctionTestCase\n  rdf:type rdfs:Class ;\n  rdfs:comment \"A test case that verifies that a given SPARQL expression produces a given, expected result.\" ;\n  rdfs:label \"Function test case\" ;\n  rdfs:subClassOf dash:TestCase ;\n  sh:property [\n      sh:path dash:expectedResult ;\n      sh:description \"The expected result of a function call.\" ;\n      sh:maxCount 1 ;\n      sh:name \"expected result\" ;\n    ] ;\n  sh:property [\n      sh:path dash:expression ;\n      sh:description \"A valid SPARQL expression calling the function to test.\" ;\n      sh:maxCount 1 ;\n      sh:minCount 1 ;\n      sh:name \"expression\" ;\n    ] ;\n.\ndash:GraphUpdate\n  rdf:type rdfs:Class ;\n  rdfs:label \"Graph update\" ;\n  rdfs:subClassOf dash:Suggestion ;\n.\ndash:GraphValidationTestCase\n  rdf:type rdfs:Class ;\n  rdfs:comment \"A test case that performs SHACL constraint validation on the whole graph and compares the results with the expected validation results stored with the test case. By default this excludes meta-validation (i.e. the validation of the shape definitions themselves). If that's desired, set dash:validateShapes to true.\" ;\n  rdfs:label \"Graph validation test case\" ;\n  rdfs:subClassOf dash:ValidationTestCase ;\n.\ndash:HasValueWithClassConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  rdfs:comment \"A constraint component that can be used to express a constraint on property shapes so that one of the values of the property path must be an instance of a given class.\" ;\n  rdfs:label \"Has value with class constraint component\" ;\n  sh:message \"At least one of the values must have class {$hasValueWithClass}\" ;\n  sh:parameter dash:HasValueWithClassConstraintComponent-hasValueWithClass ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateHasValueWithClass\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"SELECT $this\nWHERE {\n\tFILTER NOT EXISTS {\n    \t$this $PATH ?value .\n\t\t?value a ?type .\n\t\t?type rdfs:subClassOf* ?hasValueWithClass .\n\t}\n}\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\ndash:HasValueWithClassConstraintComponent-hasValueWithClass\n  rdf:type sh:Parameter ;\n  sh:path dash:hasValueWithClass ;\n  sh:class rdfs:Class ;\n  sh:group tosh:OtherConstraintPropertyGroup ;\n  sh:nodeKind sh:IRI ;\n.\ndash:InferencingTestCase\n  rdf:type rdfs:Class ;\n  rdf:type sh:NodeShape ;\n  rdfs:comment \"A test case to verify whether an inferencing engine is producing identical results to those stored as expected results.\" ;\n  rdfs:label \"Inferencing test case\" ;\n  rdfs:subClassOf dash:TestCase ;\n  sh:property [\n      sh:path dash:expectedResult ;\n      sh:description \"The expected inferred triples, represented by instances of rdfs:Statement.\" ;\n      sh:name \"expected result\" ;\n    ] ;\n.\ndash:JSTestCase\n  rdf:type rdfs:Class ;\n  rdfs:comment \"A test case that calls a given JavaScript function like a sh:JSFunction and compares its result with the dash:expectedResult.\" ;\n  rdfs:label \"JavaScript test case\" ;\n  rdfs:subClassOf dash:TestCase ;\n  rdfs:subClassOf sh:JSFunction ;\n  sh:property [\n      sh:path dash:expectedResult ;\n      sh:description \"The expected result of the JavaScript function call, as an RDF node.\" ;\n      sh:maxCount 1 ;\n      sh:name \"expected result\" ;\n    ] ;\n.\ndash:ListNodeShape\n  rdf:type sh:NodeShape ;\n  rdfs:comment \"Defines constraints on what it means for a node to be a node within a well-formed RDF list. Note that this does not check whether the rdf:rest items are also well-formed lists as this would lead to unsupported recursion.\" ;\n  rdfs:label \"List node shape\" ;\n  sh:or (\n      [\n        sh:hasValue () ;\n        sh:property [\n            sh:path rdf:first ;\n            sh:maxCount 0 ;\n          ] ;\n        sh:property [\n            sh:path rdf:rest ;\n            sh:maxCount 0 ;\n          ] ;\n      ]\n      [\n        sh:not [\n            sh:hasValue () ;\n          ] ;\n        sh:property [\n            sh:path rdf:first ;\n            sh:maxCount 1 ;\n            sh:minCount 1 ;\n          ] ;\n        sh:property [\n            sh:path rdf:rest ;\n            sh:maxCount 1 ;\n            sh:minCount 1 ;\n          ] ;\n      ]\n    ) ;\n.\ndash:ListShape\n  rdf:type sh:NodeShape ;\n  rdfs:comment \"\"\"Defines constraints on what it means for a node to be a well-formed RDF list.\n\nThe focus node must either be rdf:nil or not recursive. Furthermore, this shape uses dash:ListNodeShape as a \\\"helper\\\" to walk through all members of the whole list (including itself).\"\"\" ;\n  rdfs:label \"List shape\" ;\n  sh:or (\n      [\n        sh:hasValue () ;\n      ]\n      [\n        sh:not [\n            sh:hasValue () ;\n          ] ;\n        sh:property [\n            sh:path [\n                sh:oneOrMorePath rdf:rest ;\n              ] ;\n            dash:nonRecursive \"true\"^^xsd:boolean ;\n          ] ;\n      ]\n    ) ;\n  sh:property [\n      sh:path [\n          sh:zeroOrMorePath rdf:rest ;\n        ] ;\n      rdfs:comment \"Each list member (including this node) must be have the shape dash:ListNodeShape.\" ;\n      sh:node dash:ListNodeShape ;\n    ] ;\n.\ndash:NonRecursiveConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  rdfs:comment \"\"\"Used to state that a property or path must not point back to itself.\n\nFor example, \\\"a person cannot have itself as parent\\\" can be expressed by setting dash:nonRecursive=true for a given sh:path.\n\nTo express that a person cannot have itself among any of its (recursive) parents, use a sh:path with the + operator such as ex:parent+.\"\"\" ;\n  rdfs:label \"Non-recursive constraint component\" ;\n  sh:message \"Points back at itself (recursively)\" ;\n  sh:parameter dash:NonRecursiveConstraintComponent-nonRecursive ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateNonRecursiveProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"SELECT DISTINCT $this ($this AS ?value)\nWHERE {\n\t{\n\t\tFILTER (?nonRecursive)\n\t}\n    $this $PATH $this .\n}\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\ndash:NonRecursiveConstraintComponent-nonRecursive\n  rdf:type sh:Parameter ;\n  sh:path dash:nonRecursive ;\n  sh:datatype xsd:boolean ;\n  sh:maxCount 1 ;\n  sh:name \"non-recursive\" ;\n.\ndash:None\n  rdf:type sh:NodeShape ;\n  rdfs:comment \"A Shape that is no node can conform to.\" ;\n  rdfs:label \"None\" ;\n  sh:in () ;\n.\ndash:ParameterConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  rdfs:comment \"A constraint component that can be used to verify that all value nodes conform to the given Parameter.\"@en ;\n  rdfs:label \"Parameter constraint component\"@en ;\n  sh:parameter dash:ParameterConstraintComponent-parameter ;\n.\ndash:ParameterConstraintComponent-parameter\n  rdf:type sh:Parameter ;\n  sh:path sh:parameter ;\n.\ndash:PrimaryKeyConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  rdfs:comment \"Enforces a constraint that the given property (sh:path) serves as primary key for all resources in the target of the shape. If a property has been declared to be the primary key then each resource must have exactly one value for that property. Furthermore, the URIs of those resources must start with a given string (dash:uriStart), followed by the URL-encoded primary key value. For example if dash:uriStart is \\\"http://example.org/country-\\\" and the primary key for an instance is \\\"de\\\" then the URI must be \\\"http://example.org/country-de\\\". Finally, as a result of the URI policy, there can not be any other resource with the same value under the same primary key policy.\" ;\n  rdfs:label \"Primary key constraint component\" ;\n  sh:labelTemplate \"The property {?predicate} is the primary key and URIs start with {?uriStart}\" ;\n  sh:message \"Violation of primary key constraint\" ;\n  sh:parameter dash:PrimaryKeyConstraintComponent-uriStart ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validatePrimaryKeyProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"SELECT DISTINCT $this\nWHERE {\n        FILTER (\n\t\t\t# Must have a value for the primary key\n\t\t\tNOT EXISTS { ?this $PATH ?any }\n\t\t\t||\n\t\t\t# Must have no more than one value for the primary key\n\t\t\tEXISTS {\n\t\t\t\t?this $PATH ?value1 .\n\t\t\t\t?this $PATH ?value2 .\n\t\t\t\tFILTER (?value1 != ?value2) .\n\t\t\t}\n\t\t\t||\n\t\t\t# The value of the primary key must align with the derived URI\n\t\t\tEXISTS {\n\t\t\t\t{\n        \t\t\t?this $PATH ?value .\n\t\t\t\t\tFILTER NOT EXISTS { ?this $PATH ?value2 . FILTER (?value != ?value2) }\n\t\t\t\t}\n        \t\tBIND (CONCAT($uriStart, ENCODE_FOR_URI(str(?value))) AS ?uri) .\n        \t\tFILTER (str(?this) != ?uri) .\n    \t\t} \n\t\t)\n}\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\ndash:PrimaryKeyConstraintComponent-uriStart\n  rdf:type sh:Parameter ;\n  sh:path dash:uriStart ;\n  sh:datatype xsd:string ;\n  sh:description \"The start of the URIs of well-formed resources.\" ;\n  sh:name \"URI start\" ;\n.\ndash:QueryTestCase\n  rdf:type rdfs:Class ;\n  rdf:type sh:NodeShape ;\n  rdfs:comment \"A test case running a given SPARQL SELECT query and comparing its results with those stored as JSON Result Set in the expected result property.\" ;\n  rdfs:label \"Query test case\" ;\n  rdfs:subClassOf dash:TestCase ;\n  rdfs:subClassOf sh:SPARQLSelectExecutable ;\n  sh:property [\n      sh:path dash:expectedResult ;\n      sh:datatype xsd:string ;\n      sh:description \"The expected result set, as a JSON string.\" ;\n      sh:maxCount 1 ;\n      sh:minCount 1 ;\n      sh:name \"expected result\" ;\n    ] ;\n  sh:property [\n      sh:path sh:select ;\n      sh:datatype xsd:string ;\n      sh:description \"The SPARQL SELECT query to execute.\" ;\n      sh:maxCount 1 ;\n      sh:minCount 1 ;\n      sh:name \"SPARQL query\" ;\n    ] ;\n.\ndash:RDFQueryJSLibrary\n  rdf:type sh:JSLibrary ;\n  rdfs:label \"rdfQuery JavaScript Library\" ;\n  sh:jsLibraryURL \"http://datashapes.org/js/rdfquery.js\"^^xsd:anyURI ;\n.\ndash:RootClassConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  rdfs:comment \"A constraint component defining the parameter dash:rootClass, which restricts the values to be either the root class itself or one of its subclasses. This is typically used in conjunction with properties that have rdfs:Class as their type.\" ;\n  rdfs:label \"Root class constraint component\" ;\n  sh:labelTemplate \"Root class {$rootClass}\" ;\n  sh:message \"Value must be subclass of {$rootClass}\" ;\n  sh:parameter dash:RootClassConstraintComponent-rootClass ;\n  sh:targetClass sh:PropertyShape ;\n  sh:validator dash:hasRootClass ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateRootClass\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\ndash:RootClassConstraintComponent-rootClass\n  rdf:type sh:Parameter ;\n  sh:path dash:rootClass ;\n  sh:class rdfs:Class ;\n  sh:description \"The root class.\" ;\n  sh:name \"root class\" ;\n  sh:nodeKind sh:IRI ;\n.\ndash:SPARQLUpdateSuggestionGenerator\n  rdf:type rdfs:Class ;\n  rdfs:comment \"\"\"A SuggestionGenerator based on a SPARQL UPDATE query (sh:update), producing an instance of dash:GraphUpdate. The INSERTs become dash:addedTriple and the DELETEs become dash:deletedTriple. The WHERE clause operates on the data graph with the pre-bound variables $subject, $predicate and $object, as well as the other pre-bound variables for the parameters of the constraint.\n\nIn many cases, there may be multiple possible suggestions to fix a problem. For example, with sh:maxLength there are many ways to slice a string. In those cases, the system will first iterate through the result variables from a SELECT query (sh:select) and apply these results as pre-bound variables into the UPDATE query.\"\"\" ;\n  rdfs:label \"SPARQL UPDATE suggestion generator\" ;\n  rdfs:subClassOf dash:SuggestionGenerator ;\n  rdfs:subClassOf sh:SPARQLSelectExecutable ;\n  rdfs:subClassOf sh:SPARQLUpdateExecutable ;\n.\ndash:StemConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  rdfs:comment \"A constraint component that can be used to verify that every value node is an IRI and the IRI starts with a given string value.\"@en ;\n  rdfs:label \"Stem constraint component\"@en ;\n  sh:message \"Value does not have stem {$stem}\" ;\n  sh:parameter dash:StemConstraintComponent-stem ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasStem ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateStem\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\ndash:StemConstraintComponent-stem\n  rdf:type sh:Parameter ;\n  sh:path dash:stem ;\n  sh:datatype xsd:string ;\n.\ndash:StringOrLangString\n  rdf:type rdf:List ;\n  rdf:first xsd:string ;\n  rdf:rest (\n      rdf:langString\n    ) ;\n  rdfs:comment \"An rdf:List that can be used in property constraints as value for sh:or to indicate that all values of a property must be either xsd:string or rdf:langString.\" ;\n  rdfs:label \"String or langString\" ;\n.\ndash:SubSetOfConstraintComponent\n  rdf:type sh:ConstraintComponent ;\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  rdfs:comment \"A constraint component that can be used to state that the set of value nodes must be a subset of the value of a given property.\" ;\n  rdfs:label \"Sub set of constraint component\" ;\n  sh:message \"Must be one of the values of {$subSetOf}\" ;\n  sh:parameter dash:SubSetOfConstraintComponent-subSetOf ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLAskValidator ;\n      sh:ask \"\"\"ASK {\n    $this $subSetOf $value .\n}\"\"\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateSubSetOf\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\ndash:SubSetOfConstraintComponent-subSetOf\n  rdf:type sh:Parameter ;\n  sh:path dash:subSetOf ;\n  sh:class rdf:Property ;\n  sh:description \"A property (of the focus node) that must (at least) have all values from the set of value nodes.\" ;\n.\ndash:SuccessResult\n  rdf:type rdfs:Class ;\n  rdfs:comment \"A result representing a successfully validated constraint.\" ;\n  rdfs:label \"Success result\" ;\n  rdfs:subClassOf sh:AbstractResult ;\n.\ndash:SuccessTestCaseResult\n  rdf:type rdfs:Class ;\n  rdfs:comment \"Represents a successful run of a test case.\" ;\n  rdfs:label \"Success test case result\" ;\n  rdfs:subClassOf dash:TestCaseResult ;\n.\ndash:Suggestion\n  rdf:type rdfs:Class ;\n  rdfs:comment \"Base class of suggestions that modify a graph to \\\"fix\\\" the source of a validation result.\" ;\n  rdfs:label \"Suggestion\" ;\n  rdfs:subClassOf rdfs:Resource ;\n.\ndash:SuggestionGenerator\n  rdf:type rdfs:Class ;\n  rdfs:comment \"Base class of objects that can generate suggestions (added or deleted triples) for a validation result of a given constraint component.\" ;\n  rdfs:label \"Suggestion generator\" ;\n  rdfs:subClassOf rdfs:Resource ;\n.\ndash:TestCase\n  rdf:type rdfs:Class ;\n  dash:abstract \"true\"^^xsd:boolean ;\n  rdfs:comment \"A test case to verify that a (SHACL-based) feature works as expected.\" ;\n  rdfs:label \"Test case\" ;\n  rdfs:subClassOf rdfs:Resource ;\n.\ndash:TestCaseResult\n  rdf:type rdfs:Class ;\n  rdfs:comment \"Base class for results produced by running test cases.\" ;\n  rdfs:label \"Test case result\" ;\n  rdfs:subClassOf sh:AbstractResult ;\n  sh:property [\n      sh:path dash:testCase ;\n      sh:class dash:TestCase ;\n      sh:description \"The dash:TestCase that was executed.\" ;\n      sh:maxCount 1 ;\n      sh:minCount 1 ;\n      sh:name \"test case\" ;\n    ] ;\n  sh:property [\n      sh:path dash:testGraph ;\n      sh:class rdfs:Resource ;\n      sh:description \"The graph containing the test case.\" ;\n      sh:maxCount 1 ;\n      sh:minCount 1 ;\n      sh:name \"test graph\" ;\n      sh:nodeKind sh:IRI ;\n    ] ;\n.\ndash:TestEnvironment\n  rdf:type rdfs:Class ;\n  dash:abstract \"true\"^^xsd:boolean ;\n  rdfs:comment \"Abstract base class for test environments, holding information on how to set up a test case.\" ;\n  rdfs:label \"Test environment\" ;\n  rdfs:subClassOf rdfs:Resource ;\n.\ndash:ValidationTestCase\n  rdf:type rdfs:Class ;\n  rdf:type sh:NodeShape ;\n  dash:abstract \"true\"^^xsd:boolean ;\n  rdfs:comment \"Abstract superclass for test cases concerning SHACL constraint validation. Future versions may add new kinds of validatin test cases, e.g. to validate a single resource only.\" ;\n  rdfs:label \"Validation test case\" ;\n  rdfs:subClassOf dash:TestCase ;\n  sh:property [\n      sh:path dash:expectedResult ;\n      sh:class sh:ValidationReport ;\n      sh:description \"The expected validation report.\" ;\n      sh:name \"expected result\" ;\n    ] ;\n.\ndash:abstract\n  rdf:type rdf:Property ;\n  rdfs:comment \"Indicates that a class is \\\"abstract\\\" and cannot be used in asserted rdf:type triples. Only non-abstract subclasses of abstract classes should be instantiated directly.\" ;\n  rdfs:domain rdfs:Class ;\n  rdfs:label \"abstract\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:addedTriple\n  rdf:type rdf:Property ;\n  rdfs:comment \"May link a dash:GraphUpdate with one or more triples (represented as instances of rdf:Statement) that should be added to fix the source of the result.\" ;\n  rdfs:domain dash:GraphUpdate ;\n  rdfs:label \"added triple\" ;\n  rdfs:range rdf:Statement ;\n.\ndash:cachable\n  rdf:type rdf:Property ;\n  rdfs:comment \"If set to true then the results of the SHACL function can be cached in between invocations with the same arguments. In other words, they are stateless and do not depend on triples in any graph, or the current time stamp etc.\" ;\n  rdfs:domain sh:Function ;\n  rdfs:label \"cachable\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:closedByTypes\n  rdf:type rdf:Property ;\n  rdfs:label \"closed by types\" ;\n.\ndash:coExistsWith\n  rdf:type rdf:Property ;\n  rdfs:comment \"Specifies a property that must have a value whenever the property path has a value, and must have no value whenever the property path has no value.\" ;\n  rdfs:label \"co-exists with\" ;\n  rdfs:range rdf:Property ;\n.\ndash:composite\n  rdf:type rdf:Property ;\n  rdfs:comment \"Can be used to indicate that a property/path represented by a property constraint represents a composite relationship. In a composite relationship, the life cycle of a \\\"child\\\" object (value of the property/path) depends on the \\\"parent\\\" object (focus node). If the parent gets deleted, then the child objects should be deleted, too. Tools may use dash:composite (if set to true) to implement cascading delete operations.\" ;\n  rdfs:domain sh:PropertyShape ;\n  rdfs:label \"composite\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:defaultValueType\n  rdf:type rdf:Property ;\n  rdfs:comment \"\"\"\n\t\tLinks a property with a default value type.\n\t\tThe default value type is assumed to be the <code>rdf:type</code> of values of the property\n\t\tthat declare no type on their own.\n\t\tAn example use of <code>sh:defaultValueType</code> is <code>sh:property</code>,\n\t\tthe values of which are assumed to be instances of <code>sh:PropertyShape</code>\n\t\teven if they are untyped (blank) nodes.\n\t\t\"\"\"^^rdf:HTML ;\n  rdfs:label \"default value type\" ;\n  rdfs:range rdfs:Class ;\n  owl:versionInfo \"Note this property may get removed in future versions. It is a left-over from a previous design in SHACL.\" ;\n.\ndash:deletedTriple\n  rdf:type rdf:Property ;\n  rdfs:comment \"May link a dash:GraphUpdate result with one or more triples (represented as instances of rdf:Statement) that should be deleted to fix the source of the result.\" ;\n  rdfs:domain dash:GraphUpdate ;\n  rdfs:label \"deleted triple\" ;\n  rdfs:range rdf:Statement ;\n.\ndash:expectedResult\n  rdf:type rdf:Property ;\n  rdfs:comment \"The expected result(s) of a test case. The value range of this property is different for each kind of test cases.\" ;\n  rdfs:domain dash:TestCase ;\n  rdfs:label \"expected result\" ;\n.\ndash:fixed\n  rdf:type rdf:Property ;\n  rdfs:comment \"Can be used to mark that certain validation results have already been fixed.\" ;\n  rdfs:domain sh:ValidationResult ;\n  rdfs:label \"fixed\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:hasClass\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:label \"has class\" ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\t$value rdf:type/rdfs:subClassOf* $class .\n\t\t}\n\t\t\"\"\" ;\n  sh:message \"Value does not have class {$class}\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMaxExclusive\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node (?value) has value less than (<) the provided ?maxExclusive. Returns false if this cannot be determined, e.g. because values do not have comparable types.\" ;\n  rdfs:label \"has max exclusive\" ;\n  sh:ask \"ASK { FILTER ($value < $maxExclusive) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMaxInclusive\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node (?value) has value less than or equal to (<=) the provided ?maxInclusive. Returns false if this cannot be determined, e.g. because values do not have comparable types.\" ;\n  rdfs:label \"has max inclusive\" ;\n  sh:ask \"ASK { FILTER ($value <= $maxInclusive) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMaxLength\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given string (?value) has a length within a given maximum string length.\" ;\n  rdfs:label \"has max length\" ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\tFILTER (STRLEN(str($value)) <= $maxLength) .\n\t\t}\n\t\t\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMinExclusive\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node (?value) has value greater than (>) the provided ?minExclusive. Returns false if this cannot be determined, e.g. because values do not have comparable types.\" ;\n  rdfs:label \"has min exclusive\" ;\n  sh:ask \"ASK { FILTER ($value > $minExclusive) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMinInclusive\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node (?value) has value greater than or equal to (>=) the provided ?minInclusive. Returns false if this cannot be determined, e.g. because values do not have comparable types.\" ;\n  rdfs:label \"has min inclusive\" ;\n  sh:ask \"ASK { FILTER ($value >= $minInclusive) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasMinLength\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given string (?value) has a length within a given minimum string length.\" ;\n  rdfs:label \"has min length\" ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\tFILTER (STRLEN(str($value)) >= $minLength) .\n\t\t}\n\t\t\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasNodeKind\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node (?value) has a given sh:NodeKind (?nodeKind). For example, sh:hasNodeKind(42, sh:Literal) = true.\" ;\n  rdfs:label \"has node kind\" ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\tFILTER ((isIRI($value) && $nodeKind IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ) ) ||\n\t\t\t\t(isLiteral($value) && $nodeKind IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ) ) ||\n\t\t\t\t(isBlank($value)   && $nodeKind IN ( sh:BlankNode, sh:BlankNodeOrIRI, sh:BlankNodeOrLiteral ) )) .\n\t\t}\n\t\t\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasPattern\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether the string representation of a given node (?value) matches a given regular expression (?pattern). Returns false if the value is a blank node.\" ;\n  rdfs:label \"has pattern\" ;\n  sh:ask \"ASK { FILTER (!isBlank($value) && IF(bound($flags), regex(str($value), $pattern, $flags), regex(str($value), $pattern))) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasRootClass\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:label \"has root class\" ;\n  sh:ask \"\"\"ASK {\n    $value rdfs:subClassOf* $rootClass .\n}\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasStem\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:comment \"Checks whether a given node is an IRI starting with a given stem.\" ;\n  rdfs:label \"has stem\" ;\n  sh:ask \"ASK { FILTER (isIRI($value) && STRSTARTS(str($value), $stem)) }\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:hasValueWithClass\n  rdf:type rdf:Property ;\n  rdfs:comment \"Specifies a constraint that at least one of the value nodes must be an instance of a given class.\" ;\n  rdfs:label \"has value with class\" ;\n  rdfs:range rdfs:Class ;\n.\ndash:height\n  rdf:type rdf:Property ;\n  rdfs:comment \"The height.\" ;\n  rdfs:label \"height\" ;\n  rdfs:range xsd:integer ;\n.\ndash:isDeactivated\n  rdf:type sh:SPARQLFunction ;\n  rdfs:comment \"Checks whether a given shape or constraint has been marked as \\\"deactivated\\\" using sh:deactivated.\" ;\n  rdfs:label \"is deactivated\" ;\n  sh:ask \"\"\"ASK {\n    ?constraintOrShape sh:deactivated true .\n}\"\"\" ;\n  sh:parameter [\n      sh:path dash:constraintOrShape ;\n      sh:description \"The sh:Constraint or sh:Shape to test.\" ;\n      sh:name \"constraint or shape\" ;\n    ] ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:returnType xsd:boolean ;\n.\ndash:isIn\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:label \"is in\" ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\tGRAPH $shapesGraph {\n\t\t\t\t$in (rdf:rest*)/rdf:first $value .\n\t\t\t}\n\t\t}\n\t\t\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:isLanguageIn\n  rdf:type sh:SPARQLAskValidator ;\n  rdfs:label \"is language in\" ;\n  sh:ask \"\"\"\n\t\tASK {\n\t\t\tBIND (lang($value) AS ?valueLang) .\n\t\t\tFILTER EXISTS {\n\t\t\t\tGRAPH $shapesGraph {\n\t\t\t\t\t$languageIn (rdf:rest*)/rdf:first ?lang .\n\t\t\t\t    FILTER (langMatches(?valueLang, ?lang))\n\t\t\t\t} }\n\t\t}\n\t\t\"\"\" ;\n  sh:prefixes <http://datashapes.org/dash> ;\n.\ndash:isNodeKindBlankNode\n  rdf:type sh:SPARQLFunction ;\n  dash:cachable \"true\"^^xsd:boolean ;\n  rdfs:comment \"Checks if a given sh:NodeKind is one that includes BlankNodes.\" ;\n  rdfs:label \"is NodeKind BlankNode\" ;\n  sh:ask \"\"\"ASK {\n\tFILTER ($nodeKind IN ( sh:BlankNode, sh:BlankNodeOrIRI, sh:BlankNodeOrLiteral ))\n}\"\"\" ;\n  sh:parameter [\n      sh:path dash:nodeKind ;\n      sh:class sh:NodeKind ;\n      sh:description \"The sh:NodeKind to check.\" ;\n      sh:name \"node kind\" ;\n      sh:nodeKind sh:IRI ;\n    ] ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:returnType xsd:boolean ;\n.\ndash:isNodeKindIRI\n  rdf:type sh:SPARQLFunction ;\n  dash:cachable \"true\"^^xsd:boolean ;\n  rdfs:comment \"Checks if a given sh:NodeKind is one that includes IRIs.\" ;\n  rdfs:label \"is NodeKind IRI\" ;\n  sh:ask \"\"\"ASK {\n\tFILTER ($nodeKind IN ( sh:IRI, sh:BlankNodeOrIRI, sh:IRIOrLiteral ))\n}\"\"\" ;\n  sh:parameter [\n      sh:path dash:nodeKind ;\n      sh:class sh:NodeKind ;\n      sh:description \"The sh:NodeKind to check.\" ;\n      sh:name \"node kind\" ;\n      sh:nodeKind sh:IRI ;\n    ] ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:returnType xsd:boolean ;\n.\ndash:isNodeKindLiteral\n  rdf:type sh:SPARQLFunction ;\n  dash:cachable \"true\"^^xsd:boolean ;\n  rdfs:comment \"Checks if a given sh:NodeKind is one that includes Literals.\" ;\n  rdfs:label \"is NodeKind Literal\" ;\n  sh:ask \"\"\"ASK {\n\tFILTER ($nodeKind IN ( sh:Literal, sh:BlankNodeOrLiteral, sh:IRIOrLiteral ))\n}\"\"\" ;\n  sh:parameter [\n      sh:path dash:nodeKind ;\n      sh:class sh:NodeKind ;\n      sh:description \"The sh:NodeKind to check.\" ;\n      sh:name \"node kind\" ;\n      sh:nodeKind sh:IRI ;\n    ] ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:returnType xsd:boolean ;\n.\ndash:localConstraint\n  rdf:type rdf:Property ;\n  rdfs:comment \"\"\"Can be set to true for those constraint components where the validation does not require to visit any other triples than the shape definitions and the direct property values of the focus node mentioned in the property constraints. Examples of this include sh:minCount and sh:hasValue.\n\nConstraint components that are marked as such can be optimized by engines, e.g. they can be evaluated client-side at form submission time, without having to make a round-trip to a server, assuming the client has downloaded a complete snapshot of the resource.\n\nAny component marked with dash:staticConstraint is also a dash:localConstraint.\"\"\" ;\n  rdfs:domain sh:ConstraintComponent ;\n  rdfs:label \"local constraint\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:propertySuggestionGenerator\n  rdf:type rdf:Property ;\n  rdfs:comment \"Links the constraint component with instances of dash:SuggestionGenerator that may be used to produce suggestions for a given validation result that was produced by a property constraint.\" ;\n  rdfs:domain sh:ConstraintComponent ;\n  rdfs:label \"property suggestion generator\" ;\n  rdfs:range dash:SuggestionGenerator ;\n.\ndash:rootClass\n  rdf:type rdf:Property ;\n  rdfs:label \"root class\" ;\n.\ndash:staticConstraint\n  rdf:type rdf:Property ;\n  rdfs:comment \"\"\"Can be set to true for those constraint components where the validation does not require to visit any other triples than the parameters. Examples of this include sh:datatype or sh:nodeKind, where no further triples need to be queried to determine the result.\n\nConstraint components that are marked as such can be optimized by engines, e.g. they can be evaluated client-side at form submission time, without having to make a round-trip to a server.\"\"\" ;\n  rdfs:domain sh:ConstraintComponent ;\n  rdfs:label \"static constraint\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:stem\n  rdf:type rdf:Property ;\n  rdfs:comment \"Specifies a string value that the IRI of the value nodes must start with.\"@en ;\n  rdfs:label \"stem\"@en ;\n  rdfs:range xsd:string ;\n.\ndash:subSetOf\n  rdf:type rdf:Property ;\n  rdfs:label \"sub set of\" ;\n.\ndash:suggestion\n  rdf:type rdf:Property ;\n  rdfs:comment \"Can be used to link a validation result with one or more suggestions on how to fix the underlying issue.\" ;\n  rdfs:domain sh:ValidationResult ;\n  rdfs:label \"suggestion\" ;\n  rdfs:range dash:Suggestion ;\n.\ndash:suggestionGenerator\n  rdf:type rdf:Property ;\n  rdfs:comment \"Links a sh:SPARQLConstraint with instances of dash:SuggestionGenerator that may be used to produce suggestions for a given validation result that was produced by the constraint.\" ;\n  rdfs:domain sh:SPARQLConstraint ;\n  rdfs:label \"suggestion generator\" ;\n  rdfs:range dash:SuggestionGenerator ;\n.\ndash:suggestionGroup\n  rdf:type rdf:Property ;\n  rdfs:comment \"Can be used to link a suggestion with the group identifier to which it belongs. By default this is a link to the dash:SuggestionGenerator, but in principle this could be any value.\" ;\n  rdfs:domain dash:Suggestion ;\n  rdfs:label \"suggestion\" ;\n.\ndash:testEnvironment\n  rdf:type rdf:Property ;\n  rdfs:comment \"Can be used by TestCases to point at a resource with information on how to set up the execution environment prior to execution.\" ;\n  rdfs:domain dash:TestCase ;\n  rdfs:label \"test environment\" ;\n  rdfs:range dash:TestEnvironment ;\n.\ndash:testModifiesEnvironment\n  rdf:type rdf:Property ;\n  rdfs:comment \"Indicates whether this test modifies the specified dash:testEnvironment. If set to true then a test runner can make sure to wipe out the previous environment, while leaving it false (or undefined) means that the test runner can reuse the environment from the previous test case. As setting up and tearing down tests is sometimes slow, this flag can significantly accelerate test execution.\" ;\n  rdfs:domain dash:TestCase ;\n  rdfs:label \"test modifies environment\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:toString\n  rdf:type sh:JSFunction ;\n  rdf:type sh:SPARQLFunction ;\n  dash:cachable \"true\"^^xsd:boolean ;\n  rdfs:comment \"Returns a literal with datatype xsd:string that has the input value as its string. If the input value is an (URI) resource then its URI will be used.\" ;\n  rdfs:label \"to string\" ;\n  sh:jsFunctionName \"dash_toString\" ;\n  sh:jsLibrary dash:DASHJSLibrary ;\n  sh:labelTemplate \"Convert {$arg} to xsd:string\" ;\n  sh:parameter [\n      sh:path dash:arg ;\n      sh:description \"The input value.\" ;\n      sh:name \"arg\" ;\n      sh:nodeKind sh:IRIOrLiteral ;\n    ] ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:returnType xsd:string ;\n  sh:select \"\"\"SELECT (xsd:string($arg) AS ?result)\nWHERE {\n}\"\"\" ;\n.\ndash:validateShapes\n  rdf:type rdf:Property ;\n  rdfs:comment \"True to also validate the shapes itself (i.e. parameter declarations).\" ;\n  rdfs:domain dash:GraphValidationTestCase ;\n  rdfs:label \"validate shapes\" ;\n  rdfs:range xsd:boolean ;\n.\ndash:valueCount\n  rdf:type sh:SPARQLFunction ;\n  rdfs:comment \"Computes the number of objects for a given subject/predicate combination.\" ;\n  rdfs:label \"value count\" ;\n  sh:parameter [\n      sh:path dash:predicate ;\n      sh:class rdfs:Resource ;\n      sh:description \"The predicate to get the number of objects of.\" ;\n      sh:name \"predicate\" ;\n      sh:order 1 ;\n    ] ;\n  sh:parameter [\n      sh:path dash:subject ;\n      sh:class rdfs:Resource ;\n      sh:description \"The subject to get the number of objects of.\" ;\n      sh:name \"subject\" ;\n      sh:order 0 ;\n    ] ;\n  sh:prefixes <http://datashapes.org/dash> ;\n  sh:returnType xsd:integer ;\n  sh:select \"\"\"\n\t\tSELECT (COUNT(?object) AS ?result)\n\t\tWHERE {\n    \t\t$subject $predicate ?object .\n\t\t}\n\"\"\" ;\n.\ndash:width\n  rdf:type rdf:Property ;\n  rdfs:comment \"The width.\" ;\n  rdfs:label \"width\" ;\n  rdfs:range xsd:integer ;\n.\ndash:x\n  rdf:type rdf:Property ;\n  rdfs:comment \"The x position.\" ;\n  rdfs:label \"x\" ;\n  rdfs:range xsd:integer ;\n.\ndash:y\n  rdf:type rdf:Property ;\n  rdfs:comment \"The y position.\" ;\n  rdfs:label \"y\" ;\n  rdfs:range xsd:integer ;\n.\nowl:Class\n  rdf:type rdfs:Class ;\n  rdfs:subClassOf rdfs:Class ;\n.\nsh:AndConstraintComponent\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateAnd\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:ClassConstraintComponent\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasClass ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateClass\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:ClosedConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:nodeValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:message \"Predicate {?path} is not allowed (closed shape)\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT $this (?predicate AS ?path) ?value\n\t\tWHERE {\n\t\t\t{\n\t\t\t\tFILTER ($closed) .\n\t\t\t}\n\t\t\t$this ?predicate ?value .\n\t\t\tFILTER (NOT EXISTS {\n\t\t\t\tGRAPH $shapesGraph {\n\t\t\t\t\t$currentShape sh:property/sh:path ?predicate .\n\t\t\t\t}\n\t\t\t} && (!bound($ignoredProperties) || NOT EXISTS {\n\t\t\t\tGRAPH $shapesGraph {\n\t\t\t\t\t$ignoredProperties rdf:rest*/rdf:first ?predicate .\n\t\t\t\t}\n\t\t\t}))\n\t\t}\n\"\"\" ;\n    ] ;\n  sh:targetClass sh:NodeShape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateClosed\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n      sh:message \"Predicate is not allowed (closed shape)\" ;\n    ] ;\n.\nsh:DatatypeConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value does not have datatype {$datatype}\" ;\n  sh:targetClass sh:PropertyShape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateDatatype\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:DerivedValuesConstraintComponent\n  sh:targetClass sh:PropertyShape ;\n.\nsh:DisjointConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateDisjoint\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n      sh:message \"Value node must not also be one of the values of {$disjoint}\" ;\n    ] ;\n  sh:validator [\n      rdf:type sh:SPARQLAskValidator ;\n      sh:ask \"\"\"\n\t\tASK {\n\t\t\tFILTER NOT EXISTS {\n\t\t\t\t$this $disjoint $value .\n\t\t\t}\n\t\t}\n\t\t\"\"\" ;\n      sh:message \"Property must not share any values with {$disjoint}\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n    ] ;\n.\nsh:EqualsConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Must have same values as {$equals}\" ;\n  sh:nodeValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT DISTINCT $this ?value\n\t\tWHERE {\n\t\t\t{\n\t\t\t\tFILTER NOT EXISTS { $this $equals $this }\n\t\t\t\tBIND ($this AS ?value) .\n\t\t\t}\n\t\t\tUNION\n\t\t\t{\n\t\t\t\t$this $equals ?value .\n\t\t\t\tFILTER (?value != $this) .\n\t\t\t}\n\t\t}\n\t\t\"\"\" ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateEqualsProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT DISTINCT $this ?value\n\t\tWHERE {\n\t\t\t{\n\t\t\t\t$this $PATH ?value .\n\t\t\t\tMINUS {\n\t\t\t\t\t$this $equals ?value .\n\t\t\t\t}\n\t\t\t}\n\t\t\tUNION\n\t\t\t{\n\t\t\t\t$this $equals ?value .\n\t\t\t\tMINUS {\n\t\t\t\t\t$this $PATH ?value .\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:Shape ;\n.\nsh:Function\n  sh:property [\n      sh:path dash:cachable ;\n      sh:datatype xsd:boolean ;\n      sh:description \"True to indicate that this function will always return the same values for the same combination of arguments, regardless of the query graphs. Engines can use this information to cache and reuse previous function calls.\" ;\n      sh:maxCount 1 ;\n      sh:name \"cachable\" ;\n    ] ;\n.\nsh:HasValueConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:nodeValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateHasValueNode\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n      sh:message \"Value must be {$hasValue}\" ;\n    ] ;\n  sh:nodeValidator [\n      rdf:type sh:SPARQLAskValidator ;\n      sh:ask \"\"\"ASK {\n    FILTER ($value = $hasValue)\n}\"\"\" ;\n      sh:message \"Value must be {$hasValue}\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateHasValueProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n      sh:message \"Missing expected value {$hasValue}\" ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:message \"Missing expected value {$hasValue}\" ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT $this\n\t\tWHERE {\n\t\t\tFILTER NOT EXISTS { $this $PATH $hasValue }\n\t\t}\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:Shape ;\n.\nsh:InConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not in {$in}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:isIn ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateIn\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:LanguageInConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Language does not match any of {$languageIn}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:isLanguageIn ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateLanguageIn\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:LessThanConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not < value of {$lessThan}\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateLessThanProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT $this ?value\n\t\tWHERE {\n\t\t\t$this $PATH ?value .\n\t\t\t$this $lessThan ?otherValue .\n\t\t\tBIND (?value < ?otherValue AS ?result) .\n\t\t\tFILTER (!bound(?result) || !(?result)) .\n\t\t}\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:LessThanOrEqualsConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not <= value of {$lessThanOrEquals}\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateLessThanOrEqualsProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT DISTINCT $this ?value\n\t\tWHERE {\n\t\t\t$this $PATH ?value .\n\t\t\t$this $lessThanOrEquals ?otherValue .\n\t\t\tBIND (?value <= ?otherValue AS ?result) .\n\t\t\tFILTER (!bound(?result) || !(?result)) .\n\t\t}\n\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:MaxCountConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"More than {$maxCount} values\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMaxCountProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT $this\n\t\tWHERE {\n\t\t\t$this $PATH ?value .\n\t\t}\n\t\tGROUP BY $this\n\t\tHAVING (COUNT(DISTINCT ?value) > $maxCount)\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:MaxExclusiveConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not < {$maxExclusive}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMaxExclusive ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMaxExclusive\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:MaxInclusiveConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not <= {$maxInclusive}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMaxInclusive ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMaxInclusive\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:MaxLengthConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value has more than {$maxLength} characters\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMaxLength ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMaxLength\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:MinCountConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Less than {$minCount} values\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMinCountProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT $this\n\t\tWHERE {\n\t\t\tOPTIONAL {\n\t\t\t\t$this $PATH ?value .\n\t\t\t}\n\t\t} \n\t\tGROUP BY $this\n\t\tHAVING (COUNT(DISTINCT ?value) < $minCount)\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:MinExclusiveConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not > {$minExclusive}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMinExclusive ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMinExclusive\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:MinInclusiveConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value is not >= {$minInclusive}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMinInclusive ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMinInclusive\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:MinLengthConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value has less than {$minLength} characters\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasMinLength ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateMinLength\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:NodeConstraintComponent\n  sh:message \"Value does not have shape {$node}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateNode\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:NodeKindConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value does not have node kind {$nodeKind}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasNodeKind ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateNodeKind\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:NotConstraintComponent\n  sh:message \"Value does have shape {$not}\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateNot\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:OrConstraintComponent\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateOr\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:PatternConstraintComponent\n  dash:staticConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Value does not match pattern \\\"{$pattern}\\\"\" ;\n  sh:targetClass sh:Shape ;\n  sh:validator dash:hasPattern ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validatePattern\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:QualifiedMaxCountConstraintComponent\n  sh:message \"More than {$qualifiedMaxCount} values have shape {$qualifiedValueShape}\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateQualifiedMaxCountProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:QualifiedMinCountConstraintComponent\n  sh:message \"Less than {$qualifiedMinCount} values have shape {$qualifiedValueShape}\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateQualifiedMinCountProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:UniqueLangConstraintComponent\n  dash:localConstraint \"true\"^^xsd:boolean ;\n  sh:message \"Language \\\"{?lang}\\\" used more than once\" ;\n  sh:propertyValidator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateUniqueLangProperty\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n  sh:propertyValidator [\n      rdf:type sh:SPARQLSelectValidator ;\n      sh:prefixes <http://datashapes.org/dash> ;\n      sh:select \"\"\"\n\t\tSELECT DISTINCT $this ?lang\n\t\tWHERE {\n\t\t\t{\n\t\t\t\tFILTER sameTerm($uniqueLang, true) .\n\t\t\t}\n\t\t\t$this $PATH ?value .\n\t\t\tBIND (lang(?value) AS ?lang) .\n\t\t\tFILTER (bound(?lang) && ?lang != \\\"\\\") . \n\t\t\tFILTER EXISTS {\n\t\t\t\t$this $PATH ?otherValue .\n\t\t\t\tFILTER (?otherValue != ?value && ?lang = lang(?otherValue)) .\n\t\t\t}\n\t\t}\n\t\t\"\"\" ;\n    ] ;\n  sh:targetClass sh:PropertyShape ;\n.\nsh:XoneConstraintComponent\n  sh:targetClass sh:Shape ;\n  sh:validator [\n      rdf:type sh:JSValidator ;\n      sh:jsFunctionName \"validateXone\" ;\n      sh:jsLibrary dash:DASHJSLibrary ;\n    ] ;\n.\nsh:node\n  dash:defaultValueType sh:NodeShape ;\n.\nsh:not\n  dash:defaultValueType sh:Shape ;\n.\nsh:order\n  rdfs:range xsd:decimal ;\n.\nsh:parameter\n  dash:defaultValueType sh:Parameter ;\n.\nsh:property\n  dash:defaultValueType sh:PropertyShape ;\n.\nsh:qualifiedValueShape\n  dash:defaultValueType sh:Shape ;\n.\nsh:sparql\n  dash:defaultValueType sh:SPARQLConstraint ;\n.\n","shacl":"# W3C Shapes Constraint Language (SHACL) Vocabulary\n# Draft last edited 2017-04-28\n\n@prefix owl:  <http://www.w3.org/2002/07/owl#> .\n@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .\n\n@prefix sh:   <http://www.w3.org/ns/shacl#> .\n\nsh:\n\ta owl:Ontology ;\n\trdfs:label \"W3C Shapes Constraint Language (SHACL) Vocabulary\"@en ;\n\trdfs:comment \"This vocabulary defines terms used in SHACL, the W3C Shapes Constraint Language.\"@en ;\n\tsh:declare [\n\t\tsh:prefix \"sh\" ;\n\t\tsh:namespace \"http://www.w3.org/ns/shacl#\" ;\n\t] ;\n\tsh:suggestedShapesGraph <http://www.w3.org/ns/shacl-shacl#> .\n\n\n# Shapes vocabulary -----------------------------------------------------------\n\nsh:Shape\n\ta rdfs:Class ;\n\trdfs:label \"Shape\"@en ;\n\trdfs:comment \"A shape is a collection of constraints that may be targeted for certain nodes.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:NodeShape\n\ta rdfs:Class ;\n\trdfs:label \"Node shape\"@en ;\n\trdfs:comment \"A node shape is a shape that specifies constraint that need to be met with respect to focus nodes.\"@en ;\n\trdfs:subClassOf sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:PropertyShape\n\ta rdfs:Class ;\n\trdfs:label \"Property shape\"@en ;\n\trdfs:comment \"A property shape is a shape that specifies constraints on the values of a focus node for a given property or path.\"@en ;\n\trdfs:subClassOf sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:deactivated\n\ta rdf:Property ;\n\trdfs:label \"deactivated\"@en ;\n\trdfs:comment \"If set to true then all nodes conform to this.\"@en ;\n\t# rdfs:domain sh:Shape or sh:SPARQLConstraint\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\nsh:targetClass \n\ta rdf:Property ;\n\trdfs:label \"target class\"@en ;\n\trdfs:comment \"Links a shape to a class, indicating that all instances of the class must conform to the shape.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range rdfs:Class ;\n\trdfs:isDefinedBy sh: .\n\nsh:targetNode \n\ta rdf:Property ;\n\trdfs:label \"target node\"@en ;\n\trdfs:comment \"Links a shape to individual nodes, indicating that these nodes must conform to the shape.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:targetObjectsOf\n\ta rdf:Property ;\n\trdfs:label \"target objects of\"@en ;\n\trdfs:comment \"Links a shape to a property, indicating that all all objects of triples that have the given property as their predicate must conform to the shape.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\nsh:targetSubjectsOf\n\ta rdf:Property ;\n\trdfs:label \"target subjects of\"@en ;\n\trdfs:comment \"Links a shape to a property, indicating that all subjects of triples that have the given property as their predicate must conform to the shape.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\nsh:message\n\ta rdf:Property ;\n\t# domain: sh:Shape or sh:SPARQLConstraint or sh:SPARQLSelectValidator or sh:SPARQLAskValidator\n\t# range: xsd:string or rdf:langString\n\trdfs:label \"message\"@en ;\n\trdfs:comment \"A human-readable message (possibly with placeholders for variables) explaining the cause of the result.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:severity\n\ta rdf:Property ;\n\trdfs:label \"severity\"@en ;\n\trdfs:comment \"Defines the severity that validation results produced by a shape must have. Defaults to sh:Violation.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range sh:Severity ;\n\trdfs:isDefinedBy sh: .\n\n\n# Node kind vocabulary --------------------------------------------------------\n\nsh:NodeKind\n\ta rdfs:Class ;\n\trdfs:label \"Node kind\"@en ;\n\trdfs:comment \"The class of all node kinds, including sh:BlankNode, sh:IRI, sh:Literal or the combinations of these: sh:BlankNodeOrIRI, sh:BlankNodeOrLiteral, sh:IRIOrLiteral.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:BlankNode\n\ta sh:NodeKind ;\n\trdfs:label \"Blank node\"@en ;\n\trdfs:comment \"The node kind of all blank nodes.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:BlankNodeOrIRI\n\ta sh:NodeKind ;\n\trdfs:label \"Blank node or IRI\"@en ;\n\trdfs:comment \"The node kind of all blank nodes or IRIs.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:BlankNodeOrLiteral\n\ta sh:NodeKind ;\n\trdfs:label \"Blank node or literal\"@en ;\n\trdfs:comment \"The node kind of all blank nodes or literals.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:IRI\n\ta sh:NodeKind ;\n\trdfs:label \"IRI\"@en ;\n\trdfs:comment \"The node kind of all IRIs.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:IRIOrLiteral\n\ta sh:NodeKind ;\n\trdfs:label \"IRI or literal\"@en ;\n\trdfs:comment \"The node kind of all IRIs or literals.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:Literal\n\ta sh:NodeKind ;\n\trdfs:label \"Literal\"@en ;\n\trdfs:comment \"The node kind of all literals.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\n# Results vocabulary ----------------------------------------------------------\n\nsh:ValidationReport\n\ta rdfs:Class ;\n\trdfs:label \"Validation report\"@en ;\n\trdfs:comment \"The class of SHACL validation reports.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:conforms\n\ta rdf:Property ;\n\trdfs:label \"conforms\"@en ;\n\trdfs:comment \"True if the validation did not produce any validation results, and false otherwise.\"@en ;\n\trdfs:domain sh:ValidationReport ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\nsh:result\n\ta rdf:Property ;\n\trdfs:label \"result\"@en ;\n\trdfs:comment \"The validation results contained in a validation report.\"@en ;\n\trdfs:domain sh:ValidationReport ;\n\trdfs:range sh:ValidationResult ;\n\trdfs:isDefinedBy sh: .\n\nsh:shapesGraphWellFormed\n\ta rdf:Property ;\n\trdfs:label \"shapes graph well-formed\"@en ;\n\trdfs:comment \"If true then the validation engine was certain that the shapes graph has passed all SHACL syntax requirements during the validation process.\"@en ;\n\trdfs:domain sh:ValidationReport ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\nsh:AbstractResult\n\ta rdfs:Class ;\n\trdfs:label \"Abstract result\"@en ;\n\trdfs:comment \"The base class of validation results, typically not instantiated directly.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:ValidationResult\n\ta rdfs:Class ;\n\trdfs:label \"Validation result\"@en ;\n\trdfs:comment \"The class of validation results.\"@en ;\n\trdfs:subClassOf sh:AbstractResult ;\n\trdfs:isDefinedBy sh: .\n\nsh:Severity\n\ta rdfs:Class ;\n\trdfs:label \"Severity\"@en ;\n\trdfs:comment \"The class of validation result severity levels, including violation and warning levels.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:Info\n\ta sh:Severity ;\n\trdfs:label \"Info\"@en ;\n\trdfs:comment \"The severity for an informational validation result.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:Violation\n\ta sh:Severity ;\n\trdfs:label \"Violation\"@en ;\n\trdfs:comment \"The severity for a violation validation result.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:Warning\n\ta sh:Severity ;\n\trdfs:label \"Warning\"@en ;\n\trdfs:comment \"The severity for a warning validation result.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:detail\n\ta rdf:Property ;\n\trdfs:label \"detail\"@en ;\n\trdfs:comment \"Links a result with other results that provide more details, for example to describe violations against nested shapes.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:range sh:AbstractResult ;\n\trdfs:isDefinedBy sh: .\n\nsh:focusNode\n\ta rdf:Property ;\n\trdfs:label \"focus node\"@en ;\n\trdfs:comment \"The focus node that was validated when the result was produced.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:isDefinedBy sh: .\n\nsh:resultMessage\n\ta rdf:Property ;\n\trdfs:label \"result message\"@en ;\n\trdfs:comment \"Human-readable messages explaining the cause of the result.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\t# range: xsd:string or rdf:langString\n\trdfs:isDefinedBy sh: .\n\nsh:resultPath\n\ta rdf:Property ;\n\trdfs:label \"result path\"@en ;\n\trdfs:comment \"The path of a validation result, based on the path of the validated property shape.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:resultSeverity\n\ta rdf:Property ;\n\trdfs:label \"result severity\"@en ;\n\trdfs:comment \"The severity of the result, e.g. warning.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:range sh:Severity ;\n\trdfs:isDefinedBy sh: .\n\nsh:sourceConstraint\n\ta rdf:Property ;\n\trdfs:label \"source constraint\"@en ;\n\trdfs:comment \"The constraint that was validated when the result was produced.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:isDefinedBy sh: .\n\nsh:sourceShape\n\ta rdf:Property ;\n\trdfs:label \"source shape\"@en ;\n\trdfs:comment \"The shape that is was validated when the result was produced.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:range sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:sourceConstraintComponent\n\ta rdf:Property ;\n\trdfs:label \"source constraint component\"@en ;\n\trdfs:comment \"The constraint component that is the source of the result.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:range sh:ConstraintComponent ;\n\trdfs:isDefinedBy sh: .\n\nsh:value\n\ta rdf:Property ;\n\trdfs:label \"value\"@en ;\n\trdfs:comment \"An RDF node that has caused the result.\"@en ;\n\trdfs:domain sh:AbstractResult ;\n\trdfs:isDefinedBy sh: .\n\n\t\n# Graph properties ------------------------------------------------------------\n\nsh:shapesGraph\n\ta rdf:Property ;\n\trdfs:label \"shapes graph\"@en ;\n\trdfs:comment \"Shapes graphs that should be used when validating this data graph.\"@en ;\n\trdfs:domain owl:Ontology ;\n\trdfs:range owl:Ontology ;\n\trdfs:isDefinedBy sh: .\n\nsh:suggestedShapesGraph\n\ta rdf:Property ;\n\trdfs:label \"suggested shapes graph\"@en ;\n\trdfs:comment \"Suggested shapes graphs for this ontology. The values of this property may be used in the absence of specific sh:shapesGraph statements.\"@en ;\n\trdfs:domain owl:Ontology ;\n\trdfs:range owl:Ontology ;\n\trdfs:isDefinedBy sh: .\n\nsh:entailment\n\ta rdf:Property ;\n\trdfs:label \"entailment\"@en ;\n\trdfs:comment \"An entailment regime that indicates what kind of inferencing is required by a shapes graph.\"@en ;\n\trdfs:domain owl:Ontology ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\n\n# Path vocabulary -------------------------------------------------------------\n\nsh:path\n\ta rdf:Property ;\n\trdfs:label \"path\"@en ;\n\trdfs:comment \"Specifies the property path of a property shape.\"@en ;\n\trdfs:domain sh:PropertyShape ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:inversePath\n\ta rdf:Property ;\n\trdfs:label \"inverse path\"@en ;\n\trdfs:comment \"The (single) value of this property represents an inverse path (object to subject).\"@en ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:alternativePath\n\ta rdf:Property ;\n\trdfs:label \"alternative path\"@en ;\n\trdfs:comment \"The (single) value of this property must be a list of path elements, representing the elements of alternative paths.\"@en ;\n\trdfs:range rdf:List ;\n\trdfs:isDefinedBy sh: .\n\nsh:zeroOrMorePath\n\ta rdf:Property ;\n\trdfs:label \"zero or more path\"@en ;\n\trdfs:comment \"The (single) value of this property represents a path that is matched zero or more times.\"@en ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:oneOrMorePath\n\ta rdf:Property ;\n\trdfs:label \"one or more path\"@en ;\n\trdfs:comment \"The (single) value of this property represents a path that is matched one or more times.\"@en ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:zeroOrOnePath\n\ta rdf:Property ;\n\trdfs:label \"zero or one path\"@en ;\n\trdfs:comment \"The (single) value of this property represents a path that is matched zero or one times.\"@en ;\n\trdfs:range rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\n\n# Parameters metamodel --------------------------------------------------------\n\nsh:Parameterizable\n\ta rdfs:Class ;\n\trdfs:label \"Parameterizable\"@en ;\n\trdfs:comment \"Superclass of components that can take parameters, especially functions and constraint components.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:parameter\n\ta rdf:Property ;\n\trdfs:label \"parameter\"@en ;\n\trdfs:comment \"The parameters of a function or constraint component.\"@en ;\n\trdfs:domain sh:Parameterizable ;\n\trdfs:range sh:Parameter ;\n\trdfs:isDefinedBy sh: .\n\nsh:labelTemplate\n\ta rdf:Property ;\n\trdfs:label \"label template\"@en ;\n\trdfs:comment \"Outlines how human-readable labels of instances of the associated Parameterizable shall be produced. The values can contain {?paramName} as placeholders for the actual values of the given parameter.\"@en ;\n\trdfs:domain sh:Parameterizable ;\n\t# range: xsd:string or rdf:langString\n\trdfs:isDefinedBy sh: .\n\nsh:Parameter\n\ta rdfs:Class ;\n\trdfs:label \"Parameter\"@en ;\n\trdfs:comment \"The class of parameter declarations, consisting of a path predicate and (possibly) information about allowed value type, cardinality and other characteristics.\"@en ;\n\trdfs:subClassOf sh:PropertyShape ;\n\trdfs:isDefinedBy sh: .\n\nsh:optional\n\ta rdf:Property ;\n\trdfs:label \"optional\"@en ;\n\trdfs:comment \"Indicates whether a parameter is optional.\"@en ;\n\trdfs:domain sh:Parameter ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\n\n# Constraint components metamodel ---------------------------------------------\n\nsh:ConstraintComponent\n\ta rdfs:Class ;\n\trdfs:label \"Constraint component\"@en ;\n\trdfs:comment \"The class of constraint components.\"@en ;\n\trdfs:subClassOf sh:Parameterizable ;\n\trdfs:isDefinedBy sh: .\n\nsh:validator\n\ta rdf:Property ;\n\trdfs:label \"validator\"@en ;\n\trdfs:comment \"The validator(s) used to evaluate constraints of either node or property shapes.\"@en ;\n\trdfs:domain sh:ConstraintComponent ;\n\trdfs:range sh:Validator ;\n\trdfs:isDefinedBy sh: .\n\nsh:nodeValidator\n\ta rdf:Property ;\n\trdfs:label \"shape validator\"@en ;\n\trdfs:comment \"The validator(s) used to evaluate a constraint in the context of a node shape.\"@en ;\n\trdfs:domain sh:ConstraintComponent ;\n\trdfs:range sh:Validator ;\n\trdfs:isDefinedBy sh: .\n\nsh:propertyValidator\n\ta rdf:Property ;\n\trdfs:label \"property validator\"@en ;\n\trdfs:comment \"The validator(s) used to evaluate a constraint in the context of a property shape.\"@en ;\n\trdfs:domain sh:ConstraintComponent ;\n\trdfs:range sh:Validator ;\n\trdfs:isDefinedBy sh: .\n\nsh:Validator\n\ta rdfs:Class ;\n\trdfs:label \"Validator\"@en ;\n\trdfs:comment \"The class of validators, which provide instructions on how to process a constraint definition. This class serves as base class for the SPARQL-based validators and other possible implementations.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLAskValidator\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL ASK validator\"@en ;\n\trdfs:comment \"The class of validators based on SPARQL ASK queries. The queries are evaluated for each value node and are supposed to return true if the given node conforms.\"@en ;\n\trdfs:subClassOf sh:Validator ;\n\trdfs:subClassOf sh:SPARQLAskExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLSelectValidator\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL SELECT validator\"@en ;\n\trdfs:comment \"The class of validators based on SPARQL SELECT queries. The queries are evaluated for each focus node and are supposed to produce bindings for all focus nodes that do not conform.\"@en ;\n\trdfs:subClassOf sh:Validator ;\n\trdfs:subClassOf sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\n\n# Library of Core Constraint Components and their properties ------------------\n\nsh:AndConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"And constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to test whether a value node conforms to all members of a provided list of shapes.\"@en ;\n\tsh:parameter sh:AndConstraintComponent-and ;\n\trdfs:isDefinedBy sh: .\n\nsh:AndConstraintComponent-and\n\ta sh:Parameter ;\n\tsh:path sh:and ;\n\trdfs:isDefinedBy sh: .\n\nsh:and\n\ta rdf:Property ;\n\trdfs:label \"and\"@en ;\n\trdfs:comment \"RDF list of shapes to validate the value nodes against.\"@en ;\n\trdfs:range rdf:List ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:ClassConstraintComponent \n\ta sh:ConstraintComponent ;\n\trdfs:label \"Class constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that each value node is an instance of a given type.\"@en ;\n\tsh:parameter sh:ClassConstraintComponent-class ;\n\trdfs:isDefinedBy sh: .\n\nsh:ClassConstraintComponent-class\n\ta sh:Parameter ;\n\tsh:path sh:class ;\n\tsh:nodeKind sh:IRI ;\n\trdfs:isDefinedBy sh: .\n\nsh:class\n\ta rdf:Property ;\n\trdfs:label \"class\"@en ;\n\trdfs:comment \"The type that all value nodes must have.\"@en ;\n\trdfs:range rdfs:Class ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:ClosedConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Closed constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to indicate that focus nodes must only have values for those properties that have been explicitly enumerated via sh:property/sh:path.\"@en ;\n\tsh:parameter sh:ClosedConstraintComponent-closed ;\n\tsh:parameter sh:ClosedConstraintComponent-ignoredProperties ;\n\trdfs:isDefinedBy sh: .\n\nsh:ClosedConstraintComponent-closed\n\ta sh:Parameter ; \n\tsh:path sh:closed ;\n\tsh:datatype xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\nsh:ClosedConstraintComponent-ignoredProperties\n\ta sh:Parameter ;\n\tsh:path sh:ignoredProperties ;\n\tsh:optional true ;\n\trdfs:isDefinedBy sh: .\n\nsh:closed\n\ta rdf:Property ;\n\trdfs:label \"closed\"@en ;\n\trdfs:comment \"If set to true then the shape is closed.\"@en ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\nsh:ignoredProperties\n\ta rdf:Property ;\n\trdfs:label \"ignored properties\"@en ;\n\trdfs:comment \"An optional RDF list of properties that are also permitted in addition to those explicitly enumerated via sh:property/sh:path.\"@en ;\n\trdfs:range rdf:List ;    # members: rdf:Property\n\trdfs:isDefinedBy sh: .\n\n\nsh:DatatypeConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Datatype constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the datatype of all value nodes.\"@en ;\n\tsh:parameter sh:DatatypeConstraintComponent-datatype ;\n\trdfs:isDefinedBy sh: .\n\nsh:DatatypeConstraintComponent-datatype\n\ta sh:Parameter ;\n\tsh:path sh:datatype ;\n\tsh:nodeKind sh:IRI ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:datatype\n\ta rdf:Property ;\n\trdfs:label \"datatype\"@en ;\n\trdfs:comment \"Specifies an RDF datatype that all value nodes must have.\"@en ;\n\trdfs:range rdfs:Datatype ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:DisjointConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Disjoint constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that the set of value nodes is disjoint with the the set of nodes that have the focus node as subject and the value of a given property as predicate.\"@en ;\n\tsh:parameter sh:DisjointConstraintComponent-disjoint ;\n\trdfs:isDefinedBy sh: .\n\nsh:DisjointConstraintComponent-disjoint\n\ta sh:Parameter ;\n\tsh:path sh:disjoint ;\n\tsh:nodeKind sh:IRI ;\n\trdfs:isDefinedBy sh: .\n\nsh:disjoint\n\ta rdf:Property ;\n\trdfs:label \"disjoint\"@en ;\n\trdfs:comment \"Specifies a property where the set of values must be disjoint with the value nodes.\"@en ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:EqualsConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Equals constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that the set of value nodes is equal to the set of nodes that have the focus node as subject and the value of a given property as predicate.\"@en ;\n\tsh:parameter sh:EqualsConstraintComponent-equals ;\n\trdfs:isDefinedBy sh: .\n\nsh:EqualsConstraintComponent-equals\n\ta sh:Parameter ;\n\tsh:path sh:equals ;\n\tsh:nodeKind sh:IRI ;\n\trdfs:isDefinedBy sh: .\n\nsh:equals\n\ta rdf:Property ;\n\trdfs:label \"equals\"@en ;\n\trdfs:comment \"Specifies a property that must have the same values as the value nodes.\"@en ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:HasValueConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Has-value constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that one of the value nodes is a given RDF node.\"@en ;\n\tsh:parameter sh:HasValueConstraintComponent-hasValue ;\n\trdfs:isDefinedBy sh: .\n\nsh:HasValueConstraintComponent-hasValue\n\ta sh:Parameter ;\n\tsh:path sh:hasValue ;\n\trdfs:isDefinedBy sh: .\n\nsh:hasValue\n\ta rdf:Property ;\n\trdfs:label \"has value\"@en ;\n\trdfs:comment \"Specifies a value that must be among the value nodes.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:InConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"In constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to exclusively enumerate the permitted value nodes.\"@en ;\n\tsh:parameter sh:InConstraintComponent-in ;\n\trdfs:isDefinedBy sh: .\n\nsh:InConstraintComponent-in\n\ta sh:Parameter ;\n\tsh:path sh:in ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:in\n\ta rdf:Property ;\n\trdfs:label \"in\"@en ;\n\trdfs:comment \"Specifies a list of allowed values so that each value node must be among the members of the given list.\"@en ;\n\trdfs:range rdf:List ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:LanguageInConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Language-in constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to enumerate language tags that all value nodes must have.\"@en ;\n\tsh:parameter sh:LanguageInConstraintComponent-languageIn ;\n\trdfs:isDefinedBy sh: .\n\nsh:LanguageInConstraintComponent-languageIn\n\ta sh:Parameter ;\n\tsh:path sh:languageIn ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:languageIn\n\ta rdf:Property ;\n\trdfs:label \"language in\"@en ;\n\trdfs:comment \"Specifies a list of language tags that all value nodes must have.\"@en ;\n\trdfs:range rdf:List ;   # members: xsd:string\n\trdfs:isDefinedBy sh: .\n\n\nsh:LessThanConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Less-than constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that each value node is smaller than all the nodes that have the focus node as subject and the value of a given property as predicate.\"@en ;\n\tsh:parameter sh:LessThanConstraintComponent-lessThan ;\n\trdfs:isDefinedBy sh: .\n\nsh:LessThanConstraintComponent-lessThan\n\ta sh:Parameter ;\n\tsh:path sh:lessThan ;\n\tsh:nodeKind sh:IRI ;\n\trdfs:isDefinedBy sh: .\n\nsh:lessThan\n\ta rdf:Property ;\n\trdfs:label \"less than\"@en ;\n\trdfs:comment \"Specifies a property that must have smaller values than the value nodes.\"@en ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:LessThanOrEqualsConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"less-than-or-equals constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that every value node is smaller than all the nodes that have the focus node as subject and the value of a given property as predicate.\"@en ;\n\tsh:parameter sh:LessThanOrEqualsConstraintComponent-lessThanOrEquals ;\n\trdfs:isDefinedBy sh: .\n\nsh:LessThanOrEqualsConstraintComponent-lessThanOrEquals\n\ta sh:Parameter ;\n\tsh:path sh:lessThanOrEquals ;\n\tsh:nodeKind sh:IRI ;\n\trdfs:isDefinedBy sh: .\n\nsh:lessThanOrEquals\n\ta rdf:Property ;\n\trdfs:label \"less than or equals\"@en ;\n\trdfs:comment \"Specifies a property that must have smaller or equal values than the value nodes.\"@en ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MaxCountConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Max-count constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the maximum number of value nodes.\"@en ;\n\tsh:parameter sh:MaxCountConstraintComponent-maxCount ;\n\trdfs:isDefinedBy sh: .\n\nsh:MaxCountConstraintComponent-maxCount\n\ta sh:Parameter ;\n\tsh:path sh:maxCount ;\n\tsh:datatype xsd:integer ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:maxCount\n\ta rdf:Property ;\n\trdfs:label \"max count\"@en ;\n\trdfs:comment \"Specifies the maximum number of values in the set of value nodes.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MaxExclusiveConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Max-exclusive constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the range of value nodes with a maximum exclusive value.\"@en ;\n\tsh:parameter sh:MaxExclusiveConstraintComponent-maxExclusive ;\n\trdfs:isDefinedBy sh: .\n\nsh:MaxExclusiveConstraintComponent-maxExclusive\n\ta sh:Parameter ;\n\tsh:path sh:maxExclusive ;\n\tsh:maxCount 1 ;\n\tsh:nodeKind sh:Literal ;\n\trdfs:isDefinedBy sh: .\n\nsh:maxExclusive\n\ta rdf:Property ;\n\trdfs:label \"max exclusive\"@en ;\n\trdfs:comment \"Specifies the maximum exclusive value of each value node.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MaxInclusiveConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Max-inclusive constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the range of value nodes with a maximum inclusive value.\"@en ;\n\tsh:parameter sh:MaxInclusiveConstraintComponent-maxInclusive ;\n\trdfs:isDefinedBy sh: .\n\nsh:MaxInclusiveConstraintComponent-maxInclusive\n\ta sh:Parameter ;\n\tsh:path sh:maxInclusive ;\n\tsh:maxCount 1 ;\n\tsh:nodeKind sh:Literal ;\n\trdfs:isDefinedBy sh: .\n\nsh:maxInclusive\n\ta rdf:Property ;\n\trdfs:label \"max inclusive\"@en ;\n\trdfs:comment \"Specifies the maximum inclusive value of each value node.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MaxLengthConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Max-length constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the maximum string length of value nodes.\"@en ;\n\tsh:parameter sh:MaxLengthConstraintComponent-maxLength ;\n\trdfs:isDefinedBy sh: .\n\nsh:MaxLengthConstraintComponent-maxLength\n\ta sh:Parameter ;\n\tsh:path sh:maxLength ;\n\tsh:datatype xsd:integer ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:maxLength\n\ta rdf:Property ;\n\trdfs:label \"max length\"@en ;\n\trdfs:comment \"Specifies the maximum string length of each value node.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MinCountConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Min-count constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the minimum number of value nodes.\"@en ;\n\tsh:parameter sh:MinCountConstraintComponent-minCount ;\n\trdfs:isDefinedBy sh: .\n\nsh:MinCountConstraintComponent-minCount\n\ta sh:Parameter ;\n\tsh:path sh:minCount ;\n\tsh:datatype xsd:integer ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:minCount\n\ta rdf:Property ;\n\trdfs:label \"min count\"@en ;\n\trdfs:comment \"Specifies the minimum number of values in the set of value nodes.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MinExclusiveConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Min-exclusive constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the range of value nodes with a minimum exclusive value.\"@en ;\n\tsh:parameter sh:MinExclusiveConstraintComponent-minExclusive ;\n\trdfs:isDefinedBy sh: .\n\nsh:MinExclusiveConstraintComponent-minExclusive\n\ta sh:Parameter ;\n\tsh:path sh:minExclusive ;\n\tsh:maxCount 1 ;\n\tsh:nodeKind sh:Literal ;\n\trdfs:isDefinedBy sh: .\n\nsh:minExclusive\n\ta rdf:Property ;\n\trdfs:label \"min exclusive\"@en ;\n\trdfs:comment \"Specifies the minimum exclusive value of each value node.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MinInclusiveConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Min-inclusive constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the range of value nodes with a minimum inclusive value.\"@en ;\n\tsh:parameter sh:MinInclusiveConstraintComponent-minInclusive ;\n\trdfs:isDefinedBy sh: .\n\nsh:MinInclusiveConstraintComponent-minInclusive\n\ta sh:Parameter ;\n\tsh:path sh:minInclusive ;\n\tsh:maxCount 1 ;\n\tsh:nodeKind sh:Literal ;\n\trdfs:isDefinedBy sh: .\n\nsh:minInclusive\n\ta rdf:Property ;\n\trdfs:label \"min inclusive\"@en ;\n\trdfs:comment \"Specifies the minimum inclusive value of each value node.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:MinLengthConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Min-length constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the minimum string length of value nodes.\"@en ;\n\tsh:parameter sh:MinLengthConstraintComponent-minLength ;\n\trdfs:isDefinedBy sh: .\n\nsh:MinLengthConstraintComponent-minLength\n\ta sh:Parameter ;\n\tsh:path sh:minLength ;\n\tsh:datatype xsd:integer ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:minLength\n\ta rdf:Property ;\n\trdfs:label \"min length\"@en ;\n\trdfs:comment \"Specifies the minimum string length of each value node.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:NodeConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Node constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that all value nodes conform to the given node shape.\"@en ;\n\tsh:parameter sh:NodeConstraintComponent-node ;\n\trdfs:isDefinedBy sh: .\n\nsh:NodeConstraintComponent-node\n\ta sh:Parameter ;\n\tsh:path sh:node ;\n\trdfs:isDefinedBy sh: .\n\nsh:node\n\ta rdf:Property ;\n\trdfs:label \"node\"@en ;\n\trdfs:comment \"Specifies the node shape that all value nodes must conform to.\"@en ;\n\trdfs:range sh:NodeShape ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:NodeKindConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Node-kind constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the RDF node kind of each value node.\"@en ;\n\tsh:parameter sh:NodeKindConstraintComponent-nodeKind ;\n\trdfs:isDefinedBy sh: .\n\nsh:NodeKindConstraintComponent-nodeKind\n\ta sh:Parameter ;\n\tsh:path sh:nodeKind ;\n\tsh:in ( sh:BlankNode sh:IRI sh:Literal sh:BlankNodeOrIRI sh:BlankNodeOrLiteral sh:IRIOrLiteral ) ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:nodeKind\n\ta rdf:Property ;\n\trdfs:label \"node kind\"@en ;\n\trdfs:comment \"Specifies the node kind (e.g. IRI or literal) each value node.\"@en ;\n\trdfs:range sh:NodeKind ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:NotConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Not constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that value nodes do not conform to a given shape.\"@en ;\n\tsh:parameter sh:NotConstraintComponent-not ;\n\trdfs:isDefinedBy sh: .\n\nsh:NotConstraintComponent-not\n\ta sh:Parameter ;\n\tsh:path sh:not ;\n\trdfs:isDefinedBy sh: .\n\nsh:not\n\ta rdf:Property ;\n\trdfs:label \"not\"@en ;\n\trdfs:comment \"Specifies a shape that the value nodes must not conform to.\"@en ;\n\trdfs:range sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:OrConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Or constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the value nodes so that they conform to at least one out of several provided shapes.\"@en ;\n\tsh:parameter sh:OrConstraintComponent-or ;\n\trdfs:isDefinedBy sh: .\n\nsh:OrConstraintComponent-or\n\ta sh:Parameter ;\n\tsh:path sh:or ;\n\trdfs:isDefinedBy sh: .\n\nsh:or\n\ta rdf:Property ;\n\trdfs:label \"or\"@en ;\n\trdfs:comment \"Specifies a list of shapes so that the value nodes must conform to at least one of the shapes.\"@en ;\n\trdfs:range rdf:List ;    # members: sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:PatternConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Pattern constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that every value node matches a given regular expression.\"@en ;\n\tsh:parameter sh:PatternConstraintComponent-pattern ;\n\tsh:parameter sh:PatternConstraintComponent-flags ;\n\trdfs:isDefinedBy sh: .\n\nsh:PatternConstraintComponent-pattern\n\ta sh:Parameter ;\n\tsh:path sh:pattern ;\n\tsh:datatype xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:PatternConstraintComponent-flags\n\ta sh:Parameter ;\n\tsh:path sh:flags ;\n\tsh:datatype xsd:string ;\n\tsh:optional true ;\n\trdfs:isDefinedBy sh: .\n\nsh:flags\n\ta rdf:Property ;\n\trdfs:label \"flags\"@en ;\n\trdfs:comment \"An optional flag to be used with regular expression pattern matching.\"@en ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:pattern\n\ta rdf:Property ;\n\trdfs:label \"pattern\"@en ;\n\trdfs:comment \"Specifies a regular expression pattern that the string representations of the value nodes must match.\"@en ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:PropertyConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Property constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that all value nodes conform to the given property shape.\"@en ;\n\tsh:parameter sh:PropertyConstraintComponent-property ;\n\trdfs:isDefinedBy sh: .\n\nsh:PropertyConstraintComponent-property\n\ta sh:Parameter ;\n\tsh:path sh:property ;\n\trdfs:isDefinedBy sh: .\n\nsh:property\n\ta rdf:Property ;\n\trdfs:label \"property\"@en ;\n\trdfs:comment \"Links a shape to its property shapes.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range sh:PropertyShape ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:QualifiedMaxCountConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Qualified-max-count constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that a specified maximum number of value nodes conforms to a given shape.\"@en ;\n\tsh:parameter sh:QualifiedMaxCountConstraintComponent-qualifiedMaxCount ;\n\tsh:parameter sh:QualifiedMaxCountConstraintComponent-qualifiedValueShape ;\n\tsh:parameter sh:QualifiedMaxCountConstraintComponent-qualifiedValueShapesDisjoint ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMaxCountConstraintComponent-qualifiedMaxCount\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedMaxCount ;\n\tsh:datatype xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMaxCountConstraintComponent-qualifiedValueShape\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedValueShape ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMaxCountConstraintComponent-qualifiedValueShapesDisjoint\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedValueShapesDisjoint ;\n\tsh:datatype xsd:boolean ;\n\tsh:optional true ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:QualifiedMinCountConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Qualified-min-count constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that a specified minimum number of value nodes conforms to a given shape.\"@en ;\n\tsh:parameter sh:QualifiedMinCountConstraintComponent-qualifiedMinCount ;\n\tsh:parameter sh:QualifiedMinCountConstraintComponent-qualifiedValueShape ;\n\tsh:parameter sh:QualifiedMinCountConstraintComponent-qualifiedValueShapesDisjoint ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMinCountConstraintComponent-qualifiedMinCount\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedMinCount ;\n\tsh:datatype xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMinCountConstraintComponent-qualifiedValueShape\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedValueShape ;\n\trdfs:isDefinedBy sh: .\n\nsh:QualifiedMinCountConstraintComponent-qualifiedValueShapesDisjoint\n\ta sh:Parameter ;\n\tsh:path sh:qualifiedValueShapesDisjoint ;\n\tsh:datatype xsd:boolean ;\n\tsh:optional true ;\n\trdfs:isDefinedBy sh: .\n\nsh:qualifiedMaxCount\n\ta rdf:Property ;\n\trdfs:label \"qualified max count\"@en ;\n\trdfs:comment \"The maximum number of value nodes that can conform to the shape.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\nsh:qualifiedMinCount\n\ta rdf:Property ;\n\trdfs:label \"qualified min count\"@en ;\n\trdfs:comment \"The minimum number of value nodes that must conform to the shape.\"@en ;\n\trdfs:range xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\nsh:qualifiedValueShape\n\ta rdf:Property ;\n\trdfs:label \"qualified value shape\"@en ;\n\trdfs:comment \"The shape that a specified number of values must conform to.\"@en ;\n\trdfs:range sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\t\nsh:qualifiedValueShapesDisjoint\n\ta rdf:Property ;\n\trdfs:label \"qualified value shapes disjoint\"@en ;\n\trdfs:comment \"Can be used to mark the qualified value shape to be disjoint with its sibling shapes.\"@en ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:UniqueLangConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Unique-languages constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to specify that no pair of value nodes may use the same language tag.\"@en ;\n\tsh:parameter sh:UniqueLangConstraintComponent-uniqueLang ;\n\trdfs:isDefinedBy sh: .\n\nsh:UniqueLangConstraintComponent-uniqueLang\n\ta sh:Parameter ;\n\tsh:path sh:uniqueLang ;\n\tsh:datatype xsd:boolean ;\n\tsh:maxCount 1 ;\n\trdfs:isDefinedBy sh: .\n\nsh:uniqueLang\n\ta rdf:Property ;\n\trdfs:label \"unique languages\"@en ;\n\trdfs:comment \"Specifies whether all node values must have a unique (or no) language tag.\"@en ;\n\trdfs:range xsd:boolean ;\n\trdfs:isDefinedBy sh: .\n\n\nsh:XoneConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Exactly one constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to restrict the value nodes so that they conform to exactly one out of several provided shapes.\"@en ;\n\tsh:parameter sh:XoneConstraintComponent-xone ;\n\trdfs:isDefinedBy sh: .\n\nsh:XoneConstraintComponent-xone\n\ta sh:Parameter ;\n\tsh:path sh:xone ;\n\trdfs:isDefinedBy sh: .\n\nsh:xone\n\ta rdf:Property ;\n\trdfs:label \"exactly one\"@en ;\n\trdfs:comment \"Specifies a list of shapes so that the value nodes must conform to exactly one of the shapes.\"@en ;\n\trdfs:range rdf:List ;    # members: sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\n\n# General SPARQL execution support --------------------------------------------\n\nsh:SPARQLExecutable\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL executable\"@en ;\n\trdfs:comment \"The class of resources that encapsulate a SPARQL query.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLAskExecutable\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL ASK executable\"@en ;\n\trdfs:comment \"The class of SPARQL executables that are based on an ASK query.\"@en ;\n\trdfs:subClassOf sh:SPARQLExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:ask\n\ta rdf:Property ;\n\trdfs:label \"ask\"@en ;\n\trdfs:comment \"The SPARQL ASK query to execute.\"@en ;\n\trdfs:domain sh:SPARQLAskExecutable ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLConstructExecutable\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL CONSTRUCT executable\"@en ;\n\trdfs:comment \"The class of SPARQL executables that are based on a CONSTRUCT query.\"@en ;\n\trdfs:subClassOf sh:SPARQLExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:construct\n\ta rdf:Property ;\n\trdfs:label \"construct\"@en ;\n\trdfs:comment \"The SPARQL CONSTRUCT query to execute.\"@en ;\n\trdfs:domain sh:SPARQLConstructExecutable ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLSelectExecutable\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL SELECT executable\"@en ;\n\trdfs:comment \"The class of SPARQL executables based on a SELECT query.\"@en ;\n\trdfs:subClassOf sh:SPARQLExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:select\n\ta rdf:Property ;\n\trdfs:label \"select\"@en ;\n\trdfs:comment \"The SPARQL SELECT query to execute.\"@en ;\n\trdfs:range xsd:string ;\n\trdfs:domain sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLUpdateExecutable\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL UPDATE executable\"@en ;\n\trdfs:comment \"The class of SPARQL executables based on a SPARQL UPDATE.\"@en ;\n\trdfs:subClassOf sh:SPARQLExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:update\n\ta rdf:Property ;\n\trdfs:label \"update\"@en ;\n\trdfs:comment \"The SPARQL UPDATE to execute.\"@en ;\n\trdfs:domain sh:SPARQLUpdateExecutable ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:prefixes\n\ta rdf:Property ;\n\trdfs:label \"prefixes\"@en ;\n\trdfs:comment \"The prefixes that shall be applied before parsing the associated SPARQL query.\"@en ;\n\trdfs:domain sh:SPARQLExecutable ;\n\trdfs:range owl:Ontology ;\n\trdfs:isDefinedBy sh: .\n\nsh:PrefixDeclaration\n\ta rdfs:Class ;\n\trdfs:label \"Prefix declaration\"@en ;\n\trdfs:comment \"The class of prefix declarations, consisting of pairs of a prefix with a namespace.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:declare\n\ta rdf:Property ;\n\trdfs:label \"declare\"@en ;\n\trdfs:comment \"Links a resource with its namespace prefix declarations.\"@en ;\n\trdfs:domain owl:Ontology ;\n\trdfs:range sh:PrefixDeclaration ;\n\trdfs:isDefinedBy sh: .\n\nsh:prefix\n\ta rdf:Property ;\n\trdfs:label \"prefix\"@en ;\n\trdfs:comment \"The prefix of a prefix declaration.\"@en ;\n\trdfs:domain sh:PrefixDeclaration ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:namespace\n\ta rdf:Property ;\n\trdfs:label \"namespace\"@en ;\n\trdfs:comment \"The namespace associated with a prefix in a prefix declaration.\"@en ;\n\trdfs:domain sh:PrefixDeclaration ;\n\trdfs:range xsd:anyURI ;\n\trdfs:isDefinedBy sh: .\n\t\n\n# SPARQL-based Constraints support --------------------------------------------\n\nsh:SPARQLConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"SPARQL constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to define constraints based on SPARQL queries.\"@en ;\n\tsh:parameter sh:SPARQLConstraintComponent-sparql ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLConstraintComponent-sparql\n\ta sh:Parameter ;\n\tsh:path sh:sparql ;\n\trdfs:isDefinedBy sh: .\n\nsh:sparql\n\ta rdf:Property ;\n\trdfs:label \"constraint (in SPARQL)\"@en ;\n\trdfs:comment \"Links a shape with SPARQL constraints.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range sh:SPARQLConstraint ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLConstraint\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL constraint\"@en ;\n\trdfs:comment \"The class of constraints based on SPARQL SELECT queries.\"@en ;\n\trdfs:subClassOf sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\n\n# Non-validating constraint properties ----------------------------------------\n\nsh:defaultValue\n\ta rdf:Property ;\n\trdfs:label \"default value\"@en ;\n\trdfs:comment \"A default value for a property, for example for user interface tools to pre-populate input fields.\"@en ;\n\trdfs:domain sh:PropertyShape ;\n\trdfs:isDefinedBy sh: .\n\nsh:description\n\ta rdf:Property ;\n\trdfs:label \"description\"@en ;\n\trdfs:comment \"Human-readable descriptions for the property in the context of the surrounding shape.\"@en ;\n\trdfs:domain sh:PropertyShape ;\n\t# range: xsd:string or rdf:langString\n\trdfs:isDefinedBy sh: .\n\nsh:group\n\ta rdf:Property ;\n\trdfs:label \"group\"@en ;\n\trdfs:comment \"Can be used to link to a property group to indicate that a property shape belongs to a group of related property shapes.\"@en ;\n\trdfs:domain sh:PropertyShape ;\n\trdfs:range sh:PropertyGroup ;\n\trdfs:isDefinedBy sh: .\n\nsh:name\n\ta rdf:Property ;\n\trdfs:label \"name\"@en ;\n\trdfs:comment \"Human-readable labels for the property in the context of the surrounding shape.\"@en ;\n\trdfs:domain sh:PropertyShape ;\n\t# range: xsd:string or rdf:langString\n\trdfs:isDefinedBy sh: .\n\nsh:order\n\ta rdf:Property ;\n\trdfs:label \"order\"@en ;\n\trdfs:comment \"Specifies the relative order of this compared to its siblings. For example use 0 for the first, 1 for the second.\"@en ;\n\t# range: xsd:decimal or xsd:integer ;\n\trdfs:isDefinedBy sh: .\n\nsh:PropertyGroup\n\ta rdfs:Class ;\n\trdfs:label \"Property group\"@en ;\n\trdfs:comment \"Instances of this class represent groups of property shapes that belong together.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\n\n# -----------------------------------------------------------------------------\n# SHACL ADVANCED FEATURES -----------------------------------------------------\n# -----------------------------------------------------------------------------\n\t\n\n# Advanced Target vocabulary --------------------------------------------------\n\nsh:target\n\ta rdf:Property ;\n\trdfs:label \"target\"@en ;\n\trdfs:comment \"Links a shape to a target specified by an extension language, for example instances of sh:SPARQLTarget.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range sh:Target ;\n\trdfs:isDefinedBy sh: .\n\nsh:Target\n\ta rdfs:Class ;\n\trdfs:label \"Target\"@en ;\n\trdfs:comment \"The base class of targets such as those based on SPARQL queries.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:TargetType\n\ta rdfs:Class ;\n\trdfs:label \"Target type\"@en ;\n\trdfs:comment \"The (meta) class for parameterizable targets.\tInstances of this are instantiated as values of the sh:target property.\"@en ;\n\trdfs:subClassOf rdfs:Class ;\n\trdfs:subClassOf sh:Parameterizable ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLTarget\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL target\"@en ;\n\trdfs:comment \"The class of targets that are based on SPARQL queries.\"@en ;\n\trdfs:subClassOf sh:Target ;\n\trdfs:subClassOf sh:SPARQLAskExecutable ;\n\trdfs:subClassOf sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLTargetType\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL target type\"@en ;\n\trdfs:comment \"The (meta) class for parameterizable targets that are based on SPARQL queries.\"@en ;\n\trdfs:subClassOf sh:TargetType ;\n\trdfs:subClassOf sh:SPARQLAskExecutable ;\n\trdfs:subClassOf sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\n\n# Functions Vocabulary --------------------------------------------------------\n\nsh:Function\n\ta rdfs:Class ;\n\trdfs:label \"Function\"@en ;\n\trdfs:comment \"The class of SHACL functions.\"@en ;\n\trdfs:subClassOf sh:Parameterizable ;\n\trdfs:isDefinedBy sh: .\n\nsh:returnType\n\ta rdf:Property ;\n\trdfs:label \"return type\"@en ;\n\trdfs:comment \"The expected type of values returned by the associated function.\"@en ;\n\trdfs:domain sh:Function ;\n\trdfs:range rdfs:Class ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLFunction\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL function\"@en ;\n\trdfs:comment \"A function backed by a SPARQL query - either ASK or SELECT.\"@en ;\n\trdfs:subClassOf sh:Function ;\n\trdfs:subClassOf sh:SPARQLAskExecutable ;\n\trdfs:subClassOf sh:SPARQLSelectExecutable ;\n\trdfs:isDefinedBy sh: .\n\n\n# Result Annotations ----------------------------------------------------------\n\nsh:resultAnnotation\n\ta rdf:Property ;\n\trdfs:label \"result annotation\"@en ;\n\trdfs:comment \"Links a SPARQL validator with zero or more sh:ResultAnnotation instances, defining how to derive additional result properties based on the variables of the SELECT query.\"@en ;\n\trdfs:domain sh:SPARQLSelectValidator ;\n\trdfs:range sh:ResultAnnotation ;\n\trdfs:isDefinedBy sh: .\n\nsh:ResultAnnotation\n\ta rdfs:Class ;\n\trdfs:label \"Result annotation\"@en ;\n\trdfs:comment \"A class of result annotations, which define the rules to derive the values of a given annotation property as extra values for a validation result.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:annotationProperty\n\ta rdf:Property ;\n\trdfs:label \"annotation property\"@en ;\n\trdfs:comment \"The annotation property that shall be set.\"@en ;\n\trdfs:domain sh:ResultAnnotation ;\n\trdfs:range rdf:Property ;\n\trdfs:isDefinedBy sh: .\n\nsh:annotationValue\n\ta rdf:Property ;\n\trdfs:label \"annotation value\"@en ;\n\trdfs:comment \"The (default) values of the annotation property.\"@en ;\n\trdfs:domain sh:ResultAnnotation ;\n\trdfs:isDefinedBy sh: .\n\nsh:annotationVarName\n\ta rdf:Property ;\n\trdfs:label \"annotation variable name\"@en ;\n\trdfs:comment \"The name of the SPARQL variable from the SELECT clause that shall be used for the values.\"@en ;\n\trdfs:domain sh:ResultAnnotation ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\n\t\n# Node Expressions ------------------------------------------------------------\n\nsh:this\n\ta rdfs:Resource ;\n\trdfs:label \"this\"@en ;\n\trdfs:comment \"A node expression that represents the current focus node.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:filterShape\n\ta rdf:Property ;\n\trdfs:label \"filter shape\"@en ;\n\trdfs:comment \"The shape that all input nodes of the expression need to conform to.\"@en ;\n\trdfs:range sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:nodes\n\ta rdf:Property ;\n\trdfs:label \"nodes\"@en ;\n\trdfs:comment \"The node expression producing the input nodes of a filter shape expression.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:intersection\n\ta rdf:Property ;\n\trdfs:label \"intersection\"@en ;\n\trdfs:comment \"A list of node expressions that shall be intersected.\"@en ;\n\trdfs:isDefinedBy sh: .\n\nsh:union\n\ta rdf:Property ;\n\trdfs:label \"union\"@en ;\n\trdfs:comment \"A list of node expressions that shall be used together.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\n# Expression Constraints ------------------------------------------------------\n\nsh:ExpressionConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"Expression constraint component\"@en ;\n\trdfs:comment \"A constraint component that can be used to verify that a given node expression produces true for all value nodes.\"@en ;\n\tsh:parameter sh:ExpressionConstraintComponent-expression ;\n\trdfs:isDefinedBy sh: .\n\nsh:ExpressionConstraintComponent-expression\n\ta sh:Parameter ;\n\tsh:path sh:expression ;\n\trdfs:isDefinedBy sh: .\n\nsh:expression\n\ta rdf:Property ;\n\trdfs:label \"expression\"@en ;\n\trdfs:comment \"The node expression that must return true for the value nodes.\"@en ;\n\trdfs:isDefinedBy sh: .\n\n\n# Rules -----------------------------------------------------------------------\n\nsh:Rule\n\ta rdfs:Class ;\n\trdfs:label \"Rule\"@en ;\n\trdfs:comment \"The class of SHACL rules. Never instantiated directly.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:rule\n\ta rdf:Property ;\n\trdfs:label \"rule\"@en ;\n\trdfs:comment \"The rules linked to a shape.\"@en ;\n\trdfs:domain sh:Shape ;\n\trdfs:range sh:Rule ;\n\trdfs:isDefinedBy sh:  .\n\nsh:condition\n\ta rdf:Property ;\n\trdfs:label \"condition\"@en ;\n\trdfs:comment \"The shapes that the focus nodes need to conform to before a rule is executed on them.\"@en ;\n\trdfs:domain sh:Rule ;\n\trdfs:range sh:Shape ;\n\trdfs:isDefinedBy sh: .\n\nsh:TripleRule\n\ta rdfs:Class ;\n\trdfs:label \"A rule based on triple (subject, predicate, object) pattern.\"@en ;\n\trdfs:subClassOf sh:Rule ;\n\trdfs:isDefinedBy sh: .\n\nsh:subject\n\ta rdf:Property ;\n\trdfs:label \"subject\"@en ;\n\trdfs:comment \"An expression producing the resources that shall be inferred as subjects.\"@en ;\n\trdfs:domain sh:TripleRule ;\n\trdfs:isDefinedBy sh: .\n\nsh:predicate\n\ta rdf:Property ;\n\trdfs:label \"predicate\"@en ;\n\trdfs:comment \"An expression producing the properties that shall be inferred as predicates.\"@en ;\n\trdfs:domain sh:TripleRule ;\n\trdfs:isDefinedBy sh: .\n\nsh:object\n\ta rdf:Property ;\n\trdfs:label \"object\"@en ;\n\trdfs:comment \"An expression producing the nodes that shall be inferred as objects.\"@en ;\n\trdfs:domain sh:TripleRule ;\n\trdfs:isDefinedBy sh: .\n\nsh:SPARQLRule\n\ta rdfs:Class ;\n\trdfs:label \"SPARQL CONSTRUCT rule\"@en ;\n\trdfs:comment \"The class of SHACL rules based on SPARQL CONSTRUCT queries.\"@en ;\n\trdfs:subClassOf sh:Rule ;\n\trdfs:subClassOf sh:SPARQLConstructExecutable ;\n\trdfs:isDefinedBy sh: .\n\n\n# SHACL-JS --------------------------------------------------------------------\n\nsh:JSExecutable\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript executable\"@en ;\n\trdfs:comment \"Abstract base class of resources that declare an executable JavaScript.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSTarget\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript target\"@en ;\n\trdfs:comment \"The class of targets that are based on JavaScript functions.\"@en ;\n\trdfs:subClassOf sh:Target ;\n\trdfs:subClassOf sh:JSExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSTargetType\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript target type\"@en ;\n\trdfs:comment \"The (meta) class for parameterizable targets that are based on JavaScript functions.\"@en ;\n\trdfs:subClassOf sh:TargetType ;\n\trdfs:subClassOf sh:JSExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSConstraint\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript-based constraint\"@en ;\n\trdfs:comment \"The class of constraints backed by a JavaScript function.\"@en ;\n\trdfs:subClassOf sh:JSExecutable ;\n\trdfs:isDefinedBy sh: .\n\t\nsh:JSConstraintComponent\n\ta sh:ConstraintComponent ;\n\trdfs:label \"JavaScript constraint component\"@en ;\n\trdfs:comment \"A constraint component with the parameter sh:js linking to a sh:JSConstraint containing a sh:script.\"@en ;\n  \tsh:parameter sh:JSConstraint-js ;\n\trdfs:isDefinedBy sh: .\n \nsh:JSConstraint-js\n\ta sh:Parameter ;\n\tsh:path sh:js ;\n\trdfs:isDefinedBy sh: .\n\t\nsh:js\n\ta rdf:Property ;\n\trdfs:label \"JavaScript constraint\"@en ;\n\trdfs:comment \"Constraints expressed in JavaScript.\" ;\n  \trdfs:range sh:JSConstraint ;\n\trdfs:isDefinedBy sh: .\n\nsh:jsFunctionName\n\ta rdf:Property ;\n\trdfs:label \"JavaScript function name\"@en ;\n\trdfs:comment \"The name of the JavaScript function to execute.\"@en ;\n\trdfs:domain sh:JSExecutable ;\n\trdfs:range xsd:string ;\n\trdfs:isDefinedBy sh: .\n\nsh:jsLibrary\n\ta rdf:Property ;\n\trdfs:label \"JavaScript library\"@en ;\n  \trdfs:comment \"Declares which JavaScript libraries are needed to execute this.\"@en ;\n\trdfs:range sh:JSLibrary ;\n\trdfs:isDefinedBy sh: .\n\nsh:jsLibraryURL\n\ta rdf:Property ;\n\trdfs:label \"JavaScript library URL\"@en ;\n\trdfs:comment \"Declares the URLs of a JavaScript library. This should be the absolute URL of a JavaScript file. Implementations may redirect those to local files.\"@en ;\n\trdfs:domain sh:JSLibrary ;\n\trdfs:range xsd:anyURI ;\n\trdfs:isDefinedBy sh: .\n\t\nsh:JSFunction\n\ta rdfs:Class ;\n  \trdfs:label \"JavaScript function\"@en ;\n\trdfs:comment \"The class of SHACL functions that execute a JavaScript function when called.\"@en ;\n\trdfs:subClassOf sh:Function ;\n\trdfs:subClassOf sh:JSExecutable ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSLibrary\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript library\"@en ;\n\trdfs:comment \"Represents a JavaScript library, typically identified by one or more URLs of files to include.\"@en ;\n\trdfs:subClassOf rdfs:Resource ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSRule\n\ta rdfs:Class ;\n\trdfs:label \"JavaScript rule\"@en ;\n\trdfs:comment \"The class of SHACL rules expressed using JavaScript.\"@en ;\n\trdfs:subClassOf sh:JSExecutable ;\n\trdfs:subClassOf sh:Rule ;\n\trdfs:isDefinedBy sh: .\n\nsh:JSValidator\n\ta rdfs:Class ;\n  \trdfs:label \"JavaScript validator\"@en ;\n\trdfs:comment \"A SHACL validator based on JavaScript. This can be used to declare SHACL constraint components that perform JavaScript-based validation when used.\"@en ;\n  \trdfs:subClassOf sh:JSExecutable ;\n  \trdfs:subClassOf sh:Validator ;\n  \trdfs:isDefinedBy sh: .\n"}
 },{}]},{},[1])
 (1)
 });
