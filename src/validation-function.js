@@ -3,9 +3,7 @@
 var rdfquery = require("./rdfquery");
 var debug = require("debug")("validation-function");
 
-
 var globalObject = typeof window !== 'undefined' ? window : global;
-
 
 var ValidationFunction = function (functionName, parameters, functionRegistry) {
 
@@ -26,7 +24,7 @@ var ValidationFunction = function (functionName, parameters, functionRegistry) {
     this.parameters = [];
     for (var i = 0; i < funcArgsRaw.length; i++) {
         var arg = funcArgsRaw[i];
-        if (arg.indexOf("$") == 0) {
+        if (arg.indexOf("$") === 0) {
             arg = arg.substring(1);
         }
         this.funcArgs.push(arg);
@@ -67,7 +65,7 @@ ValidationFunction.prototype.execute = function (focusNode, valueNode, constrain
         else if (arg === "path") {
             args.push(constraint.shape.path);
         }
-        else if (arg == "shapesGraph") {
+        else if (arg === "shapesGraph") {
             args.push("DummyShapesGraph");
         }
         else if (arg === "this") {
