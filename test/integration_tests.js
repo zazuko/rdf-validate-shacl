@@ -67,9 +67,8 @@ ExpectedValidationReport.prototype.results = function() {
 };
 
 var expectedResult = function(data, mediaType, cb) {
-    var store = $rdf.graph();
-    rdflibgraph.loadGraph(data, store, "http://test.com/example", mediaType, function() {
-        var graph = new RDFLibGraph(store);
+    var graph = new RDFLibGraph();
+    graph.loadGraph(data, "http://test.com/example", mediaType, function() {
         var expectedValidationReport = new ExpectedValidationReport(graph);
         expectedValidationReport.results();
         cb(expectedValidationReport, null);
@@ -87,12 +86,14 @@ var validateReports = function(test, input) {
 
     expectedResult(data, "text/turtle", function(expectedReport, e) {
         if (e != null) {
-            test.ok(e != null);
+            console.log(e);
+            test.ok(e == null);
             test.done();
         } else {
             new SHACLValidator().validate(data, "text/turtle", data, "text/turtle", function (e, report) {
                 if (e != null) {
-                    test.ok(e != null);
+                    console.log(e);
+                    test.ok(e == null);
                     test.done();
                 } else {
                     test.ok(report.conforms() === expectedReport.conforms());
@@ -119,6 +120,7 @@ var validateReports = function(test, input) {
         }
     });
 };
+
 
 fs.readdirSync(__dirname + "/data/core").forEach(function(dir) {
     fs.readdirSync(__dirname + "/data/core/" + dir).forEach(function(file) {

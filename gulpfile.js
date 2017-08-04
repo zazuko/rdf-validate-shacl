@@ -26,6 +26,7 @@ gulp.task('browserify', function () {
         });
 });
 
+
 gulp.task('generate-vocabularies', function () {
     var vocabularies = fs.readdirSync("./vocabularies");
     var acc = {};
@@ -33,6 +34,19 @@ gulp.task('generate-vocabularies', function () {
         console.log("Generating " + vocabularies[i]);
         acc[vocabularies[i].split(".ttl")[0]] = fs.readFileSync("./vocabularies/" + vocabularies[i]).toString();
         fs.writeFileSync("./src/vocabularies.js", "module.exports = " + JSON.stringify(acc));
+    }
+});
+
+gulp.task('generate-libraries', function () {
+    var libraries = {
+        "http://datashapes.org/js/dash.js": "./shared/dash.js",
+        "http://datashapes.org/js/rdfquery.js": "./shared/rdfquery.js"
+    };
+    var acc = {};
+    for (var library in libraries) {
+        console.log("Generating " + library);
+        acc[library] = fs.readFileSync(libraries[library]).toString();
+        fs.writeFileSync("./src/libraries.js", "module.exports = " + JSON.stringify(acc));
     }
 });
 

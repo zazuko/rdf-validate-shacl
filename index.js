@@ -3,19 +3,18 @@
  */
 
 var jsonld = require("jsonld");
-var T = require("./src/rdfquery").T;
-var TermFactory = require("./src/rdfquery/term-factory");
-var ShapesGraph = require("./src/shapes-graph");
-var ValidationEngine = require("./src/validation-engine");
 var ValidationReport = require("./src/validation-report");
 var debug = require("debug")("index");
 var error = require("debug")("index::error");
-
 var $rdf = require("rdflib");
+
+var TermFactory = require("./src/rdfquery/term-factory");
+var RDFQuery = require("./src/rdfquery");
+var T = RDFQuery.T;
+var ShapesGraph = require("./src/shapes-graph");
+var ValidationEngine = require("./src/validation-engine");
 var rdflibgraph = require("./src/rdflib-graph");
 var RDFLibGraph = rdflibgraph.RDFLibGraph;
-
-
 
 /********************************/
 /* Vocabularies                 */
@@ -44,36 +43,53 @@ var createRDFListNode = function(store, items, index) {
 };
 
 
+// SHACL Interface
 /**
  * SHACL Validator.
  * Main interface with the library
  */
 var SHACLValidator = function() {
-    this.functionRegistry = {};
-    // invoking this just for the side effects.
-    // It will trigger the registration of DASH functions
-    require("./src/dash").registerDASH(this);
-
+    this.$data = new RDFLibGraph();
+    this.$shapes = new RDFLibGraph();
+    this.depth = 0;
     this.results = null;
-    this.dataStore = $rdf.graph();
-    this.$data = new RDFLibGraph(this.dataStore);
-    this.$shapes = new RDFLibGraph($rdf.graph());
     this.validationEngine = null;
     this.validationError = null;
     this.sequence = null;
     this.shapesGraph = new ShapesGraph(this);
+    this.functionsRegistry = require("./src/libraries");
 };
 
+SHACLValidator.prototype.compareNodes = function(node1, node2) {
+    // TODO: Does not handle the case where nodes cannot be compared
+    if (node1 && node2 && node1.isLiteral() && node2.isLiteral()) {
+        if ((node1.datatype != null) !== (node2.datatype != null)) {
+            return null;
+        } else if (node1.datatype && node2.datatype && node1.datatype.value !== node2.datatype.value) {
+            return null;
+        }
+    }
+    return RDFQuery.compareTerms(node1, node2);
+};
 
+SHACLValidator.prototype.nodeConformsToShape = function(focusNode, shapeNode) {
+    var shape = this.shapesGraph.getShape(shapeNode);
+    try {
+        this.depth++;
+        var foundViolations = this.validationEngine.validateNodeAgainstShape(focusNode, shape, this.$data);
+        return !foundViolations;
+    }
+    finally {
+        this.depth--;
+    }
+}
 
 // Data graph and Shapes graph logic
 
 
 SHACLValidator.prototype.parseDataGraph = function(text, mediaType, andThen) {
-    this.dataStore = $rdf.graph();
-    var that = this;
-    rdflibgraph.loadGraph(text, this.dataStore, dataGraphURI, mediaType, function () {
-        that.$data = new RDFLibGraph(that.dataStore);
+    this.$data.clear();
+    this.$data.loadGraph(text, dataGraphURI, mediaType, function () {
         andThen();
     }, function (ex) {
         error(ex);
@@ -158,12 +174,11 @@ SHACLValidator.prototype.parseShapesGraph = function(text, mediaType, andThen) {
     var handleError = function (ex) {
         error(ex);
     };
-    this.shapesStore = $rdf.graph();
     var that = this;
-    rdflibgraph.loadGraph(text, this.shapesStore, shapesGraphURI, mediaType, function () {
-        rdflibgraph.loadGraph(shaclFile, that.shapesStore, "http://shacl.org", "text/turtle", function () {
-            rdflibgraph.loadGraph(dashFile, that.shapesStore, "http://datashapes.org/dash", "text/turtle", function () {
-                that.$shapes = new RDFLibGraph(that.shapesStore);
+    this.$shapes.clear();
+    this.$shapes.loadGraph(text, shapesGraphURI, mediaType, function () {
+        that.$shapes.loadGraph(shaclFile, "http://shacl.org", "text/turtle", function () {
+            that.$shapes.loadGraph(dashFile, "http://datashapes.org/dash", "text/turtle", function () {
                 andThen();
             });
         }, handleError);
@@ -202,15 +217,22 @@ SHACLValidator.prototype.updateShapesGraph = function(shapes, mediaType, cb) {
         var midTime = new Date().getTime();
         that.shapesGraph = new ShapesGraph(that);
         var midTime2 = new Date().getTime();
-        that.updateValidationEngine();
-        var endTime = new Date().getTime();
-        debug("Parsing took " + (midTime - startTime) + " ms. Preparing the shapes took " + (midTime2 - midTime)
-            + " ms. Validation the data took " + (endTime - midTime2) + " ms.");
-        try {
-            that.showValidationResults(cb);
-        } catch (e) {
-            cb(e, null);
-        }
+        that.shapesGraph.loadJSLibraries(function (err) {
+            if (err) {
+                cb(err, null);
+            } else {
+                that.updateValidationEngine();
+                var endTime = new Date().getTime();
+                debug("Parsing took " + (midTime - startTime) + " ms. Preparing the shapes took " + (midTime2 - midTime)
+                    + " ms. Validation the data took " + (endTime - midTime2) + " ms.");
+                try {
+
+                    that.showValidationResults(cb);
+                } catch (e) {
+                    cb(e, null);
+                }
+            }
+        });
     });
 };
 

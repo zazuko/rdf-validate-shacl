@@ -1,16 +1,13 @@
 // class ValidationFunction
-
-var rdfquery = require("./rdfquery");
+var RDFQuery = require("./rdfquery");
 var debug = require("debug")("validation-function");
-
 
 var globalObject = typeof window !== 'undefined' ? window : global;
 
-
-var ValidationFunction = function (functionName, parameters, functionRegistry) {
+var ValidationFunction = function (functionName, parameters, findInScript) {
 
     this.funcName = functionName;
-    this.func = functionRegistry[functionName];
+    this.func = findInScript(functionName);
     if (!this.func) {
         throw "Cannot find validator function " + functionName;
     }
@@ -26,13 +23,13 @@ var ValidationFunction = function (functionName, parameters, functionRegistry) {
     this.parameters = [];
     for (var i = 0; i < funcArgsRaw.length; i++) {
         var arg = funcArgsRaw[i];
-        if (arg.indexOf("$") == 0) {
+        if (arg.indexOf("$") === 0) {
             arg = arg.substring(1);
         }
         this.funcArgs.push(arg);
         for (var j = 0; j < parameters.length; j++) {
             var parameter = parameters[j];
-            var localName = rdfquery.getLocalName(parameter.value);
+            var localName = RDFQuery.getLocalName(parameter.value);
             if (arg === localName) {
                 this.parameters[i] = parameter;
                 break;
@@ -67,7 +64,7 @@ ValidationFunction.prototype.execute = function (focusNode, valueNode, constrain
         else if (arg === "path") {
             args.push(constraint.shape.path);
         }
-        else if (arg == "shapesGraph") {
+        else if (arg === "shapesGraph") {
             args.push("DummyShapesGraph");
         }
         else if (arg === "this") {
