@@ -1,14 +1,13 @@
 // class ValidationFunction
-
-var rdfquery = require("./rdfquery");
+var RDFQuery = require("./rdfquery");
 var debug = require("debug")("validation-function");
 
 var globalObject = typeof window !== 'undefined' ? window : global;
 
-var ValidationFunction = function (functionName, parameters, functionRegistry) {
+var ValidationFunction = function (functionName, parameters, findInScript) {
 
     this.funcName = functionName;
-    this.func = functionRegistry[functionName];
+    this.func = findInScript(functionName);
     if (!this.func) {
         throw "Cannot find validator function " + functionName;
     }
@@ -30,7 +29,7 @@ var ValidationFunction = function (functionName, parameters, functionRegistry) {
         this.funcArgs.push(arg);
         for (var j = 0; j < parameters.length; j++) {
             var parameter = parameters[j];
-            var localName = rdfquery.getLocalName(parameter.value);
+            var localName = RDFQuery.getLocalName(parameter.value);
             if (arg === localName) {
                 this.parameters[i] = parameter;
                 break;

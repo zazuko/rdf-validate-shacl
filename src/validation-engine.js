@@ -1,11 +1,11 @@
-var rdfquery = require("./rdfquery");
-var T = rdfquery.T;
+var RDFQuery = require("./rdfquery");
+var T = RDFQuery.T;
 var TermFactory = require("./rdfquery/term-factory");
 
 var nodeLabel = function (node, store) {
     if (node.termType === "Collection") {
         var acc = [];
-        for (var i=0; i<node.elements.length; i++) {
+        for (var i = 0; i < node.elements.length; i++) {
             acc.push(nodeLabel(node.elements[i], store));
         }
         return acc.join(", ");
@@ -33,6 +33,7 @@ var ValidationEngine = function (context, conformanceOnly) {
     this.context = context;
     this.conformanceOnly = conformanceOnly;
     this.results = [];
+    this.recordErrorsLevel = 0;
 };
 
 ValidationEngine.prototype.addResultProperty = function (result, predicate, object) {
@@ -45,10 +46,13 @@ ValidationEngine.prototype.addResultProperty = function (result, predicate, obje
  */
 ValidationEngine.prototype.createResult = function (constraint, focusNode, valueNode) {
     var result = TermFactory.blankNode();
+    var severity = constraint.shape.severity;
+    var sourceConstraintComponent = constraint.component.node;
+    var sourceShape = constraint.shape.shapeNode;
     this.addResultProperty(result, T("rdf:type"), T("sh:ValidationResult"));
-    this.addResultProperty(result, T("sh:resultSeverity"), constraint.shape.severity);
-    this.addResultProperty(result, T("sh:sourceConstraintComponent"), constraint.component.node);
-    this.addResultProperty(result, T("sh:sourceShape"), constraint.shape.shapeNode);
+    this.addResultProperty(result, T("sh:resultSeverity"), severity);
+    this.addResultProperty(result, T("sh:sourceConstraintComponent"), sourceConstraintComponent);
+    this.addResultProperty(result, T("sh:sourceShape"), sourceShape);
     this.addResultProperty(result, T("sh:focusNode"), focusNode);
     if (valueNode) {
         this.addResultProperty(result, T("sh:value"), valueNode);
@@ -64,18 +68,34 @@ ValidationEngine.prototype.createResult = function (constraint, focusNode, value
  */
 ValidationEngine.prototype.createResultFromObject = function (obj, constraint, focusNode, valueNode) {
     if (obj === false) {
+        if (this.recordErrorsLevel > 0) {
+            if (this.conformanceOnly) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+
         if (this.conformanceOnly) {
-            return true;
+            return false;
         }
         var result = this.createResult(constraint, focusNode, valueNode);
         if (constraint.shape.isPropertyShape()) {
             this.addResultProperty(result, T("sh:resultPath"), constraint.shape.path); // TODO: Make deep copy
         }
         this.createResultMessages(result, constraint);
+        return true;
     }
     else if (typeof obj === 'string') {
+        if (this.recordErrorsLevel > 0) {
+            if (this.conformanceOnly) {
+                return false;
+            } else {
+                return true;
+            }
+        }
         if (this.conformanceOnly) {
-            return true;
+            return false;
         }
         result = this.createResult(constraint, focusNode, valueNode);
         if (constraint.shape.isPropertyShape()) {
@@ -83,10 +103,18 @@ ValidationEngine.prototype.createResultFromObject = function (obj, constraint, f
         }
         this.addResultProperty(result, T("sh:resultMessage"), TermFactory.literal(obj, T("xsd:string")));
         this.createResultMessages(result, constraint);
+        return true;
     }
     else if (typeof obj === 'object') {
+        if (this.recordErrorsLevel > 0) {
+            if (this.conformanceOnly) {
+                return false;
+            } else {
+                return true;
+            }
+        }
         if (this.conformanceOnly) {
-            return true;
+            return false;
         }
         result = this.createResult(constraint, focusNode);
         if (obj.path) {
@@ -107,6 +135,7 @@ ValidationEngine.prototype.createResultFromObject = function (obj, constraint, f
         else {
             this.createResultMessages(result, constraint);
         }
+        return true;
     }
     return false;
 };
@@ -144,17 +173,19 @@ ValidationEngine.prototype.createResultMessages = function (result, constraint) 
  * Validates the data graph against the shapes graph
  */
 ValidationEngine.prototype.validateAll = function (rdfDataGraph) {
+    this.results = [];
+    var foundError = false;
     var shapes = this.context.shapesGraph.getShapesWithTarget();
     for (var i = 0; i < shapes.length; i++) {
         var shape = shapes[i];
         var focusNodes = shape.getTargetNodes(rdfDataGraph);
         for (var j = 0; j < focusNodes.length; j++) {
             if (this.validateNodeAgainstShape(focusNodes[j], shape, rdfDataGraph)) {
-                return true;
+                foundError = true;
             }
         }
     }
-    return false;
+    return foundError;
 };
 
 /**
@@ -166,21 +197,24 @@ ValidationEngine.prototype.validateNodeAgainstShape = function (focusNode, shape
     }
     var constraints = shape.getConstraints();
     var valueNodes = shape.getValueNodes(focusNode, rdfDataGraph);
+    var errorFound = false;
     for (var i = 0; i < constraints.length; i++) {
         if (this.validateNodeAgainstConstraint(focusNode, valueNodes, constraints[i], rdfDataGraph)) {
-            return true;
+            errorFound = true;
         }
     }
-    return false;
+    return errorFound;
 };
 
 ValidationEngine.prototype.validateNodeAgainstConstraint = function (focusNode, valueNodes, constraint, rdfDataGraph) {
     if (T("sh:PropertyConstraintComponent").equals(constraint.component.node)) {
+        var errorFound = false;
         for (var i = 0; i < valueNodes.length; i++) {
             if (this.validateNodeAgainstShape(valueNodes[i], this.context.shapesGraph.getShape(constraint.paramValue), rdfDataGraph)) {
-                return true;
+                errorFound = true;
             }
         }
+        return errorFound;
     }
     else {
         var validationFunction = constraint.shape.isPropertyShape() ?
@@ -192,31 +226,47 @@ ValidationEngine.prototype.validateNodeAgainstConstraint = function (focusNode, 
                 constraint.component.nodeValidationFunctionGeneric;
             if (generic) {
                 // Generic sh:validator is called for each value node separately
+                var errorFound = false;
                 for (i = 0; i < valueNodes.length; i++) {
                     var valueNode = valueNodes[i];
+                    //if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
+                    this.recordErrorsLevel++;
+                    //}
                     var obj = validationFunction.execute(focusNode, valueNode, constraint);
+                    //if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
+                    this.recordErrorsLevel--;
+                    //}
                     if (Array.isArray(obj)) {
                         for (a = 0; a < obj.length; a++) {
                             if (this.createResultFromObject(obj[a], constraint, focusNode, valueNode)) {
-                                return true;
+                                errorFound = true;
                             }
                         }
                     }
                     else {
                         if (this.createResultFromObject(obj, constraint, focusNode, valueNode)) {
-                            return true;
+                            errorFound = true;
                         }
                     }
                 }
+                return errorFound;
             }
             else {
+                //if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
+                this.recordErrorsLevel++;
+                //}
                 obj = validationFunction.execute(focusNode, null, constraint);
+                //if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
+                this.recordErrorsLevel--;
+                //}
                 if (Array.isArray(obj)) {
+                    var errorFound = false;
                     for (var a = 0; a < obj.length; a++) {
                         if (this.createResultFromObject(obj[a], constraint, focusNode)) {
-                            return true;
+                            errorFound = true;
                         }
                     }
+                    return errorFound;
                 }
                 else {
                     if (this.createResultFromObject(obj, constraint, focusNode)) {
