@@ -439,7 +439,7 @@ WHERE {
 				}
         		BIND (CONCAT($uriStart, ENCODE_FOR_URI(str(?value))) AS ?uri) .
         		FILTER (str(?this) != ?uri) .
-    		} 
+    		}
 		)
 }""" ;
     ] ;
@@ -1179,6 +1179,11 @@ sh:EqualsConstraintComponent
 		}
 		""" ;
     ] ;
+  sh:nodeValidator [
+      rdf:type sh:JSValidator ;
+      sh:jsFunctionName "validateEqualsNode" ;
+      sh:jsLibrary dash:DASHJSLibrary ;
+    ] ;
   sh:propertyValidator [
       rdf:type sh:JSValidator ;
       sh:jsFunctionName "validateEqualsProperty" ;
@@ -1392,7 +1397,7 @@ sh:MinCountConstraintComponent
 			OPTIONAL {
 				$this $PATH ?value .
 			}
-		} 
+		}
 		GROUP BY $this
 		HAVING (COUNT(DISTINCT ?value) < $minCount)
 		""" ;
@@ -1517,7 +1522,7 @@ sh:UniqueLangConstraintComponent
 			}
 			$this $PATH ?value .
 			BIND (lang(?value) AS ?lang) .
-			FILTER (bound(?lang) && ?lang != \"\") . 
+			FILTER (bound(?lang) && ?lang != \"\") .
 			FILTER EXISTS {
 				$this $PATH ?otherValue .
 				FILTER (?otherValue != ?value && ?lang = lang(?otherValue)) .
