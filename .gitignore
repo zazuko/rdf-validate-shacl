@@ -3,3 +3,4 @@ node_modules
 public/data/*
 public/test.js
 public/test_cases.json
+public/shacl.js
