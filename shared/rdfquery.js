@@ -48,16 +48,16 @@ Equivalent SPARQL:
 		} LIMIT 1
 */
 
-if(!this["TermFactory"]) {
+if(!this["TermFactory"]) {   
 	// In some environments such as Nashorn this may already have a value
 	// In TopBraid this is redirecting to native Jena calls
 	TermFactory = {
-
-		impl : null,   // This needs to be connected to an API such as $rdf
-
+			
+		impl : null,   // This needs to be connected to an API such as $rdf	
+			
 		// Globally registered prefixes for TTL short cuts
-		namespaces : {},
-
+		namespaces : {},	
+		
 		/**
 		 * Registers a new namespace prefix for global TTL short cuts (qnames).
 		 * @param prefix  the prefix to add
@@ -69,7 +69,7 @@ if(!this["TermFactory"]) {
 			}
 			this.namespaces[prefix] = namespace;
 		},
-
+		
 		/**
 		 * Produces an RDF term from a TTL string representation.
 		 * Also uses the registered prefixes.
@@ -91,7 +91,7 @@ if(!this["TermFactory"]) {
 			}
 			return this.namedNode(ns + str.substring(col + 1));
 		},
-
+		
 		/**
 		 * Produces a new blank node.
 		 * @param id  an optional ID for the node
@@ -99,7 +99,7 @@ if(!this["TermFactory"]) {
 		blankNode : function(id) {
 			return this.impl.blankNode(id);
 		},
-
+		
 		/**
 		 * Produces a new literal.  For example .literal("42", T("xsd:integer")).
 		 * @param lex  the lexical form, e.g. "42"
@@ -108,12 +108,12 @@ if(!this["TermFactory"]) {
 		literal : function(lex, langOrDatatype) {
 			return this.impl.literal(lex, langOrDatatype)
 		},
-
+		
 		// This function is basically left for Task Force compatibility, but the preferred function is uri()
 		namedNode : function(uri) {
 			return this.impl.namedNode(uri)
 		},
-
+		
 		/**
 		 * Produces a new URI node.
 		 * @param uri  the URI of the node
@@ -300,7 +300,7 @@ AbstractQuery.prototype.construct = function(subject, predicate, object) {
 			else {
 				s = T(subject);
 			}
-		}
+		} 
 		else {
 			s = subject;
 		}
@@ -312,7 +312,7 @@ AbstractQuery.prototype.construct = function(subject, predicate, object) {
 			else {
 				p = T(predicate);
 			}
-		}
+		} 
 		else {
 			p = predicate;
 		}
@@ -325,7 +325,7 @@ AbstractQuery.prototype.construct = function(subject, predicate, object) {
 			else {
 				o = T(object);
 			}
-		}
+		} 
 		else {
 			o = object;
 		}
@@ -414,7 +414,7 @@ AbstractQuery.prototype.getNodeArray = function(varName) {
 
 /**
  * Turns all result bindings for a given variable into a set.
- * The set has functions .contains and .toArray.
+ * The set has functions .contains and .toArray. 
  * @param varName  the name of the variable, starting with "?"
  * @return a set consisting of RDF node objects
  */
@@ -472,7 +472,7 @@ AbstractQuery.prototype.getObject = function(subject, predicate) {
 		if(!p) {
 			throw "getObject() called with null predicate";
 		}
-
+		
 		var it = this.source.find(s, p, null);
 		var triple = it.next();
 		if(triple) {
@@ -499,8 +499,7 @@ AbstractQuery.prototype.hasSolution = function() {
 
 
 // ----------------------------------------------------------------------------
-// Expression functions - may be used in filter and bind queri274
-// es
+// Expression functions - may be used in filter and bind queries
 // ----------------------------------------------------------------------------
 
 /**
@@ -553,7 +552,7 @@ BindQuery.prototype.close = function() {
 	this.input.close();
 }
 
-// Pulls the next result from the input Query and passes it into
+// Pulls the next result from the input Query and passes it into 
 // the given bind function to add a new node
 BindQuery.prototype.nextSolution = function() {
 	var result = this.input.nextSolution();
@@ -586,7 +585,7 @@ FilterQuery.prototype.close = function() {
 	this.input.close();
 }
 
-// Pulls the next result from the input Query and passes it into
+// Pulls the next result from the input Query and passes it into 
 // the given filter function
 FilterQuery.prototype.nextSolution = function() {
 	for(;;) {
@@ -644,7 +643,7 @@ function MatchQuery(input, s, p, o) {
 		else {
 			this.s = T(s);
 		}
-	}
+	} 
 	else {
 		this.s = s;
 	}
@@ -655,7 +654,7 @@ function MatchQuery(input, s, p, o) {
 		else {
 			this.p = T(p);
 		}
-	}
+	} 
 	else {
 		this.p = p;
 	}
@@ -666,7 +665,7 @@ function MatchQuery(input, s, p, o) {
 		else {
 			this.o = T(o);
 		}
-	}
+	} 
 	else {
 		this.o = o;
 	}
@@ -710,7 +709,7 @@ MatchQuery.prototype.nextSolution = function() {
 			delete this.ownIterator; // Mark as exhausted
 		}
 	}
-
+	
 	// Pull from input
 	this.inputSolution = this.input.nextSolution();
 	if(this.inputSolution) {
@@ -809,7 +808,7 @@ PathQuery.prototype.nextSolution = function() {
 		}
 		return result;
 	}
-
+	
 	// Pull from input
 	this.inputSolution = this.input.nextSolution();
 	if(this.inputSolution) {
@@ -918,7 +917,7 @@ function compareTerms(t1, t2) {
 
 function getLocalName(uri) {
 	// TODO: This is not the 100% correct local name algorithm
-	var index = uri.lastIndexOf("#");
+	var index = uri.lastIndexOf("#"); 
 	if(index < 0) {
 		index = uri.lastIndexOf("/");
 	}

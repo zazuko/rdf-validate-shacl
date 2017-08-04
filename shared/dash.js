@@ -537,7 +537,7 @@ RDFQueryUtil.prototype.getInstancesOf = function($class) {
 
 RDFQueryUtil.prototype.getObject = function($subject, $predicate) {
 	if(!$subject) {
-		throw "Missing subject!!!!";
+		throw "Missing subject";
 	}
 	if(!$predicate) {
 		throw "Missing predicate";

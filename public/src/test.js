@@ -65,9 +65,8 @@ ExpectedValidationReport.prototype.results = function() {
 };
 
 var expectedResult = function(data, mediaType, cb) {
-    var store = $rdf.graph();
-    rdflibgraph.loadGraph(data, store, "http://test.com/example", mediaType, function() {
-        var graph = new RDFLibGraph(store);
+    var graph = new RDFLibGraph();
+    graph.loadGraph(data, "http://test.com/example", mediaType, function() {
         var expectedValidationReport = new ExpectedValidationReport(graph);
         expectedValidationReport.results();
         cb(expectedValidationReport, null);
@@ -148,34 +147,3 @@ loadTestCases(function(testCases) {
         })(testCases[i])
     }
 });
-
-
-/*
-
-
-QUnit.test("Integration test 2", function (assert) {
-    var done = assert.async();
-    new SHACLValidator().validate(
-        examples.example2.data,
-        examples.example2.dataFormat,
-        examples.example2.shapes,
-        examples.example2.shapesFormat,
-        function (e, report) {
-            if (e != null) {
-                console.log(e);
-            }
-            assert.ok(e == null);
-            assert.ok(!report.conforms());
-            var results = report.results();
-            assert.ok(results.length === 1);
-            assert.ok(results[0].message() === "More than 1 values");
-            assert.ok(results[0].path() === "http://raml.org/vocabularies/shapes/anon#title");
-            assert.ok(results[0].focusNode() !== null);
-            assert.ok(results[0].severity() === "Violation");
-            assert.ok(results[0].sourceConstraintComponent() === "http://www.w3.org/ns/shacl#MaxCountConstraintComponent");
-            assert.ok(results[0].sourceShape() === "https://mulesoft-labs.github.io/amf-playground/raml/world-music-api/api.raml#/definitions/Entry/items/0/property/title");
-            done();
-        });
-});
-
-*/
