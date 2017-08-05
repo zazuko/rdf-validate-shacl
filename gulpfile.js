@@ -4,6 +4,39 @@ var browserify = require('gulp-browserify');
 var fs = require('fs');
 var serve = require('gulp-serve');
 
+var http = require("https");
+
+var fetch = function (url, c) {
+    var acc = "";
+    http.get(url, function (res) {
+        res.on('data', function (d) {
+            acc += d;
+        });
+        res.on('end', function () {
+            c(acc);
+        });
+    });
+};
+
+gulp.task('checkJavaFiles', function () {
+    var files = {
+        "./vocabularies/dash.ttl": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/dash.ttl",
+        "./vocabularies/shacl.ttl": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/shacl.ttl",
+        "./shared/dash.js": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/dash.js",
+        "./shared/rdfquery.js": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/rdfquery.js"
+    };
+
+    for (var p in files) {
+        (function (p, url) {
+            var read = fs.readFileSync(p).toString();
+            fetch(url, function (data) {
+                console.log(url);
+                console.log(read === data);
+            });
+        })(p, files[p]);
+    }
+});
+
 gulp.task('test', function () {
     gulp.src('./test/**/*.js')
         .pipe(nodeunit({}));
