@@ -19,8 +19,11 @@ var fetch = function (url, c) {
 };
 
 gulp.task('checkJavaFiles', function () {
+	// In the current design, the version of dash.ttl in the Java repo (and TopBraid) is slightly different
+	// because the Java version requires some hard-coded features from the tosh namespace, so this is left
+	// out of the synch test for now
     var files = {
-        "./vocabularies/dash.ttl": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/dash.ttl",
+        //"./vocabularies/dash.ttl": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/dash.ttl",
         "./vocabularies/shacl.ttl": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/shacl.ttl",
         "./shared/dash.js": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/dash.js",
         "./shared/rdfquery.js": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/rdfquery.js"
