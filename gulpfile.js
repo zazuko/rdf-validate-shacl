@@ -104,6 +104,11 @@ gulp.task('generate-libraries', function () {
         acc[library] = fs.readFileSync(libraries[library]).toString();
         fs.writeFileSync("./src/libraries.js", "module.exports = " + JSON.stringify(acc));
     }
+
+    var rdfqueryTemplate = fs.readFileSync("./templates/rdfquery.js").toString();
+    var rdfqueryData = fs.readFileSync("./shared/rdfquery.js").toString();
+    var generated = rdfqueryTemplate.replace("</content>", rdfqueryData);
+    fs.writeFileSync("./src/rdfquery.js", generated);
 });
 
 gulp.task('browserify-public-tests', function () {
