@@ -1,4 +1,4 @@
-# SHACL.js
+# SHACL.js [![Build Status](https://travis-ci.org/TopQuadrant/shacl-js.svg?branch=master)](https://travis-ci.org/TopQuadrant/shacl-js)
 
 ## Usage
 
@@ -35,6 +35,6 @@ this task.
 
 The vocabularies for SHACL and DASH are located in the `vocabularies` directory. After modifying these files, they must
 be transformed into library code using the `generate-vocabularies` gulp task.
-The JS libraries referenced in the DASH vocabulary can be found in the `shared` directory. They can be bundled into the 
+The JS libraries referenced in the DASH vocabulary can be found in the `shared` directory. They can be bundled into the
 library build using the `generate-libraries` gulp command. If they are not bundled, the library will try to de-reference
 them using HTTP.
