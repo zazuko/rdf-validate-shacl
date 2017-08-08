@@ -18,26 +18,46 @@ var fetch = function (url, c) {
     });
 };
 
-gulp.task('checkJavaFiles', function () {
-	// In the current design, the version of dash.ttl in the Java repo (and TopBraid) is slightly different
-	// because the Java version requires some hard-coded features from the tosh namespace, so this is left
-	// out of the synch test for now
-    var files = {
+gulp.task('checkJavaFiles', function (cb) {
+    // In the current design, the version of dash.ttl in the Java repo (and TopBraid) is slightly different
+    // because the Java version requires some hard-coded features from the tosh namespace, so this is left
+    // out of the synch test for now
+    var files = [
         //"./vocabularies/dash.ttl": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/dash.ttl",
-        "./vocabularies/shacl.ttl": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/shacl.ttl",
-        "./shared/dash.js": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/dash.js",
-        "./shared/rdfquery.js": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/rdfquery.js"
+        ["./vocabularies/shacl.ttl", "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/shacl.ttl"],
+        ["./shared/dash.js", "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/dash.js"],
+        ["./shared/rdfquery.js", "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/rdfquery.js"]
+    ];
+
+    var uptodate = true;
+    var checkFile = function (fileInfo, cb) {
+        var p = fileInfo[0];
+        var url = fileInfo[1];
+        var read = fs.readFileSync(p).toString();
+        fetch(url, function (data) {
+            console.log(url);
+            console.log(read === data);
+            uptodate = uptodate && (read === data);
+            cb();
+        });
     };
 
-    for (var p in files) {
-        (function (p, url) {
-            var read = fs.readFileSync(p).toString();
-            fetch(url, function (data) {
-                console.log(url);
-                console.log(read === data);
+    var checkFiles = function (files) {
+        if (files.length === 0) {
+            if (uptodate) {
+                cb();
+            } else {
+                cb(new Error("Some Java files are not in sync"));
+            }
+        } else {
+            var file = files.shift();
+            checkFile(file, function () {
+                checkFiles(files);
             });
-        })(p, files[p]);
-    }
+        }
+    };
+
+    checkFiles(files);
 });
 
 gulp.task('test', function () {
