@@ -123,8 +123,10 @@ function postProcessGraph(store, graphURI, newStore) {
             if ("0" === object.value || "false" === object.value) {
                 store.add(ss[i].subject, ss[i].predicate, T("false"), graphURI);
             }
-            else {
+            else if ("1" === object.value || "true" === object.value) {
                 store.add(ss[i].subject, ss[i].predicate, T("true"), graphURI);
+            } else {
+                store.add(ss[i].subject, ss[i].predicate, object, graphURI);
             }
         }
         else if (object.termType === 'collection') {
