@@ -93,6 +93,11 @@ gulp.task('generate-vocabularies', function () {
     }
 });
 
+/**
+ * We generate rdfquery from the shared library and we add it to the validator code and to the
+ * list of libraries that must be loaded.
+ * Dash.js is only added to the list of loaded libraries.
+ */
 gulp.task('generate-libraries', function () {
     var libraries = {
         "http://datashapes.org/js/dash.js": "./shared/dash.js",
