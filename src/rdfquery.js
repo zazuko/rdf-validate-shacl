@@ -864,7 +864,11 @@ PathQuery.prototype.nextSolution = function() {
 
 function StartQuery(source, initialSolution) {
 	this.source = source;
-	this.solution = initialSolution;
+    if (initialSolution && initialSolution.length > 0) {
+        this.solution = initialSolution;
+    } else {
+        this.solution = [{}];
+    }
 }
 
 StartQuery.prototype = Object.create(AbstractQuery.prototype);
@@ -873,14 +877,13 @@ StartQuery.prototype.close = function() {
 }
 
 StartQuery.prototype.nextSolution = function() {
-	if(this.solution) {
-		var b = this.solution;
-		delete this.solution;
-		return b;
-	}
-	else {
-		return null;
-	}
+    if (this.solution) {
+        if (this.solution.length > 0) {
+            return this.solution.shift();
+        } else {
+            delete this.solution;
+        }
+    }
 }
 
 
