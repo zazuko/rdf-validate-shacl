@@ -57,6 +57,8 @@ if(!this["TermFactory"]) {
 	// In some environments such as Nashorn this may already have a value
 	// In TopBraid this is redirecting to native Jena calls
 	TermFactory = {
+
+        REGEX_URI: /^([a-z][a-z0-9+.-]*):(?:\/\/((?:(?=((?:[a-z0-9-._~!$&'()*+,;=:]|%[0-9A-F]{2})*))(\3)@)?(?=(\[[0-9A-F:.]{2,}\]|(?:[a-z0-9-._~!$&'()*+,;=]|%[0-9A-F]{2})*))\5(?::(?=(\d*))\6)?)(\/(?=((?:[a-z0-9-._~!$&'()*+,;=:@\/]|%[0-9A-F]{2})*))\8)?|(\/?(?!\/)(?=((?:[a-z0-9-._~!$&'()*+,;=:@\/]|%[0-9A-F]{2})*))\10)?)(?:\?(?=((?:[a-z0-9-._~!$&'()*+,;=:@\/?]|%[0-9A-F]{2})*))\11)?(?:#(?=((?:[a-z0-9-._~!$&'()*+,;=:@\/?]|%[0-9A-F]{2})*))\12)?$/i,
 			
 		impl : null,   // This needs to be connected to an API such as $rdf	
 			
@@ -82,19 +84,31 @@ if(!this["TermFactory"]) {
 		 * @return an RDF term
 		 */
 		term : function(str) {
-			// TODO: this implementation currently only supports booleans and qnames - better overload to rdflib.js
-			if("true" === str || "false" === str) {
-				return this.literal(str, T("xsd:boolean"))
-			}
-			var col = str.indexOf(":")
-			if(col < 0) {
-				throw "Expected qname with a ':', but found: " + str;
-			}
-			var ns = this.namespaces[str.substring(0, col)];
-			if(!ns) {
-				throw "Unregistered prefix " + str.substring(0, col) + " of node " + str;
-			}
-			return this.namedNode(ns + str.substring(col + 1));
+            // TODO: this implementation currently only supports booleans and qnames - better overload to rdflib.js
+            if ("true" === str || "false" === str) {
+                return this.literal(str, (this.term("xsd:boolean")));
+            }
+
+            if (str.match(/^\d+$/)) {
+                return this.literal(str, (this.term("xsd:integer")));
+            }
+
+            if (str.match(/^\d+\.\d+$/)) {
+                return this.literal(str, (this.term("xsd:float")));
+            }
+
+            const col = str.indexOf(":");
+            if (col > 0) {
+                const ns = this.namespaces[str.substring(0, col)];
+                if (ns != null) {
+                    return this.namedNode(ns + str.substring(col + 1));
+                } else {
+                    if (str.match(REGEX_URI)) {
+                        return this.namedNode(str)
+                    }
+                }
+            }
+            return this.literal(str);
 		},
 		
 		/**
