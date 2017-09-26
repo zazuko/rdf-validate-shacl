@@ -15,6 +15,7 @@ var ShapesGraph = require("./src/shapes-graph");
 var ValidationEngine = require("./src/validation-engine");
 var rdflibgraph = require("./src/rdflib-graph");
 var RDFLibGraph = rdflibgraph.RDFLibGraph;
+var fs = require("fs");
 
 /********************************/
 /* Vocabularies                 */
@@ -254,6 +255,33 @@ SHACLValidator.prototype.validate = function (data, dataMediaType, shapes, shape
             });
         }
     });
+};
+
+/**
+ * Saves a cached version of a remote JS file used during validation
+ * @param url URL of the library to cache
+ * @param localFile path to a local version of the file identified by url
+ * @param cb invoked with an optional error when registration of the cached function has finished
+ */
+SHACLValidator.prototype.registerJSLibrary = function(url, localFile, cb){
+    var that = this;
+    fs.readFile(localFile, function(error, buffer) {
+        if (error != null) {
+            cb(error)
+        } else {
+            that.functionsRegistry[url]  = buffer.toString();
+            cb(null)
+        }
+    });
+};
+
+/**
+ * Saves a some JS library code using the provided URL that can be used during validation
+ * @param url URL of the library to register
+ * @param libraryCode JS code for the library being registered
+  */
+SHACLValidator.prototype.registerJSCode = function(url, jsCode){
+    this.functionsRegistry[url] =  jsCode;
 };
 
 module.exports = SHACLValidator;

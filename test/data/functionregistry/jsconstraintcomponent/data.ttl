@@ -1,0 +1,73 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <http://datashapes.org/sh/tests/functionregistry/jsconstraintcomponent/data#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:PropertyLengthShape
+	a sh:NodeShape ;
+	sh:targetClass ex:Data ;
+	sh:property [
+	  sh:path ex:prop ;
+	  ex:customMaxLength 3
+	] .
+
+ex:AlwaysValidShape
+  a sh:NodeShape ;
+  sh:targetClass ex:AlwaysValidData ;
+  ex:constantValidation true .
+
+ex:AlwaysInvalidShape
+  a sh:NodeShape ;
+  sh:targetClass ex:AlwaysInvalidData ;
+  ex:constantValidation false .
+
+
+
+ex:InvalidExample a ex:Data ;
+	ex:prop "Wadus".
+
+ex:ValidExample a ex:Data ;
+	ex:prop "foo" .
+
+ex:hey ex:p "now" .
+
+ex:InvalidExampleShape a ex:AlwaysInvalidData .
+
+ex:ValidExampleShape a ex:AlwaysValidData .
+
+
+
+ex:MaxLengthConstraintComponent
+	a sh:ConstraintComponent ;
+	sh:parameter [
+		sh:path ex:customMaxLength ;
+		sh:datatype xsd:integer ;
+	] ;
+	sh:validator ex:hasMaxLength .
+
+
+ex:ConstantValidConstraintComponent
+	a sh:ConstraintComponent ;
+    sh:parameter [
+		sh:path ex:constantValidation ;
+		sh:datatype xsd:boolean ;
+	] ;
+	sh:validator ex:constantValidator .
+
+ex:hasMaxLength
+	a sh:JSValidator ;
+	sh:message "Value has more than {$customMaxLength} characters" ;
+	rdfs:comment """
+		Note that $value and $customMaxLength are RDF nodes expressed in JavaScript Objects.
+		Their string value is accessed via the .lex and .uri attributes.
+		The function returns true if no violation has been found.
+		""" ;
+	sh:jsLibrary [ sh:jsLibraryURL "http://example.org/ns/shapesConstraints.js"^^xsd:anyURI ] ;
+	sh:jsFunctionName "hasMaxLength" .
+
+
+ex:constantValidator
+	a sh:JSValidator ;
+	sh:message "Shape is constantly valid {$constantValidation}" ;
+	sh:jsLibrary [ sh:jsLibraryURL "http://example.org/ns/shapesConstraints.js"^^xsd:anyURI ] ;
+	sh:jsFunctionName "constantValid" .
