@@ -17,6 +17,7 @@
     "gulp-cli": "^1.4.0",
     "gulp-nodeunit": "^0.1.0",
     "gulp-serve": "^1.4.0",
+    "http-browserify": "^1.7.0",
     "nodeunit": "^0.11.1"
   }
 }
