@@ -47,6 +47,11 @@ RDFLibGraph.prototype.query = function () {
     return RDFQuery(this);
 };
 
+RDFLibGraph.prototype.loadMemoryGraph = function(graphURI, rdfModel, andThen) {
+    postProcessGraph(this.store, graphURI, rdfModel)
+    andThen();
+};
+
 RDFLibGraph.prototype.loadGraph = function(str, graphURI, mimeType, andThen, handleError) {
     var newStore = $rdf.graph();
     handleError = handleError || errorHandler;

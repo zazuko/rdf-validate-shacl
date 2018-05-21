@@ -98,6 +98,20 @@ SHACLValidator.prototype.parseDataGraph = function(text, mediaType, andThen) {
 };
 
 /**
+ * Reloads the shapes graph.
+ * It will load SHACL and DASH shapes constraints.
+ */
+SHACLValidator.prototype.loadDataGraph = function(rdfGraph, andThen) {
+    this.$data.clear();
+    this.$data.loadMemoryGraph(dataGraphURI, rdfGraph, function () {
+        andThen();
+    }, function(ex) {
+        error(ex);
+    });
+};
+
+
+/**
  * Validates the data graph against the shapes graph using the validation engine
  */
 SHACLValidator.prototype.updateValidationEngine = function() {
@@ -186,6 +200,25 @@ SHACLValidator.prototype.parseShapesGraph = function(text, mediaType, andThen) {
     }, handleError);
 };
 
+/**
+ * Reloads the shapes graph.
+ * It will load SHACL and DASH shapes constraints.
+ */
+SHACLValidator.prototype.loadShapesGraph = function(rdfGraph, andThen) {
+    var handleError = function (ex) {
+        error(ex);
+    };
+    var that = this;
+    this.$shapes.clear();
+    this.$shapes.loadMemoryGraph(shapesGraphURI, rdfGraph, function () {
+        that.$shapes.loadGraph(shaclFile, "http://shacl.org", "text/turtle", function () {
+            that.$shapes.loadGraph(dashFile, "http://datashapes.org/dash", "text/turtle", function () {
+                andThen();
+            });
+        }, handleError);
+    }, handleError);
+};
+
 
 // Update validations
 
@@ -194,8 +227,20 @@ SHACLValidator.prototype.parseShapesGraph = function(text, mediaType, andThen) {
  */
 SHACLValidator.prototype.updateDataGraph = function(text, mediaType, cb) {
     var startTime = new Date().getTime();
+    this.parseDataGraph(text, mediaType, this.onDataGraphChange(startTime, cb));
+};
+
+/**
+ * Updates the data graph and validate it against the current data shapes
+ */
+SHACLValidator.prototype.updateDataGraphRdfModel = function(dataRdfGraph, cb) {
+    var startTime = new Date().getTime();
+    this.loadDataGraph(dataRdfGraph, this.onDataGraphChange(startTime, cb));
+};
+
+SHACLValidator.prototype.onDataGraphChange = function(startTime, cb) {
     var that = this;
-    this.parseDataGraph(text, mediaType, function () {
+    return function() {
         var midTime = new Date().getTime();
         that.updateValidationEngine();
         var endTime = new Date().getTime();
@@ -205,16 +250,28 @@ SHACLValidator.prototype.updateDataGraph = function(text, mediaType, cb) {
         } catch (e) {
             cb(e, null);
         }
-    });
-};
+    }
+}
 
 /**
- *  *pdates the shapes graph and validates it against the current data graph
+ *  Updates the shapes graph and validates it against the current data graph
  */
 SHACLValidator.prototype.updateShapesGraph = function(shapes, mediaType, cb) {
     var startTime = new Date().getTime();
+    this.parseShapesGraph(shapes, mediaType, this.onShapesGraphChange(startTime, cb));
+};
+
+/**
+ *  Updates the shapes graph from a memory model, and validates it against the current data graph
+ */
+SHACLValidator.prototype.updateShapesGraphRdfModel = function(shapesRdfGraph, cb) {
+    var startTime = new Date().getTime();
+    this.loadShapesGraph(shapesRdfGraph, this.onShapesGraphChange(startTime, cb));
+};
+
+SHACLValidator.prototype.onShapesGraphChange = function(startTime, cb) {
     var that = this;
-    this.parseShapesGraph(shapes, mediaType, function () {
+    return function() {
         var midTime = new Date().getTime();
         that.shapesGraph = new ShapesGraph(that);
         var midTime2 = new Date().getTime();
@@ -234,8 +291,8 @@ SHACLValidator.prototype.updateShapesGraph = function(shapes, mediaType, cb) {
                 }
             }
         });
-    });
-};
+    }
+}
 
 /**
  * Validates the provided data graph against the provided shapes graph
@@ -247,6 +304,27 @@ SHACLValidator.prototype.validate = function (data, dataMediaType, shapes, shape
             cb(e, null);
         } else {
             that.updateShapesGraph(shapes, shapesMediaType, function (e, result) {
+                if (e) {
+                    cb(e, null);
+                } else {
+                    cb(null, result);
+                }
+            });
+        }
+    });
+};
+
+
+/**
+* Validates the provided data graph against the provided shapes graph
+*/
+SHACLValidator.prototype.validateFromModels = function (dataRdfGraph, shapesRdfGraph, cb) {
+    var that = this;
+    this.updateDataGraphRdfModel(dataRdfGraph, function (e) {
+        if (e != null) {
+            cb(e, null);
+        } else {
+            that.updateShapesGraphRdfModel(shapesRdfGraph, function (e, result) {
                 if (e) {
                     cb(e, null);
                 } else {
@@ -283,5 +361,8 @@ SHACLValidator.prototype.registerJSLibrary = function(url, localFile, cb){
 SHACLValidator.prototype.registerJSCode = function(url, jsCode){
     this.functionsRegistry[url] =  jsCode;
 };
+
+// Expose the RDF interface
+SHACLValidator.$rdf = $rdf;
 
 module.exports = SHACLValidator;
