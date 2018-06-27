@@ -16,6 +16,7 @@ var ValidationEngine = require("./src/validation-engine");
 var rdflibgraph = require("./src/rdflib-graph");
 var RDFLibGraph = rdflibgraph.RDFLibGraph;
 var fs = require("fs");
+var ValidationEngineConfiguration = require("./src/validation-engine-configuration");
 
 /********************************/
 /* Vocabularies                 */
@@ -58,6 +59,7 @@ var SHACLValidator = function() {
     this.validationError = null;
     this.sequence = null;
     this.shapesGraph = new ShapesGraph(this);
+    this.configuration = new ValidationEngineConfiguration();
     this.functionsRegistry = require("./src/libraries");
 };
 
@@ -71,6 +73,10 @@ SHACLValidator.prototype.compareNodes = function(node1, node2) {
         }
     }
     return RDFQuery.compareTerms(node1, node2);
+};
+
+SHACLValidator.prototype.getConfiguration = function () {
+    return this.configuration;
 };
 
 SHACLValidator.prototype.nodeConformsToShape = function(focusNode, shapeNode) {
@@ -117,6 +123,7 @@ SHACLValidator.prototype.loadDataGraph = function(rdfGraph, andThen) {
 SHACLValidator.prototype.updateValidationEngine = function() {
     results = [];
     this.validationEngine = new ValidationEngine(this);
+    this.validationEngine.setConfiguration(this.configuration);
     try {
         this.validationError = null;
         if (this.sequence) {
