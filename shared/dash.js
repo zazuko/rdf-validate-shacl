@@ -573,7 +573,7 @@ RDFQueryUtil.prototype.getSubClassesOf = function($class) {
 
 RDFQueryUtil.prototype.isInstanceOf = function($instance, $class) {
 	var classes = this.getSubClassesOf($class);
-	var types = $data.query().match($instance, "rdf:type", "?type");
+	var types = this.source.query().match($instance, "rdf:type", "?type");
 	for(var n = types.nextSolution(); n; n = types.nextSolution()) {
 		if(n.type.equals($class) || classes.contains(n.type)) {
 			types.close();
