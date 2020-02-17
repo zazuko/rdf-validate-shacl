@@ -107,7 +107,8 @@ SHACLValidator.prototype.parseDataGraph = function(text, mediaType, andThen) {
  * Reloads the shapes graph.
  * It will load SHACL and DASH shapes constraints.
  */
-SHACLValidator.prototype.loadDataGraph = function(rdfGraph, andThen) {
+SHACLValidator.prototype.loadDataGraph = function(dataset, andThen) {
+    const rdfGraph = datasetToLegacyGraph(dataset);
     this.$data.clear();
     this.$data.loadMemoryGraph(dataGraphURI, rdfGraph, function () {
         andThen();
@@ -211,7 +212,8 @@ SHACLValidator.prototype.parseShapesGraph = function(text, mediaType, andThen) {
  * Reloads the shapes graph.
  * It will load SHACL and DASH shapes constraints.
  */
-SHACLValidator.prototype.loadShapesGraph = function(rdfGraph, andThen) {
+SHACLValidator.prototype.loadShapesGraph = function(dataset, andThen) {
+    const rdfGraph = datasetToLegacyGraph(dataset);
     var handleError = function (ex) {
         error(ex);
     };
@@ -373,3 +375,30 @@ SHACLValidator.prototype.registerJSCode = function(url, jsCode){
 SHACLValidator.$rdf = $rdf;
 
 module.exports = SHACLValidator;
+
+function datasetToLegacyGraph (dataset) {
+    const graph = $rdf.graph();
+    for (quad of dataset) {
+        graph.add(
+            termToLegacyTerm(quad.subject),
+            termToLegacyTerm(quad.predicate),
+            termToLegacyTerm(quad.object)
+        )
+    }
+    return graph
+}
+
+function termToLegacyTerm (term) {
+    switch (term.termType) {
+        case "NamedNode":
+            return $rdf.namedNode(term.value);
+        case "BlankNode":
+            return $rdf.blankNode(term.value);
+        case "Literal":
+            return $rdf.literal(term.value);
+        default:
+            console.error(term)
+            return term
+    }
+    return term
+}
