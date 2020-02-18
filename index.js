@@ -29,6 +29,8 @@ var dashFile = vocabs.dash;
 /********************************/
 /********************************/
 
+var rdf = require("rdf-ext");
+
 
 // List utility
 
@@ -38,8 +40,8 @@ var createRDFListNode = function(store, items, index) {
     }
     else {
         var bnode = TermFactory.blankNode();
-        store.add(bnode, T("rdf:first"), items[index]);
-        store.add(bnode, T("rdf:rest"), createRDFListNode(store, items, index + 1));
+        store.add(rdf.quad(bnode, T("rdf:first"), items[index]));
+        store.add(rdf.quad(bnode, T("rdf:rest"), createRDFListNode(store, items, index + 1)));
         return bnode;
     }
 };
@@ -107,8 +109,7 @@ SHACLValidator.prototype.parseDataGraph = function(text, mediaType, andThen) {
  * Reloads the shapes graph.
  * It will load SHACL and DASH shapes constraints.
  */
-SHACLValidator.prototype.loadDataGraph = function(dataset, andThen) {
-    const rdfGraph = datasetToLegacyGraph(dataset);
+SHACLValidator.prototype.loadDataGraph = function(rdfGraph, andThen) {
     this.$data.clear();
     this.$data.loadMemoryGraph(dataGraphURI, rdfGraph, function () {
         andThen();
@@ -149,19 +150,19 @@ SHACLValidator.prototype.showValidationResults = function(cb) {
     }
     else {
 
-        var resultGraph = $rdf.graph();
+        var resultGraph = rdf.dataset();
         var reportNode = TermFactory.blankNode("report");
-        resultGraph.add(reportNode, T("rdf:type"), T("sh:ValidationReport"));
-        resultGraph.add(reportNode, T("sh:conforms"), T("" + (this.validationEngine.results.length == 0)));
+        resultGraph.add(rdf.quad(reportNode, T("rdf:type"), T("sh:ValidationReport")));
+        resultGraph.add(rdf.quad(reportNode, T("sh:conforms"), T("" + (this.validationEngine.results.length == 0))));
         var nodes = {};
 
         for (var i = 0; i < this.validationEngine.results.length; i++) {
             var result = this.validationEngine.results[i];
             if (nodes[result[0].toString()] == null) {
                 nodes[result[0].toString()] = true;
-                resultGraph.add(reportNode, T("sh:result"), result[0]);
+                resultGraph.add(rdf.quad(reportNode, T("sh:result"), result[0]));
             }
-            resultGraph.add(result[0], result[1], result[2]);
+            resultGraph.add(rdf.quad(result[0], result[1], result[2]));
         }
 
         // Unsupported bug in JSON parser bug workaround
@@ -173,7 +174,7 @@ SHACLValidator.prototype.showValidationResults = function(cb) {
         };
         //////////////////
 
-        jsonld.fromRDF(resultGraph.toNT(), {}, function (err, doc) {
+        jsonld.fromRDF(resultGraph.toString(), {}, function (err, doc) {
             if (err != null) {
                 cb(err);
             } else {
@@ -212,8 +213,7 @@ SHACLValidator.prototype.parseShapesGraph = function(text, mediaType, andThen) {
  * Reloads the shapes graph.
  * It will load SHACL and DASH shapes constraints.
  */
-SHACLValidator.prototype.loadShapesGraph = function(dataset, andThen) {
-    const rdfGraph = datasetToLegacyGraph(dataset);
+SHACLValidator.prototype.loadShapesGraph = function(rdfGraph, andThen) {
     var handleError = function (ex) {
         error(ex);
     };
@@ -375,30 +375,3 @@ SHACLValidator.prototype.registerJSCode = function(url, jsCode){
 SHACLValidator.$rdf = $rdf;
 
 module.exports = SHACLValidator;
-
-function datasetToLegacyGraph (dataset) {
-    const graph = $rdf.graph();
-    for (quad of dataset) {
-        graph.add(
-            termToLegacyTerm(quad.subject),
-            termToLegacyTerm(quad.predicate),
-            termToLegacyTerm(quad.object)
-        )
-    }
-    return graph
-}
-
-function termToLegacyTerm (term) {
-    switch (term.termType) {
-        case "NamedNode":
-            return $rdf.namedNode(term.value);
-        case "BlankNode":
-            return $rdf.blankNode(term.value);
-        case "Literal":
-            return $rdf.literal(term.value);
-        default:
-            console.error(term)
-            return term
-    }
-    return term
-}
