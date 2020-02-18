@@ -53,6 +53,8 @@ Equivalent SPARQL:
 		} LIMIT 1
 */
 
+var F = require("./fix");
+
 if(!this["TermFactory"]) {
     // In some environments such as Nashorn this may already have a value
     // In TopBraid this is redirecting to native Jena calls
@@ -265,7 +267,7 @@ AbstractQuery.prototype.orderBy = function(varName) {
  * @param o  the match object or a variable name (string)
  */
 AbstractQuery.prototype.path = function(s, path, o) {
-    if(path && path.value && path.isURI()) {
+    if(path && path.value && F.isURI(path)) {
         return new MatchQuery(this, s, path, o);
     }
     else {
@@ -918,8 +920,8 @@ function compareTerms(t1, t2) {
             return bv;
         }
         else {
-            if(t1.isLiteral()) {
-                var bd = t1.datatype.uri.localeCompare(t2.datatype.uri);
+            if(F.isLiteral(t1)) {
+                var bd = F.uri(t1.datatype).localeCompare(F.uri(t2.datatype));
                 if(bd != 0) {
                     return bd;
                 }
@@ -1022,7 +1024,7 @@ function var2Attr(varName) {
 // This should really be doing lazy evaluation and only up to the point
 // where the match object is found.
 function addPathValues(graph, subject, path, set) {
-    if(path.uri) {
+    if(F.uri(path)) {
         set.addAll(RDFQuery(graph).match(subject, path, "?object").getNodeArray("?object"));
     }
     else if(Array.isArray(path)) {
@@ -1043,7 +1045,7 @@ function addPathValues(graph, subject, path, set) {
         }
     }
     else if(path.inverse) {
-        if(path.inverse.isURI()) {
+        if(F.isURI(path.inverse)) {
             set.addAll(RDFQuery(graph).match("?subject", path.inverse, subject).getNodeArray("?subject"));
         }
         else {
@@ -1078,6 +1080,7 @@ function walkPath(graph, subject, path, set, visited) {
         }
     }
 }
+
 
 /// ADDED...
 RDFQuery.T = T;

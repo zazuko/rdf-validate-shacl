@@ -30,6 +30,7 @@ var dashFile = vocabs.dash;
 /********************************/
 
 var rdf = require("rdf-ext");
+var F = require("./src/fix");
 
 
 // List utility
@@ -67,7 +68,7 @@ var SHACLValidator = function() {
 
 SHACLValidator.prototype.compareNodes = function(node1, node2) {
     // TODO: Does not handle the case where nodes cannot be compared
-    if (node1 && node2 && node1.isLiteral() && node2.isLiteral()) {
+    if (node1 && node2 && F.isLiteral(node1) && F.isLiteral(node2)) {
         if ((node1.datatype != null) !== (node2.datatype != null)) {
             return null;
         } else if (node1.datatype && node2.datatype && node1.datatype.value !== node2.datatype.value) {
@@ -372,6 +373,7 @@ SHACLValidator.prototype.registerJSCode = function(url, jsCode){
 };
 
 // Expose the RDF interface
+// TODO: Check that
 SHACLValidator.$rdf = $rdf;
 
 module.exports = SHACLValidator;

@@ -23,6 +23,7 @@ var RDFQuery = require("./rdfquery");
 var NodeSet = RDFQuery.NodeSet;
 var T = RDFQuery.T;
 var ValidationFunction = require("./validation-function");
+var F = require("./fix");
 
 TermFactory.registerNamespace("dash", "http://datashapes.org/dash#");
 
@@ -111,10 +112,10 @@ var toRDFQueryPath = function ($shapes, shPath) {
         }
         return result;
     }
-    if (shPath.isURI()) {
+    if (F.isURI(shPath)) {
         return shPath;
     }
-    else if (shPath.isBlankNode()) {
+    else if (F.isBlankNode(shPath)) {
         var util = new RDFQueryUtil($shapes);
         if (util.getObject(shPath, "rdf:first")) {
             var paths = util.rdfListToArray(shPath);
@@ -168,7 +169,7 @@ var Constraint = function(shape, component, paramValue, rdfShapesGraph) {
         var param = params[i];
         var value = paramValue ? paramValue : rdfShapesGraph.query().match(shape.shapeNode, param, "?value").getNode("?value");
         if (value) {
-            var localName = RDFQuery.getLocalName(param.uri);
+            var localName = RDFQuery.getLocalName(param.value);
             parameterValues[localName] = value;
         }
     }
@@ -195,7 +196,7 @@ var ConstraintComponent = function(node, context) {
             parameters.push(sol.path);
             parameterNodes.push(sol.parameter);
             if (that.context.$shapes.query().match(sol.parameter, "sh:optional", "true").hasSolution()) {
-                optionals[sol.path.uri] = true;
+                optionals[F.uri(sol.path)] = true;
             }
             else {
                 requiredParameters.push(sol.path);
@@ -235,7 +236,7 @@ ConstraintComponent.prototype.findValidationFunction = function (predicate) {
         if (libraryUrl == null) {
             break;
         } else {
-            libraries.unshift(libraryUrl.toString());
+            libraries.unshift(libraryUrl.value);
         }
         libraryNode = this.context.$shapes.query().match(libraryNode, "sh:jsLibrary", "?library").getNode("?library");
     }
@@ -249,7 +250,7 @@ ConstraintComponent.prototype.findValidationFunction = function (predicate) {
         script = script + "  return function(name) { return eval(name) }\n}";
         eval(script);
         var findInScript = makeFindInScript(this.context.$data, this.context.$shapes, this.context, TermFactory);
-        return new ValidationFunction(functionName.lex, this.parameters, findInScript);
+        return new ValidationFunction(functionName.value, this.parameters, findInScript);
     }
     else {
         return null;
@@ -263,7 +264,7 @@ ConstraintComponent.prototype.getParameters = function () {
 ConstraintComponent.prototype.isComplete = function (shapeNode) {
     for (var i = 0; i < this.parameters.length; i++) {
         var parameter = this.parameters[i];
-        if (!this.isOptional(parameter.uri)) {
+        if (!this.isOptional(F.uri(parameter))) {
             if (!this.context.$shapes.query().match(shapeNode, parameter, null).hasSolution()) {
                 return false;
             }
@@ -473,7 +474,7 @@ ShapesGraph.prototype.loadJSLibraries = function(k) {
     var libraries= this.context.$shapes.query().
       match("?library", "sh:jsLibraryURL", "?library").getNodeArray("?library");
     for (var i=0 ;i<libraries.length; i++) {
-        libraries[i] = libraries[i].toString();
+        libraries[i] = libraries[i].value;
     }
     fetchLibraries(libraries, this.context, that.context.functionsRegistry, function(err) {
         if (err) {
