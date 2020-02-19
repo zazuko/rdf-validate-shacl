@@ -175,18 +175,12 @@ SHACLValidator.prototype.showValidationResults = function(cb) {
         };
         //////////////////
 
-        jsonld.fromRDF(resultGraph.toString(), {}, function (err, doc) {
-            if (err != null) {
-                cb(err);
-            } else {
-                jsonld.flatten(doc, function (err, result) {
-                    if (err != null) {
-                        cb(err);
-                    } else {
-                        cb(null, new ValidationReport(result));
-                    }
-                });
-            }
+        jsonld.fromRDF(resultGraph.toString()).then((doc) => {
+            return jsonld.flatten(doc).then((result) => {
+                cb(null, new ValidationReport(result));
+            });
+        }).catch((err) => {
+            cb(err);
         });
     }
 };

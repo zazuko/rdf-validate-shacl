@@ -9,9 +9,10 @@
   "author": "Holger Knublauch <holger@topquadrant.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "@rdfjs/formats-common": "2.1.0",
     "@rdfjs/data-model": "1.1.2",
     "@rdfjs/dataset": "1.0.1",
+    "@rdfjs/formats-common": "2.1.0",
+    "jsonld": "2.0.2",
     "rdflib": "^0.15.0",
     "string-to-stream": "3.0.1"
   },
