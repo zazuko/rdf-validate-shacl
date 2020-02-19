@@ -81,7 +81,7 @@ if(!this["TermFactory"]) {
          * @return an RDF term
          */
         term : function(str) {
-            // TODO: this implementation currently only supports booleans and qnames - better overload to rdflib.js
+            // TODO: this implementation currently only supports booleans and qnames
             if ("true" === str || "false" === str) {
                 return this.literal(str, (this.term("xsd:boolean")));
             }

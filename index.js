@@ -6,7 +6,6 @@ var jsonld = require("jsonld");
 var ValidationReport = require("./src/validation-report");
 var debug = require("debug")("index");
 var error = require("debug")("index::error");
-var $rdf = require("rdflib");
 
 var TermFactory = require("./src/rdfquery/term-factory");
 var RDFQuery = require("./src/rdfquery");
@@ -367,7 +366,7 @@ SHACLValidator.prototype.registerJSCode = function(url, jsCode){
 };
 
 // Expose the RDF interface
-// TODO: Check that
-SHACLValidator.$rdf = $rdf;
+// TODO: Check $rdf was exposed on the validator. Do we need that?
+// SHACLValidator.$rdf = $rdf;
 
 module.exports = SHACLValidator;

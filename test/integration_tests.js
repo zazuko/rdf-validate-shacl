@@ -1,7 +1,6 @@
 var SHACLValidator = require("../index");
 var fs = require("fs");
 // expected result
-var $rdf = require("rdflib");
 var rdflibgraph = require("../src/rdflib-graph");
 var RDFLibGraph = rdflibgraph.RDFLibGraph;
 
