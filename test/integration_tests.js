@@ -11,7 +11,7 @@ var ExpectedValidationResult = function(solution) {
     this._focusNode = solution["focusNode"].termType === "BlankNode" ? "_:" + solution["focusNode"].id : solution["focusNode"].value;
     this._severity = solution["severity"].value;
     this._constraint = solution["constraint"].value;
-    this._shape = solution["shape"].value;
+    this._shape = solution["shape"].termType === "BlankNode" ? "_:" + solution["shape"].id : solution["shape"].value;
 };
 
 ExpectedValidationResult.prototype.id = function() {

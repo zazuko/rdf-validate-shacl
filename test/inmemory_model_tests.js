@@ -26,6 +26,7 @@ exports.loadFromMemoryModelTest = async function(test) {
     validator.registerJSLibrary(url, localFile, function(e) {
         test.ok(e == null);
         validator.validateFromModels(dataGraph, shapesGraph, function (e, report) {
+            test.ok(e == null);
             test.ok(report.conforms() === false);
             test.ok(report.results().length === 2);
             report.results().forEach(function(result) {
