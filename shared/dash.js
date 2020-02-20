@@ -5,8 +5,6 @@
 
 // There is no validator for sh:property as this is expected to be
 // natively implemented by the surrounding engine.
-var F = require("./fix");
-
 var XSDIntegerTypes = new NodeSet();
 XSDIntegerTypes.add(T("xsd:integer"));
 
@@ -36,7 +34,7 @@ function validateClosed($value, $closed, $ignoredProperties, $currentShape) {
 	var allowed = $shapes.query().
 		match($currentShape, "sh:property", "?propertyShape").
 		match("?propertyShape", "sh:path", "?path").
-		filter(function(solution) { return F.isURI(solution.path) } ).
+		filter(function(solution) { return solution.path.termType === "NamedNode" } ).
 		getNodeSet("?path");
 	if($ignoredProperties) {
 		allowed.addAll(new RDFQueryUtil($shapes).rdfListToArray($ignoredProperties));
@@ -67,7 +65,7 @@ function validateClosedByTypesNode($this, $closedByTypes) {
 			$shapes.query().
 				match(type, "sh:property", "?pshape").
 				match("?pshape", "sh:path", "?path").
-				filter(function(sol) { return F.isURI(sol.path) }).
+				filter(function(sol) { return sol.path.termType === "NamedNode" }).
 				addAllNodes("?path", allowedProperties);
 		});
 	$data.query().
@@ -91,8 +89,8 @@ function validateCoExistsWith($this, $path, $coExistsWith) {
 }
 
 function validateDatatype($value, $datatype) {
-	if(F.isLiteral($value)) {
-		return $datatype.equals($value.datatype) && isValidForDatatype(F.lex($value), $datatype);
+	if($value.termType === "Literal") {
+		return $datatype.equals($value.datatype) && isValidForDatatype($value.value, $datatype);
 	}
 	else {
 		return false;
@@ -168,7 +166,7 @@ function validateIn($value, $in) {
 }
 
 function validateLanguageIn($value, $languageIn) {
-	if(!F.isLiteral($value)) {
+	if($value.termType !== "Literal") {
 		return false;
 	}
 	var lang = $value.language;
@@ -177,7 +175,7 @@ function validateLanguageIn($value, $languageIn) {
 	}
 	var ls = new RDFQueryUtil($shapes).rdfListToArray($languageIn);
 	for(var i = 0; i < ls.length; i++) {
-		if(lang.startsWith(F.lex(ls[i]))) {
+		if(lang.startsWith(ls[i].value)) {
 			return true;
 		}
 	}
@@ -222,18 +220,18 @@ function validateMaxCountProperty($this, $path, $maxCount) {
 }
 
 function validateMaxExclusive($value, $maxExclusive) {
-	return F.isLiteral($value) && Number(F.lex($value)) < Number(F.lex($maxExclusive));
+	return $value.termType === "Literal" && Number($value.value) < Number($maxExclusive.value);
 }
 
 function validateMaxInclusive($value, $maxInclusive) {
-	return F.isLiteral($value) && Number(F.lex($value)) <= Number(F.lex($maxInclusive));
+	return $value.termType === "Literal" && Number($value.value) <= Number($maxInclusive.value);
 }
 
 function validateMaxLength($value, $maxLength) {
-	if(F.isBlankNode($value)) {
+	if($value.termType === "BlankNode") {
 		return false;
 	}
-	return $value.value.length <= Number(F.lex($maxLength));
+	return $value.value.length <= Number($maxLength.value);
 }
 
 function validateMinCountProperty($this, $path, $minCount) {
@@ -242,32 +240,32 @@ function validateMinCountProperty($this, $path, $minCount) {
 }
 
 function validateMinExclusive($value, $minExclusive) {
-	return F.isLiteral($value) && Number(F.lex($value)) > Number(F.lex($minExclusive));
+	return $value.termType === "Literal" && Number($value.value) > Number($minExclusive.value);
 }
 
 function validateMinInclusive($value, $minInclusive) {
-	return F.isLiteral($value) && Number(F.lex($value)) >= Number(F.lex($minInclusive));
+	return $value.termType === "Literal" && Number($value.value) >= Number($minInclusive.value);
 }
 
 function validateMinLength($value, $minLength) {
-	if(F.isBlankNode($value)) {
+	if($value.termType === "BlankNode") {
 		return false;
 	}
-	return $value.value.length >= Number(F.lex($minLength));
+	return $value.value.length >= Number($minLength.value);
 }
 
 function validateNodeKind($value, $nodeKind) {
-	if(F.isBlankNode($value)) {
+	if($value.termType === "BlankNode") {
 		return T("sh:BlankNode").equals($nodeKind) ||
 			T("sh:BlankNodeOrIRI").equals($nodeKind) ||
 			T("sh:BlankNodeOrLiteral").equals($nodeKind);
 	}
-	else if(F.isURI($value)) {
+	else if($value.termType === "NamedNode") {
 		return T("sh:IRI").equals($nodeKind) ||
 			T("sh:BlankNodeOrIRI").equals($nodeKind) ||
 			T("sh:IRIOrLiteral").equals($nodeKind);
 	}
-	else if(F.isLiteral($value)) {
+	else if($value.termType === "Literal") {
 		return T("sh:Literal").equals($nodeKind) ||
 			T("sh:BlankNodeOrLiteral").equals($nodeKind) ||
 			T("sh:IRIOrLiteral").equals($nodeKind);
@@ -304,35 +302,35 @@ function validateOr($value, $or) {
 }
 
 function validatePattern($value, $pattern, $flags) {
-	if(F.isBlankNode($value)) {
+	if($value.termType === "BlankNode") {
 		return false;
 	}
-	var re = $flags ? new RegExp(F.lex($pattern), F.lex($flags)) : new RegExp(F.lex($pattern));
+	var re = $flags ? new RegExp($pattern.value, $flags.value) : new RegExp($pattern.value);
 	return re.test($value.value);
 }
 
 function validatePrimaryKeyProperty($this, $path, $uriStart) {
-	if(!F.isURI($this)) {
+	if($this.termType !== "NamedNode") {
 		return "Must be an IRI";
 	}
 	if($data.query().path($this, toRDFQueryPath($path), null).getCount() != 1) {
 		return "Must have exactly one value";
 	}
 	var value = $data.query().path($this, toRDFQueryPath($path), "?value").getNode("?value");
-	var uri = F.lex($uriStart) + encodeURIComponent(value.value);
-	if(!F.uri($this).equals(uri)) {
+	var uri = $uriStart.value + encodeURIComponent(value.value);
+	if(!$this.value.equals(uri)) {
 		return "Does not have URI " + uri;
 	}
 }
 
 function validateQualifiedMaxCountProperty($this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $qualifiedMaxCount, $currentShape) {
 	var c = validateQualifiedHelper($this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape);
-	return c <= Number(F.lex($qualifiedMaxCount));
+	return $qualifiedMaxCount.termType === "Literal" && c <= Number($qualifiedMaxCount.value);
 }
 
 function validateQualifiedMinCountProperty($this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $qualifiedMinCount, $currentShape) {
 	var c = validateQualifiedHelper($this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape);
-	return c >= Number(F.lex($qualifiedMinCount));
+	return $qualifiedMinCount.termType === "Literal" && c >= Number($qualifiedMinCount.value);
 }
 
 function validateQualifiedHelper($this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape) {
@@ -368,7 +366,7 @@ function validateRootClass($value, $rootClass) {
 }
 
 function validateStem($value, $stem) {
-	return F.isURI($value) && F.uri($value).startsWith(F.lex($stem));
+	return $value.termType === "NamedNode" && $value.value.startsWith($stem.value);
 }
 
 function validateSubSetOf($this, $subSetOf, $value) {
@@ -440,11 +438,11 @@ function validateXone($value, $xone) {
 
 // dash:toString
 function dash_toString($arg) {
-	if(F.isLiteral($arg)) {
-		return NodeFactory.literal(F.lex($arg), T("xsd:string"));
+	if($arg.termType === "Literal") {
+		return NodeFactory.literal($arg.value, T("xsd:string"));
 	}
-	else if(F.isURI($arg)) {
-		return NodeFactory.literal(F.uri($arg), T("xsd:string"));
+	else if($arg.termType === "NamedNode") {
+		return NodeFactory.literal($arg.value, T("xsd:string"));
 	}
 	else {
 		return null;
@@ -476,10 +474,10 @@ function toRDFQueryPath(shPath) {
         }
         return result;
     }
-	if(F.isURI(shPath)) {
+	if(shPath.termType === "NamedNode") {
 		return shPath;
 	}
-	else if(F.isBlankNode(shPath)) {
+	else if(shPath.termType === "BlankNode") {
 		var util = new RDFQueryUtil($shapes);
 		if($shapes.query().getObject(shPath, "rdf:first")) {
 			var paths = util.rdfListToArray(shPath);

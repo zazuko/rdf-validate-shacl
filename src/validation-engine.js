@@ -2,7 +2,6 @@ var RDFQuery = require("./rdfquery");
 var T = RDFQuery.T;
 var TermFactory = require("./rdfquery/term-factory");
 var ValidationEngineConfiguration = require("./validation-engine-configuration");
-var F = require("./fix");
 
 var nodeLabel = function (node, store) {
     if (node.termType === "Collection") {
@@ -12,7 +11,7 @@ var nodeLabel = function (node, store) {
         }
         return acc.join(", ");
     }
-    if (F.isURI(node)) {
+    if (node.termType === "NamedNode") {
         for (prefix in store.namespaces) {
             var ns = store.namespaces[prefix];
             if (node.value.indexOf(ns) === 0) {
@@ -21,7 +20,7 @@ var nodeLabel = function (node, store) {
         }
         return "<" + node.value + ">";
     }
-    else if (F.isBlankNode(node)) {
+    else if (node.termType === "BlankNode") {
         return "Blank node " + node.value;
     }
     else {
@@ -315,7 +314,7 @@ ValidationEngine.prototype.maxErrorsReached = function() {
 };
 
 ValidationEngine.prototype.withSubstitutions = function (msg, constraint) {
-    var str = F.lex(msg);
+    var str = msg.value;
     var values = constraint.parameterValues;
     for (var key in values) {
         var label = nodeLabel(values[key], this.context.$shapes);
