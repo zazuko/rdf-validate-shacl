@@ -1,5 +1,5 @@
 var gulp = require('gulp');
-var nodeunit = require('gulp-nodeunit');
+var mocha = require('gulp-mocha');
 var browserify = require('gulp-browserify');
 var fs = require('fs');
 var serve = require('gulp-serve');
@@ -62,7 +62,7 @@ gulp.task('checkJavaFiles', function (cb) {
 
 gulp.task('test', function () {
     gulp.src('./test/**/*.js')
-        .pipe(nodeunit({}));
+        .pipe(mocha({}));
 });
 
 gulp.task('browserify', function () {

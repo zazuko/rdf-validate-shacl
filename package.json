@@ -15,14 +15,15 @@
     "string-to-stream": "3.0.1"
   },
   "devDependencies": {
+    "chai": "4.2.0",
     "debug": "4.1.1",
     "gulp": "^3.9.1",
     "gulp-browserify": "^0.5.1",
     "gulp-cli": "^1.4.0",
-    "gulp-nodeunit": "^0.1.0",
+    "gulp-mocha": "7.0.2",
     "gulp-serve": "^1.4.0",
     "http-browserify": "^1.7.0",
-    "nodeunit": "^0.11.1",
+    "mocha": "7.0.1",
     "rdf-utils-fs": "2.1.0"
   }
 }
