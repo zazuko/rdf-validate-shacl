@@ -61,7 +61,7 @@ var ValidationReport = function(g) {
         }
     }
     if (this.validationNode == null) {
-        throw new Exception("Cannot find validation report node");
+        throw new Error("Cannot find validation report node");
     }
 };
 

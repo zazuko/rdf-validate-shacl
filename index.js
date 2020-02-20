@@ -6,7 +6,6 @@ var jsonld = require("jsonld");
 var ValidationReport = require("./src/validation-report");
 var debug = require("debug")("index");
 var error = require("debug")("index::error");
-var $rdf = require("rdflib");
 
 var TermFactory = require("./src/rdfquery/term-factory");
 var RDFQuery = require("./src/rdfquery");
@@ -29,6 +28,9 @@ var dashFile = vocabs.dash;
 /********************************/
 /********************************/
 
+var rdf = require("rdf-ext");
+var F = require("./src/fix");
+
 
 // List utility
 
@@ -38,8 +40,8 @@ var createRDFListNode = function(store, items, index) {
     }
     else {
         var bnode = TermFactory.blankNode();
-        store.add(bnode, T("rdf:first"), items[index]);
-        store.add(bnode, T("rdf:rest"), createRDFListNode(store, items, index + 1));
+        store.add(rdf.quad(bnode, T("rdf:first"), items[index]));
+        store.add(rdf.quad(bnode, T("rdf:rest"), createRDFListNode(store, items, index + 1)));
         return bnode;
     }
 };
@@ -65,7 +67,7 @@ var SHACLValidator = function() {
 
 SHACLValidator.prototype.compareNodes = function(node1, node2) {
     // TODO: Does not handle the case where nodes cannot be compared
-    if (node1 && node2 && node1.isLiteral() && node2.isLiteral()) {
+    if (node1 && node2 && F.isLiteral(node1) && F.isLiteral(node2)) {
         if ((node1.datatype != null) !== (node2.datatype != null)) {
             return null;
         } else if (node1.datatype && node2.datatype && node1.datatype.value !== node2.datatype.value) {
@@ -148,19 +150,19 @@ SHACLValidator.prototype.showValidationResults = function(cb) {
     }
     else {
 
-        var resultGraph = $rdf.graph();
+        var resultGraph = rdf.dataset();
         var reportNode = TermFactory.blankNode("report");
-        resultGraph.add(reportNode, T("rdf:type"), T("sh:ValidationReport"));
-        resultGraph.add(reportNode, T("sh:conforms"), T("" + (this.validationEngine.results.length == 0)));
+        resultGraph.add(rdf.quad(reportNode, T("rdf:type"), T("sh:ValidationReport")));
+        resultGraph.add(rdf.quad(reportNode, T("sh:conforms"), T("" + (this.validationEngine.results.length == 0))));
         var nodes = {};
 
         for (var i = 0; i < this.validationEngine.results.length; i++) {
             var result = this.validationEngine.results[i];
             if (nodes[result[0].toString()] == null) {
                 nodes[result[0].toString()] = true;
-                resultGraph.add(reportNode, T("sh:result"), result[0]);
+                resultGraph.add(rdf.quad(reportNode, T("sh:result"), result[0]));
             }
-            resultGraph.add(result[0], result[1], result[2]);
+            resultGraph.add(rdf.quad(result[0], result[1], result[2]));
         }
 
         // Unsupported bug in JSON parser bug workaround
@@ -172,18 +174,12 @@ SHACLValidator.prototype.showValidationResults = function(cb) {
         };
         //////////////////
 
-        jsonld.fromRDF(resultGraph.toNT(), {}, function (err, doc) {
-            if (err != null) {
-                cb(err);
-            } else {
-                jsonld.flatten(doc, function (err, result) {
-                    if (err != null) {
-                        cb(err);
-                    } else {
-                        cb(null, new ValidationReport(result));
-                    }
-                });
-            }
+        jsonld.fromRDF(resultGraph.toString()).then((doc) => {
+            return jsonld.flatten(doc).then((result) => {
+                cb(null, new ValidationReport(result));
+            });
+        }).catch((err) => {
+            cb(err);
         });
     }
 };
@@ -370,6 +366,7 @@ SHACLValidator.prototype.registerJSCode = function(url, jsCode){
 };
 
 // Expose the RDF interface
-SHACLValidator.$rdf = $rdf;
+// TODO: Check $rdf was exposed on the validator. Do we need that?
+// SHACLValidator.$rdf = $rdf;
 
 module.exports = SHACLValidator;
