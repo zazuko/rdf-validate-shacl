@@ -1,3 +1,4 @@
+var assert = require("assert");
 var SHACLValidator = require("../index");
 var fs = require("fs");
 
@@ -11,48 +12,53 @@ var results = {
     }
 };
 
-exports.functionRegistrationTest = function(test) {
-    var validator = new SHACLValidator();
+describe('registerJSLibrary', () => {
+    it('registers code via file path', (done) => {
+        var validator = new SHACLValidator();
 
-    var url = "http://example.org/ns/shapesConstraints.js";
-    var localFile = __dirname + "/data/functionregistry/jsconstraintcomponent/library.js";
-    var data = fs.readFileSync(__dirname + "/data/functionregistry/jsconstraintcomponent/data.ttl").toString();
+        var url = "http://example.org/ns/shapesConstraints.js";
+        var localFile = __dirname + "/data/functionregistry/jsconstraintcomponent/library.js";
+        var data = fs.readFileSync(__dirname + "/data/functionregistry/jsconstraintcomponent/data.ttl").toString();
 
-    validator.registerJSLibrary(url, localFile, function(e) {
-        test.ok(e == null);
+        validator.registerJSLibrary(url, localFile, function(e) {
+            assert.equal(e, null);
 
+            validator.validate(data, "text/turtle", data, "text/turtle", function (e, report) {
+                assert.equal(e, null);
+                assert.equal(report.conforms(), false);
+                assert.equal(report.results().length, 2);
+
+                report.results().forEach(function(result) {
+                    var expected = results[result.focusNode()];
+                    assert.notEqual(expected, null);
+                    assert.equal(result.path(), expected.path);
+                    assert.equal(result.message(), expected.message);
+                });
+                done();
+            });
+        });
+    });
+
+    it('registers code with string', (done) => {
+        var validator = new SHACLValidator();
+
+        var url = "http://example.org/ns/shapesConstraints.js";
+        var jsCode = fs.readFileSync(__dirname + "/data/functionregistry/jsconstraintcomponent/library.js").toString();
+        var data = fs.readFileSync(__dirname + "/data/functionregistry/jsconstraintcomponent/data.ttl").toString();
+
+        validator.registerJSCode(url, jsCode);
         validator.validate(data, "text/turtle", data, "text/turtle", function (e, report) {
-            test.ok(report.conforms() === false);
-            test.ok(report.results().length === 2);
+            assert.equal(e, null);
+            assert.equal(report.conforms(), false);
+            assert.equal(report.results().length, 2);
             report.results().forEach(function(result) {
                 var expected = results[result.focusNode()];
-                test.ok(expected != null);
-                test.ok(result.path() === expected.path);
-                test.ok(result.message() === expected.message);
+                assert.notEqual(expected, null);
+                assert.equal(result.path(), expected.path);
+                assert.equal(result.message(), expected.message);
             });
-            test.done();
+            done();
         });
     });
-};
+});
 
-
-exports.functionCodeRegistrationTest = function(test) {
-    var validator = new SHACLValidator();
-
-    var url = "http://example.org/ns/shapesConstraints.js";
-    var jsCode = fs.readFileSync(__dirname + "/data/functionregistry/jsconstraintcomponent/library.js").toString();
-    var data = fs.readFileSync(__dirname + "/data/functionregistry/jsconstraintcomponent/data.ttl").toString();
-
-    validator.registerJSCode(url, jsCode);
-    validator.validate(data, "text/turtle", data, "text/turtle", function (e, report) {
-        test.ok(report.conforms() === false);
-        test.ok(report.results().length === 2);
-        report.results().forEach(function(result) {
-            var expected = results[result.focusNode()];
-            test.ok(expected != null);
-            test.ok(result.path() === expected.path);
-            test.ok(result.message() === expected.message);
-        });
-        test.done();
-    });
-};

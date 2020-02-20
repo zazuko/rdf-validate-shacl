@@ -25,12 +25,6 @@ A browser version of the library will be built in the `dist` directory using the
 
 Tests can be run using the `test` gulp task.
 
-## Running the web tests
-
-Tests can be run for the browser version running the `test-web` gulp task. This task will generate the test cases from
-the node version and start a server in port 3000. The browser version of the library must have been built before running
-this task.
-
 ## Regenerating vocabularies and libraries
 
 The vocabularies for SHACL and DASH are located in the `vocabularies` directory. After modifying these files, they must
