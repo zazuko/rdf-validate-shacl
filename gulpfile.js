@@ -1,5 +1,4 @@
 var gulp = require('gulp');
-var mocha = require('gulp-mocha');
 var browserify = require('gulp-browserify');
 var fs = require('fs');
 
@@ -59,11 +58,6 @@ gulp.task('checkJavaFiles', function (cb) {
     checkFiles(files);
 });
 
-gulp.task('test', function () {
-    gulp.src('./test/**/*.js')
-        .pipe(mocha({}));
-});
-
 gulp.task('browserify', function () {
     if (fs.existsSync('dist/index.js')) {
         fs.unlinkSync('dist/index.js');
@@ -115,4 +109,4 @@ gulp.task('generate-libraries', function () {
     fs.writeFileSync("./src/rdfquery.js", generated);
 });
 
-gulp.task('default', ['test', 'browserify']);
+gulp.task('default', ['browserify']);
