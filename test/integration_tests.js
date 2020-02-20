@@ -1,4 +1,4 @@
-var { assert } = require("chai");
+var assert = require("assert");
 var SHACLValidator = require("../index");
 var fs = require("fs");
 // expected result
