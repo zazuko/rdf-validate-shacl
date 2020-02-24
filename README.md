@@ -6,15 +6,16 @@ Create a new SHACL validator and load shapes and data to trigger the validation.
 The validation function returns a `ValidationReport` object that can be used to inspect conformance rand results.
 
 ```javascript
-var validator = new SHACLValidator();
-validator.validate(data, "text/turtle", shapes, "text/turtle", function (e, report) {
-    console.log("Conforms? " + report.conforms());
-    if (report.conforms() === false) {
-        report.results().forEach(function(result) {
-            console.log(" - Severity: " + result.severity() + " for " + result.sourceConstraintComponent());
-        });
-    }
-});
+const validator = new SHACLValidator();
+const report = await validator.validate(data, "text/turtle", shapes, "text/turtle");
+
+console.log("Conforms? " + report.conforms());
+
+if (report.conforms() === false) {
+    report.results().forEach((result) => {
+        console.log(" - Severity: " + result.severity() + " for " + result.sourceConstraintComponent());
+    });
+}
 ```
 
 ## Building for the web
