@@ -6,6 +6,7 @@ var jsonld = require("jsonld");
 var ValidationReport = require("./src/validation-report");
 var debug = require("debug")("index");
 var error = require("debug")("index::error");
+var util = require('util');
 
 var TermFactory = require("./src/rdfquery/term-factory");
 var RDFQuery = require("./src/rdfquery");
@@ -31,6 +32,7 @@ var dashFile = vocabs.dash;
 var rdf = require("rdf-ext");
 var F = require("./src/fix");
 
+const readFile = util.promisify(fs.readFile);
 
 // List utility
 
@@ -96,13 +98,9 @@ SHACLValidator.prototype.nodeConformsToShape = function(focusNode, shapeNode) {
 // Data graph and Shapes graph logic
 
 
-SHACLValidator.prototype.parseDataGraph = function(text, mediaType, andThen) {
+SHACLValidator.prototype.parseDataGraph = async function(text, mediaType) {
     this.$data.clear();
-    this.$data.loadGraph(text, dataGraphURI, mediaType, function () {
-        andThen();
-    }, function (ex) {
-        error(ex);
-    });
+    await this.$data.loadGraph(text, dataGraphURI, mediaType);
 };
 
 /**
@@ -111,11 +109,7 @@ SHACLValidator.prototype.parseDataGraph = function(text, mediaType, andThen) {
  */
 SHACLValidator.prototype.loadDataGraph = function(rdfGraph, andThen) {
     this.$data.clear();
-    this.$data.loadMemoryGraph(dataGraphURI, rdfGraph, function () {
-        andThen();
-    }, function(ex) {
-        error(ex);
-    });
+    this.$data.loadMemoryGraph(dataGraphURI, rdfGraph);
 };
 
 
@@ -143,13 +137,12 @@ SHACLValidator.prototype.updateValidationEngine = function() {
  * engine to build the RDF graph with the validation report.
  * It returns a ValidationReport object wrapping the RDF graph
  */
-SHACLValidator.prototype.showValidationResults = function(cb) {
+SHACLValidator.prototype.showValidationResults = async function() {
     if (this.validationError) {
         error("Validation Failure: " + this.validationError);
         throw (this.validationError);
     }
     else {
-
         var resultGraph = rdf.dataset();
         var reportNode = TermFactory.blankNode("report");
         resultGraph.add(rdf.quad(reportNode, T("rdf:type"), T("sh:ValidationReport")));
@@ -174,13 +167,9 @@ SHACLValidator.prototype.showValidationResults = function(cb) {
         };
         //////////////////
 
-        jsonld.fromRDF(resultGraph.toString()).then((doc) => {
-            return jsonld.flatten(doc).then((result) => {
-                cb(null, new ValidationReport(result));
-            });
-        }).catch((err) => {
-            cb(err);
-        });
+        return jsonld.fromRDF(resultGraph.toString())
+            .then((doc) => jsonld.flatten(doc))
+            .then((flatDoc) => new ValidationReport(flatDoc));
     }
 };
 
@@ -188,38 +177,22 @@ SHACLValidator.prototype.showValidationResults = function(cb) {
  * Reloads the shapes graph.
  * It will load SHACL and DASH shapes constraints.
  */
-SHACLValidator.prototype.parseShapesGraph = function(text, mediaType, andThen) {
-    var handleError = function (ex) {
-        error(ex);
-    };
-    var that = this;
+SHACLValidator.prototype.parseShapesGraph = async function(text, mediaType) {
     this.$shapes.clear();
-    this.$shapes.loadGraph(text, shapesGraphURI, mediaType, function () {
-        that.$shapes.loadGraph(shaclFile, "http://shacl.org", "text/turtle", function () {
-            that.$shapes.loadGraph(dashFile, "http://datashapes.org/dash", "text/turtle", function () {
-                andThen();
-            });
-        }, handleError);
-    }, handleError);
+    await this.$shapes.loadGraph(text, shapesGraphURI, mediaType);
+    await this.$shapes.loadGraph(shaclFile, "http://shacl.org", "text/turtle");
+    await this.$shapes.loadGraph(dashFile, "http://datashapes.org/dash", "text/turtle");
 };
 
 /**
  * Reloads the shapes graph.
  * It will load SHACL and DASH shapes constraints.
  */
-SHACLValidator.prototype.loadShapesGraph = function(rdfGraph, andThen) {
-    var handleError = function (ex) {
-        error(ex);
-    };
-    var that = this;
+SHACLValidator.prototype.loadShapesGraph = async function(rdfGraph) {
     this.$shapes.clear();
-    this.$shapes.loadMemoryGraph(shapesGraphURI, rdfGraph, function () {
-        that.$shapes.loadGraph(shaclFile, "http://shacl.org", "text/turtle", function () {
-            that.$shapes.loadGraph(dashFile, "http://datashapes.org/dash", "text/turtle", function () {
-                andThen();
-            });
-        }, handleError);
-    }, handleError);
+    this.$shapes.loadMemoryGraph(shapesGraphURI, rdfGraph);
+    await this.$shapes.loadGraph(shaclFile, "http://shacl.org", "text/turtle");
+    await this.$shapes.loadGraph(dashFile, "http://datashapes.org/dash", "text/turtle");
 };
 
 
@@ -228,132 +201,89 @@ SHACLValidator.prototype.loadShapesGraph = function(rdfGraph, andThen) {
 /**
  * Updates the data graph and validate it against the current data shapes
  */
-SHACLValidator.prototype.updateDataGraph = function(text, mediaType, cb) {
+SHACLValidator.prototype.updateDataGraph = async function(text, mediaType) {
     var startTime = new Date().getTime();
-    this.parseDataGraph(text, mediaType, this.onDataGraphChange(startTime, cb));
+    await this.parseDataGraph(text, mediaType);
+    return this.onDataGraphChange(startTime);
 };
 
 /**
  * Updates the data graph and validate it against the current data shapes
  */
-SHACLValidator.prototype.updateDataGraphRdfModel = function(dataRdfGraph, cb) {
+SHACLValidator.prototype.updateDataGraphRdfModel = async function(dataRdfGraph) {
     var startTime = new Date().getTime();
-    this.loadDataGraph(dataRdfGraph, this.onDataGraphChange(startTime, cb));
+    await this.loadDataGraph(dataRdfGraph);
+    return this.onDataGraphChange(startTime);
 };
 
-SHACLValidator.prototype.onDataGraphChange = function(startTime, cb) {
-    var that = this;
-    return function() {
-        var midTime = new Date().getTime();
-        that.updateValidationEngine();
-        var endTime = new Date().getTime();
-        debug("Parsing took " + (midTime - startTime) + " ms. Validating the data took " + (endTime - midTime) + " ms.");
-        try {
-            that.showValidationResults(cb);
-        } catch (e) {
-            cb(e, null);
-        }
-    }
+SHACLValidator.prototype.onDataGraphChange = async function(startTime) {
+    var midTime = new Date().getTime();
+    this.updateValidationEngine();
+
+    var endTime = new Date().getTime();
+    debug("Parsing took " + (midTime - startTime) + " ms. Validating the data took " + (endTime - midTime) + " ms.");
+
+    return this.showValidationResults();
 }
 
 /**
  *  Updates the shapes graph and validates it against the current data graph
  */
-SHACLValidator.prototype.updateShapesGraph = function(shapes, mediaType, cb) {
+SHACLValidator.prototype.updateShapesGraph = async function(shapes, mediaType) {
     var startTime = new Date().getTime();
-    this.parseShapesGraph(shapes, mediaType, this.onShapesGraphChange(startTime, cb));
+    await this.parseShapesGraph(shapes, mediaType);
+    return this.onShapesGraphChange(startTime);
 };
 
 /**
  *  Updates the shapes graph from a memory model, and validates it against the current data graph
  */
-SHACLValidator.prototype.updateShapesGraphRdfModel = function(shapesRdfGraph, cb) {
+SHACLValidator.prototype.updateShapesGraphRdfModel = async function(shapesRdfGraph) {
     var startTime = new Date().getTime();
-    this.loadShapesGraph(shapesRdfGraph, this.onShapesGraphChange(startTime, cb));
+    await this.loadShapesGraph(shapesRdfGraph);
+    return this.onShapesGraphChange(startTime);
 };
 
-SHACLValidator.prototype.onShapesGraphChange = function(startTime, cb) {
-    var that = this;
-    return function() {
-        var midTime = new Date().getTime();
-        that.shapesGraph = new ShapesGraph(that);
-        var midTime2 = new Date().getTime();
-        that.shapesGraph.loadJSLibraries(function (err) {
-            if (err) {
-                cb(err, null);
-            } else {
-                that.updateValidationEngine();
-                var endTime = new Date().getTime();
-                debug("Parsing took " + (midTime - startTime) + " ms. Preparing the shapes took " + (midTime2 - midTime)
-                    + " ms. Validation the data took " + (endTime - midTime2) + " ms.");
-                try {
+SHACLValidator.prototype.onShapesGraphChange = async function(startTime) {
+    var midTime = new Date().getTime();
+    this.shapesGraph = new ShapesGraph(this);
+    var midTime2 = new Date().getTime();
 
-                    that.showValidationResults(cb);
-                } catch (e) {
-                    cb(e, null);
-                }
-            }
-        });
-    }
+    await this.shapesGraph.loadJSLibraries();
+    this.updateValidationEngine();
+
+    var endTime = new Date().getTime();
+    debug("Parsing took " + (midTime - startTime) + " ms. Preparing the shapes took " + (midTime2 - midTime)
+        + " ms. Validation the data took " + (endTime - midTime2) + " ms.");
+
+    return this.showValidationResults();
 }
 
 /**
  * Validates the provided data graph against the provided shapes graph
  */
-SHACLValidator.prototype.validate = function (data, dataMediaType, shapes, shapesMediaType, cb) {
-    var that = this;
-    this.updateDataGraph(data, dataMediaType, function (e) {
-        if (e != null) {
-            cb(e, null);
-        } else {
-            that.updateShapesGraph(shapes, shapesMediaType, function (e, result) {
-                if (e) {
-                    cb(e, null);
-                } else {
-                    cb(null, result);
-                }
-            });
-        }
-    });
+SHACLValidator.prototype.validate = async function (data, dataMediaType, shapes, shapesMediaType) {
+    await this.updateDataGraph(data, dataMediaType);
+    return this.updateShapesGraph(shapes, shapesMediaType);
 };
 
 
 /**
 * Validates the provided data graph against the provided shapes graph
 */
-SHACLValidator.prototype.validateFromModels = function (dataRdfGraph, shapesRdfGraph, cb) {
-    var that = this;
-    this.updateDataGraphRdfModel(dataRdfGraph, function (e) {
-        if (e != null) {
-            cb(e, null);
-        } else {
-            that.updateShapesGraphRdfModel(shapesRdfGraph, function (e, result) {
-                if (e) {
-                    cb(e, null);
-                } else {
-                    cb(null, result);
-                }
-            });
-        }
-    });
+SHACLValidator.prototype.validateFromModels = async function (dataRdfGraph, shapesRdfGraph) {
+    await this.updateDataGraphRdfModel(dataRdfGraph);
+    return this.updateShapesGraphRdfModel(shapesRdfGraph);
 };
 
 /**
  * Saves a cached version of a remote JS file used during validation
  * @param url URL of the library to cache
  * @param localFile path to a local version of the file identified by url
- * @param cb invoked with an optional error when registration of the cached function has finished
  */
-SHACLValidator.prototype.registerJSLibrary = function(url, localFile, cb){
-    var that = this;
-    fs.readFile(localFile, function(error, buffer) {
-        if (error != null) {
-            cb(error)
-        } else {
-            that.functionsRegistry[url]  = buffer.toString();
-            cb(null)
-        }
-    });
+SHACLValidator.prototype.registerJSLibrary = async function(url, localFile) {
+    const buffer = await readFile(localFile);
+    this.functionsRegistry[url] = buffer.toString();
 };
 
 /**

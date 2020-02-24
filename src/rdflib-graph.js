@@ -3,11 +3,6 @@ var T = RDFQuery.T;
 var rdf = require("rdf-ext");
 var stringToDataset = require("./dataset-utils").stringToDataset;
 
-var errorHandler = function(e){
-    require("debug")("rdflib-graph::error")(e);
-    throw(e);
-};
-
 /**
  * Creates a new RDFLibGraph wrapping a provided `Dataset` or creating
  * a new one if no dataset is provided
@@ -30,16 +25,13 @@ RDFLibGraph.prototype.query = function () {
     return RDFQuery(this);
 };
 
-RDFLibGraph.prototype.loadMemoryGraph = function(graphURI, rdfModel, andThen) {
-    postProcessGraph(this.store, graphURI, rdfModel)
-    andThen();
+RDFLibGraph.prototype.loadMemoryGraph = function(graphURI, rdfModel) {
+    postProcessGraph(this.store, graphURI, rdfModel);
 };
 
-RDFLibGraph.prototype.loadGraph = function(str, graphURI, mimeType, andThen, handleError) {
-    stringToDataset(mimeType, str).then((newStore) => {
-        postProcessGraph(this.store, graphURI, newStore);
-        andThen();
-    }).catch(handleError)
+RDFLibGraph.prototype.loadGraph = async function(str, graphURI, mimeType) {
+    const newStore = await stringToDataset(mimeType, str);
+    postProcessGraph(this.store, graphURI, newStore);
 };
 
 RDFLibGraph.prototype.clear = function() {

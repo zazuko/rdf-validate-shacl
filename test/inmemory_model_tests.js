@@ -25,22 +25,16 @@ describe('validateFromModels', () => {
         var dataGraph = await rdf.dataset().import(rdfFS.fromFile(dataFile));
         var shapesGraph = dataGraph.clone();
 
-        return new Promise((resolve, reject) => {
-            validator.registerJSLibrary(url, localFile, function(e) {
-                assert.equal(e, null);
-                validator.validateFromModels(dataGraph, shapesGraph, function (e, report) {
-                    assert.equal(e, null);
-                    assert.equal(report.conforms(), false);
-                    assert.equal(report.results().length, 2);
-                    report.results().forEach(function(result) {
-                        var expected = results[result.focusNode()];
-                        assert.notEqual(expected, null);
-                        assert.equal(result.path(), expected.path);
-                        assert.equal(result.message(), expected.message);
-                    });
-                    resolve();
-                });
-            });
+        await validator.registerJSLibrary(url, localFile);
+
+        const report = await validator.validateFromModels(dataGraph, shapesGraph);
+        assert.equal(report.conforms(), false);
+        assert.equal(report.results().length, 2);
+        report.results().forEach(function(result) {
+            var expected = results[result.focusNode()];
+            assert.notEqual(expected, null);
+            assert.equal(result.path(), expected.path);
+            assert.equal(result.message(), expected.message);
         });
     });
 })

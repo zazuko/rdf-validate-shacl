@@ -66,68 +66,47 @@ ExpectedValidationReport.prototype.results = function() {
     return acc;
 };
 
-var expectedResult = function(data, mediaType, cb) {
+var expectedResult = async function(data, mediaType) {
     var graph = new RDFLibGraph();
-    graph.loadGraph(data, "http://test.com/example", mediaType, function() {
-        var expectedValidationReport = new ExpectedValidationReport(graph);
-        expectedValidationReport.results();
-        cb(expectedValidationReport, null);
-    }, function(e) {
-        cb(null, e);
-    });
+    await graph.loadGraph(data, "http://test.com/example", mediaType)
+    var expectedValidationReport = new ExpectedValidationReport(graph);
+    expectedValidationReport.results();
+    return expectedValidationReport;
 };
 
 var isBlank = function(s) {
     return s != null && (s.indexOf("_:") === 0 || s.indexOf("_g_") > -1);
 }
 
-var validateReports = function(done, input) {
+var validateReports = async function(input) {
     var data = fs.readFileSync(input).toString();
 
-    expectedResult(data, "text/turtle", function(expectedReport, e) {
-        if (e != null) {
-            console.log(e);
-            assert.equal(e, null);
-            done();
-        } else {
-            new SHACLValidator().validate(data, "text/turtle", data, "text/turtle", function (e, report) {
-                if (e != null) {
-                    console.log(e);
-                    assert.equal(e, null);
-                    done();
-                } else {
-                    assert.equal(report.conforms(), expectedReport.conforms());
-                    assert.equal(report.results().length, expectedReport.results().length);
-                    var results = report.results() || [];
-                    var expectedResults = expectedReport.results();
-                    for (var i=0; i <results.length; i++) {
-                        found = false;
-                        for (var j=0; j<expectedResults.length; j++) {
-                            if (//(results[i].focusNode() ===  expectedResults[j].focusNode() ) &&
-                                results[i].severity() === expectedResults[j].severity() &&
-                                ( (isBlank(results[i].sourceShape()) && isBlank(expectedResults[j].sourceShape())) ||
-                                  results[i].sourceShape() === expectedResults[j].sourceShape()) &&
-                                results[i].sourceConstraintComponent() === expectedResults[j].sourceConstraintComponent()) {
-                                found = true;
-                            }
+    const expectedReport = await expectedResult(data, "text/turtle");
+    const report = await new SHACLValidator().validate(data, "text/turtle", data, "text/turtle");
+    assert.equal(report.conforms(), expectedReport.conforms());
+    assert.equal(report.results().length, expectedReport.results().length);
+    var results = report.results() || [];
+    var expectedResults = expectedReport.results();
+    for (var i=0; i <results.length; i++) {
+        found = false;
+        for (var j=0; j<expectedResults.length; j++) {
+            if (//(results[i].focusNode() ===  expectedResults[j].focusNode() ) &&
+                results[i].severity() === expectedResults[j].severity() &&
+                ( (isBlank(results[i].sourceShape()) && isBlank(expectedResults[j].sourceShape())) ||
+                    results[i].sourceShape() === expectedResults[j].sourceShape()) &&
+                results[i].sourceConstraintComponent() === expectedResults[j].sourceConstraintComponent()) {
+                found = true;
+            }
 
-                        }
-                        assert.equal(found, true);
-                    }
-                    done();
-                }
-            });
         }
-    });
+        assert.equal(found, true);
+    }
 };
-
 
 describe('integration tests', () => {
     fs.readdirSync(__dirname + "/data/core").forEach(function(dir) {
         fs.readdirSync(__dirname + "/data/core/" + dir).forEach(function(file) {
-            it(dir + "-test-" + file, (done) => {
-                validateReports(done, __dirname + "/data/core/" + dir + "/" + file);
-            });
+            it(dir + "-test-" + file, async () => validateReports(__dirname + "/data/core/" + dir + "/" + file));
         });
     });
 });

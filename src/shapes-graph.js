@@ -438,51 +438,43 @@ ShapesGraph.prototype.getShapesWithTarget = function () {
     return this.targetShapes;
 };
 
-var fetchLibraries = function(libraries, context, acc, k) {
+var fetchLibraries = async function(libraries, context, acc) {
     if (libraries.length === 0) {
-        k(null, acc);
+        return acc;
     } else {
         var nextLibrary = libraries.shift();
         if (context.functionsRegistry[nextLibrary] != null) {
-            fetchLibraries(libraries, context, acc, k);
+            return fetchLibraries(libraries, context, acc);
         } else {
-            var response = "";
-            try {
-                require('http').get(nextLibrary, function (res) {
-                    res.on('data', function (b) {
+            return new Promise((resolve, reject) => {
+                var response = "";
+                require('http').get(nextLibrary, (res) => {
+                    res.on('data', (b) => {
                         response = response + b.toString();
                     });
 
-                    res.on('error', function (e) {
-                        k(e, null);
+                    res.on('error', (e) => {
+                        reject(e);
                     });
 
                     res.on('end', function () {
                         acc[nextLibrary] = response;
-                        fetchLibraries(libraries, context, acc, k);
+                        resolve(fetchLibraries(libraries, context, acc));
                     });
                 });
-            } catch (e) {
-                k(e, null);
-            }
+            });
         }
     }
 };
 
-ShapesGraph.prototype.loadJSLibraries = function(k) {
+ShapesGraph.prototype.loadJSLibraries = async function() {
     var that = this;
     var libraries= this.context.$shapes.query().
       match("?library", "sh:jsLibraryURL", "?library").getNodeArray("?library");
     for (var i=0 ;i<libraries.length; i++) {
         libraries[i] = libraries[i].value;
     }
-    fetchLibraries(libraries, this.context, that.context.functionsRegistry, function(err) {
-        if (err) {
-            k(err);
-        } else {
-            k();
-        }
-    })
+    await fetchLibraries(libraries, this.context, that.context.functionsRegistry);
 };
 
 
