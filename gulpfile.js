@@ -1,5 +1,4 @@
 var gulp = require('gulp');
-var browserify = require('gulp-browserify');
 var fs = require('fs');
 
 var http = require("https");
@@ -58,24 +57,6 @@ gulp.task('checkJavaFiles', function (cb) {
     checkFiles(files);
 });
 
-gulp.task('browserify', function () {
-    if (fs.existsSync('dist/index.js')) {
-        fs.unlinkSync('dist/index.js');
-    }
-    if (fs.existsSync('dist/shacl.js')) {
-        fs.unlinkSync('dist/shacl.js');
-    }
-    gulp.src('index.js')
-        .pipe(browserify({
-            standalone: 'SHACLValidator'
-        }))
-        .pipe(gulp.dest('dist'))
-        .on('end', function () {
-            fs.renameSync('dist/index.js', 'dist/shacl.js');
-        });
-});
-
-
 gulp.task('generate-vocabularies', function () {
     var vocabularies = fs.readdirSync("./vocabularies");
     var acc = {};
@@ -108,5 +89,3 @@ gulp.task('generate-libraries', function () {
     var generated = rdfqueryTemplate.replace("</content>", rdfqueryData);
     fs.writeFileSync("./src/rdfquery.js", generated);
 });
-
-gulp.task('default', ['browserify']);
