@@ -1,7 +1,6 @@
 var RDFQuery = require("./rdfquery");
 var T = RDFQuery.T;
 var rdf = require("rdf-ext");
-var stringToDataset = require("./dataset-utils").stringToDataset;
 var TermFactory = require("./rdfquery/term-factory");
 
 /**
@@ -28,11 +27,6 @@ RDFLibGraph.prototype.query = function () {
 
 RDFLibGraph.prototype.loadGraph = function(graphURI, rdfModel) {
     postProcessGraph(this.store, graphURI, rdfModel);
-};
-
-RDFLibGraph.prototype.loadGraphFromString = async function(str, graphURI, mimeType) {
-    const newStore = await stringToDataset(mimeType, str);
-    postProcessGraph(this.store, graphURI, newStore);
 };
 
 RDFLibGraph.prototype.clear = function() {
