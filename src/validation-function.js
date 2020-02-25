@@ -9,7 +9,7 @@ var ValidationFunction = function (functionName, parameters, findInScript) {
     this.funcName = functionName;
     this.func = findInScript(functionName);
     if (!this.func) {
-        throw "Cannot find validator function " + functionName;
+        throw new Error("Cannot find validator function " + functionName);
     }
     // Get list of argument of the function, see
     // https://davidwalsh.name/javascript-arguments
@@ -71,7 +71,7 @@ ValidationFunction.prototype.execute = function (focusNode, valueNode, constrain
             args.push(focusNode);
         }
         else {
-            throw "Unexpected validator function argument " + arg + " for function " + this.funcName;
+            throw new Error("Unexpected validator function argument " + arg + " for function " + this.funcName);
         }
     }
     return this.doExecute(args);

@@ -43,10 +43,10 @@ RDFQueryUtil.prototype.getInstancesOf = function ($class) {
 
 RDFQueryUtil.prototype.getObject = function ($subject, $predicate) {
     if (!$subject) {
-        throw "Missing subject";
+        throw new Error("Missing subject");
     }
     if (!$predicate) {
-        throw "Missing predicate";
+        throw new Error("Missing predicate");
     }
     return RDFQuery(this.source).match($subject, $predicate, "?object").getNode("?object");
 };
@@ -150,7 +150,7 @@ var toRDFQueryPath = function ($shapes, shPath) {
             return {inverse: toRDFQueryPath($shapes, inversePath)};
         }
     }
-    throw "Unsupported SHACL path " + shPath;
+    throw new Error("Unsupported SHACL path " + shPath);
     // TODO: implement conforming to AbstractQuery.path syntax
     return shPath;
 };

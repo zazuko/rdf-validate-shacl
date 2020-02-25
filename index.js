@@ -96,7 +96,6 @@ SHACLValidator.prototype.loadDataGraph = function(graph) {
  * Validates the data graph against the shapes graph using the validation engine
  */
 SHACLValidator.prototype.updateValidationEngine = function() {
-    results = [];
     this.validationEngine = new ValidationEngine(this);
     this.validationEngine.setConfiguration(this.configuration);
     try {
@@ -125,7 +124,7 @@ SHACLValidator.prototype.showValidationResults = async function() {
         var resultGraph = rdf.dataset();
         var reportNode = TermFactory.blankNode("report");
         resultGraph.add(rdf.quad(reportNode, T("rdf:type"), T("sh:ValidationReport")));
-        resultGraph.add(rdf.quad(reportNode, T("sh:conforms"), T("" + (this.validationEngine.results.length == 0))));
+        resultGraph.add(rdf.quad(reportNode, T("sh:conforms"), T("" + (this.validationEngine.results.length === 0))));
         var nodes = {};
 
         for (var i = 0; i < this.validationEngine.results.length; i++) {

@@ -16,7 +16,7 @@ var TermFactory = {
      */
     registerNamespace: function (prefix, namespace) {
         if (this.namespaces.prefix) {
-            throw "Prefix " + prefix + " already registered"
+            throw new Error("Prefix " + prefix + " already registered");
         }
         this.namespaces[prefix] = namespace;
     },
@@ -47,7 +47,7 @@ var TermFactory = {
             if (ns != null) {
                 return this.namedNode(ns + str.substring(col + 1));
             } else {
-                if (str.match(REGEX_URI)) {
+                if (str.match(this.REGEX_URI)) {
                     return this.namedNode(str)
                 }
             }

@@ -12,7 +12,7 @@ var nodeLabel = function (node, store) {
         return acc.join(", ");
     }
     if (node.termType === "NamedNode") {
-        for (prefix in store.namespaces) {
+        for (const prefix in store.namespaces) {
             var ns = store.namespaces[prefix];
             if (node.value.indexOf(ns) === 0) {
                 return prefix + ":" + node.value.substring(ns.length);
@@ -255,7 +255,7 @@ ValidationEngine.prototype.validateNodeAgainstConstraint = function (focusNode, 
                         this.recordErrorsLevel--;
                         //}
                         if (Array.isArray(obj)) {
-                            for (a = 0; a < obj.length; a++) {
+                            for (let a = 0; a < obj.length; a++) {
                                 if (this.createResultFromObject(obj[a], constraint, focusNode, valueNode)) {
                                     iterationError = true;
                                 }
@@ -298,7 +298,7 @@ ValidationEngine.prototype.validateNodeAgainstConstraint = function (focusNode, 
                 }
             }
             else {
-                throw "Cannot find validator for constraint component " + constraint.component.node.value;
+                throw new Error("Cannot find validator for constraint component " + constraint.component.node.value);
             }
         }
         return false;

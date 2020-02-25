@@ -74,7 +74,7 @@ function ensureBlankId(component) {
 function postProcessGraph(store, graphURI, newStore) {
 
     var ss = newStore.match(undefined, undefined, undefined);
-    for (quad of ss) {
+    for (const quad of ss) {
         var object = quad.object;
         ensureBlankId(quad.subject);
         ensureBlankId(quad.predicate);
