@@ -1,4 +1,4 @@
-# SHACL.js [![Build Status](https://travis-ci.org/TopQuadrant/shacl-js.svg?branch=master)](https://travis-ci.org/TopQuadrant/shacl-js)
+# SHACL.js [![Build Status](https://travis-ci.org/zazuko/shacl-js.svg?branch=master)](https://travis-ci.org/zazuko/shacl-js)
 
 ## Usage
 
