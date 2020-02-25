@@ -21,7 +21,6 @@ gulp.task('checkJavaFiles', function (cb) {
     // out of the synch test for now
     var files = [
         //"./vocabularies/dash.ttl": "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/etc/dash.ttl",
-        ["./vocabularies/shacl.ttl", "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/rdf/shacl.ttl"],
         ["./shared/dash.js", "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/js/dash.js"],
         ["./shared/rdfquery.js", "https://raw.githubusercontent.com/TopQuadrant/shacl/master/src/main/resources/js/rdfquery.js"]
     ];
@@ -55,16 +54,6 @@ gulp.task('checkJavaFiles', function (cb) {
     };
 
     checkFiles(files);
-});
-
-gulp.task('generate-vocabularies', function () {
-    var vocabularies = fs.readdirSync("./vocabularies");
-    var acc = {};
-    for (var i = 0; i < vocabularies.length; i++) {
-        console.log("Generating " + vocabularies[i]);
-        acc[vocabularies[i].split(".ttl")[0]] = fs.readFileSync("./vocabularies/" + vocabularies[i]).toString();
-        fs.writeFileSync("./src/vocabularies.js", "module.exports = " + JSON.stringify(acc));
-    }
 });
 
 /**
