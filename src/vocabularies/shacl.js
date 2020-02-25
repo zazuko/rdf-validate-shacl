@@ -5,23 +5,9 @@ module.exports = (factory) => {
     'b1_c14n3': factory.blankNode(),
     'b1_c14n6': factory.blankNode(),
     'b1_c14n0': factory.blankNode(),
-    'b1_c14n0': factory.blankNode(),
-    'b1_c14n1': factory.blankNode(),
-    'b1_c14n1': factory.blankNode(),
     'b1_c14n1': factory.blankNode(),
     'b1_c14n5': factory.blankNode(),
     'b1_c14n2': factory.blankNode(),
-    'b1_c14n2': factory.blankNode(),
-    'b1_c14n0': factory.blankNode(),
-    'b1_c14n3': factory.blankNode(),
-    'b1_c14n3': factory.blankNode(),
-    'b1_c14n4': factory.blankNode(),
-    'b1_c14n4': factory.blankNode(),
-    'b1_c14n2': factory.blankNode(),
-    'b1_c14n5': factory.blankNode(),
-    'b1_c14n5': factory.blankNode(),
-    'b1_c14n6': factory.blankNode(),
-    'b1_c14n6': factory.blankNode(),
     'b1_c14n4': factory.blankNode()
   };
 

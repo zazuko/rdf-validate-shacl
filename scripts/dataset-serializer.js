@@ -37,9 +37,9 @@ function serializeQuad (quad) {
 function serializeQuads (quads) {
   const blankNodes = new Set()
   for (quad of quads) {
-    if (quad.subject.termType === 'BlankNode') blankNodes.add(quad.subject)
-    if (quad.predicate.termType === 'BlankNode') blankNodes.add(quad.predicate)
-    if (quad.object.termType === 'BlankNode') blankNodes.add(quad.object)
+    if (quad.subject.termType === 'BlankNode') blankNodes.add(quad.subject.value)
+    if (quad.predicate.termType === 'BlankNode') blankNodes.add(quad.predicate.value)
+    if (quad.object.termType === 'BlankNode') blankNodes.add(quad.object.value)
   }
 
   return [
@@ -47,7 +47,7 @@ function serializeQuads (quads) {
     '',
     'module.exports = (factory) => {',
     '  const blankNodes = {',
-    [...blankNodes].map(term => `    '${term.value}': factory.blankNode()`).join(',\n'),
+    [...blankNodes].map(id => `    '${id}': factory.blankNode()`).join(',\n'),
     '  };',
     '',
     '  return [',
