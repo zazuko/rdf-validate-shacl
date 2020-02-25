@@ -1,6 +1,8 @@
 var assert = require("assert");
 var SHACLValidator = require("../index");
 var fs = require("fs");
+var rdf = require("rdf-ext");
+var rdfFS = require("rdf-utils-fs");
 // expected result
 var rdflibgraph = require("../src/rdflib-graph");
 var RDFLibGraph = rdflibgraph.RDFLibGraph;
@@ -68,7 +70,7 @@ ExpectedValidationReport.prototype.results = function() {
 
 var expectedResult = async function(data, mediaType) {
     var graph = new RDFLibGraph();
-    await graph.loadGraph(data, "http://test.com/example", mediaType)
+    graph.loadGraph("http://test.com/example", data);
     var expectedValidationReport = new ExpectedValidationReport(graph);
     expectedValidationReport.results();
     return expectedValidationReport;
@@ -79,10 +81,10 @@ var isBlank = function(s) {
 }
 
 var validateReports = async function(input) {
-    var data = fs.readFileSync(input).toString();
+    var data = await rdf.dataset().import(rdfFS.fromFile(input));
 
-    const expectedReport = await expectedResult(data, "text/turtle");
-    const report = await new SHACLValidator().validate(data, "text/turtle", data, "text/turtle");
+    const expectedReport = await expectedResult(data);
+    const report = await new SHACLValidator().validate(data, data);
     assert.equal(report.conforms(), expectedReport.conforms());
     assert.equal(report.results().length, expectedReport.results().length);
     var results = report.results() || [];

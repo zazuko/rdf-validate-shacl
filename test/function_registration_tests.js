@@ -1,4 +1,6 @@
 var assert = require("assert");
+var rdf = require("rdf-ext");
+var rdfFS = require("rdf-utils-fs");
 var SHACLValidator = require("../index");
 var fs = require("fs");
 
@@ -18,10 +20,11 @@ describe('registerJSLibrary', () => {
 
         var url = "http://example.org/ns/shapesConstraints.js";
         var localFile = __dirname + "/data/functionregistry/jsconstraintcomponent/library.js";
-        var data = fs.readFileSync(__dirname + "/data/functionregistry/jsconstraintcomponent/data.ttl").toString();
+        var dataFile = __dirname + "/data/functionregistry/jsconstraintcomponent/data.ttl";
+        var data = await rdf.dataset().import(rdfFS.fromFile(dataFile));
 
         await validator.registerJSLibrary(url, localFile);
-        const report = await validator.validate(data, "text/turtle", data, "text/turtle");
+        const report = await validator.validate(data, data);
         assert.equal(report.conforms(), false);
         assert.equal(report.results().length, 2);
         report.results().forEach((result) => {
@@ -37,10 +40,11 @@ describe('registerJSLibrary', () => {
 
         var url = "http://example.org/ns/shapesConstraints.js";
         var jsCode = fs.readFileSync(__dirname + "/data/functionregistry/jsconstraintcomponent/library.js").toString();
-        var data = fs.readFileSync(__dirname + "/data/functionregistry/jsconstraintcomponent/data.ttl").toString();
+        var dataFile = __dirname + "/data/functionregistry/jsconstraintcomponent/data.ttl";
+        var data = await rdf.dataset().import(rdfFS.fromFile(dataFile));
 
         validator.registerJSCode(url, jsCode);
-        const report = await validator.validate(data, "text/turtle", data, "text/turtle");
+        const report = await validator.validate(data, data);
         assert.equal(report.conforms(), false);
         assert.equal(report.results().length, 2);
         report.results().forEach(function(result) {
