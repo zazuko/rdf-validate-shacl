@@ -18,10 +18,6 @@ if (report.conforms() === false) {
 }
 ```
 
-## Building for the web
-
-A browser version of the library will be built in the `dist` directory using the gulp `browserify` task.
-
 ## Running the tests
 
 Tests can be run using the `test` gulp task.
