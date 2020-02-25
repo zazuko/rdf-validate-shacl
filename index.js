@@ -30,7 +30,6 @@ var dashFile = vocabs.dash;
 /********************************/
 
 var rdf = require("rdf-ext");
-var F = require("./src/fix");
 
 const readFile = util.promisify(fs.readFile);
 
@@ -69,7 +68,7 @@ var SHACLValidator = function() {
 
 SHACLValidator.prototype.compareNodes = function(node1, node2) {
     // TODO: Does not handle the case where nodes cannot be compared
-    if (node1 && node2 && F.isLiteral(node1) && F.isLiteral(node2)) {
+    if (node1 && node1.termType === "Literal" && node2 && node2.termType === "Literal") {
         if ((node1.datatype != null) !== (node2.datatype != null)) {
             return null;
         } else if (node1.datatype && node2.datatype && node1.datatype.value !== node2.datatype.value) {

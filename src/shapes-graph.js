@@ -23,7 +23,6 @@ var RDFQuery = require("./rdfquery");
 var NodeSet = RDFQuery.NodeSet;
 var T = RDFQuery.T;
 var ValidationFunction = require("./validation-function");
-var F = require("./fix");
 
 TermFactory.registerNamespace("dash", "http://datashapes.org/dash#");
 
@@ -112,10 +111,10 @@ var toRDFQueryPath = function ($shapes, shPath) {
         }
         return result;
     }
-    if (F.isURI(shPath)) {
+    if (shPath.termType === "NamedNode") {
         return shPath;
     }
-    else if (F.isBlankNode(shPath)) {
+    else if (shPath.termType === "BlankNode") {
         var util = new RDFQueryUtil($shapes);
         if (util.getObject(shPath, "rdf:first")) {
             var paths = util.rdfListToArray(shPath);
@@ -196,7 +195,7 @@ var ConstraintComponent = function(node, context) {
             parameters.push(sol.path);
             parameterNodes.push(sol.parameter);
             if (that.context.$shapes.query().match(sol.parameter, "sh:optional", "true").hasSolution()) {
-                optionals[F.uri(sol.path)] = true;
+                optionals[sol.path.value] = true;
             }
             else {
                 requiredParameters.push(sol.path);
@@ -264,7 +263,7 @@ ConstraintComponent.prototype.getParameters = function () {
 ConstraintComponent.prototype.isComplete = function (shapeNode) {
     for (var i = 0; i < this.parameters.length; i++) {
         var parameter = this.parameters[i];
-        if (!this.isOptional(F.uri(parameter))) {
+        if (!this.isOptional(parameter.value)) {
             if (!this.context.$shapes.query().match(shapeNode, parameter, null).hasSolution()) {
                 return false;
             }
