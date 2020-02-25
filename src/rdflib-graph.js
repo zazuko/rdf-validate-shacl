@@ -2,6 +2,7 @@ var RDFQuery = require("./rdfquery");
 var T = RDFQuery.T;
 var rdf = require("rdf-ext");
 var stringToDataset = require("./dataset-utils").stringToDataset;
+var TermFactory = require("./rdfquery/term-factory");
 
 /**
  * Creates a new RDFLibGraph wrapping a provided `Dataset` or creating
@@ -102,6 +103,18 @@ function postProcessGraph(store, graphURI, newStore) {
         store.namespaces[prefix] = ns;
     }
 }
+
+function createRDFListNode(store, items, index) {
+    if (index >= items.length) {
+        return T("rdf:nil");
+    }
+    else {
+        var bnode = TermFactory.blankNode();
+        store.add(rdf.quad(bnode, T("rdf:first"), items[index]));
+        store.add(rdf.quad(bnode, T("rdf:rest"), createRDFListNode(store, items, index + 1)));
+        return bnode;
+    }
+};
 
 module.exports.RDFLibGraph = RDFLibGraph;
 module.exports.RDFLibGraphIterator = RDFLibGraphIterator;

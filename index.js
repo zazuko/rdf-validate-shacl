@@ -33,21 +33,6 @@ var rdf = require("rdf-ext");
 
 const readFile = util.promisify(fs.readFile);
 
-// List utility
-
-var createRDFListNode = function(store, items, index) {
-    if (index >= items.length) {
-        return T("rdf:nil");
-    }
-    else {
-        var bnode = TermFactory.blankNode();
-        store.add(rdf.quad(bnode, T("rdf:first"), items[index]));
-        store.add(rdf.quad(bnode, T("rdf:rest"), createRDFListNode(store, items, index + 1)));
-        return bnode;
-    }
-};
-
-
 // SHACL Interface
 /**
  * SHACL Validator.
