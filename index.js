@@ -21,11 +21,8 @@ var ValidationEngineConfiguration = require("./src/validation-engine-configurati
 /********************************/
 /* Vocabularies                 */
 /********************************/
-var vocabs = require("./src/vocabularies");
 var shapesGraphURI = "urn:x-shacl:shapesGraph";
 var dataGraphURI = "urn:x-shacl:dataGraph";
-var shaclFile = vocabs.shacl;
-var dashFile = vocabs.dash;
 /********************************/
 /********************************/
 
@@ -151,17 +148,24 @@ SHACLValidator.prototype.showValidationResults = async function() {
     }
 };
 
-
 /**
  * Reloads the shapes graph.
  * It will load SHACL and DASH shapes constraints.
  */
 SHACLValidator.prototype.loadShapesGraph = async function(graph) {
     this.$shapes.clear();
+
     this.$shapes.loadGraph(shapesGraphURI, graph);
-    await this.$shapes.loadGraphFromString(shaclFile, "http://shacl.org", "text/turtle");
-    await this.$shapes.loadGraphFromString(dashFile, "http://datashapes.org/dash", "text/turtle");
+
+    this.$shapes.loadGraph("http://shacl.org", this.loadVocabulary('shacl'));
+    this.$shapes.loadGraph("http://datashapes.org/dash", this.loadVocabulary('dash'));
 };
+
+SHACLValidator.prototype.loadVocabulary = function(vocab) {
+    const vocabFactory = require(`./src/vocabularies/${vocab}`);
+    const quads = vocabFactory(rdf);
+    return rdf.dataset(quads);
+}
 
 
 // Update validations
