@@ -7,7 +7,7 @@ The validation function returns a `ValidationReport` object that can be used to 
 
 ```javascript
 const validator = new SHACLValidator();
-const report = await validator.validate(data, "text/turtle", shapes, "text/turtle");
+const report = await validator.validate(dataGraph, shapesGraph);
 
 console.log("Conforms? " + report.conforms());
 

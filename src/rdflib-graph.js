@@ -25,11 +25,11 @@ RDFLibGraph.prototype.query = function () {
     return RDFQuery(this);
 };
 
-RDFLibGraph.prototype.loadMemoryGraph = function(graphURI, rdfModel) {
+RDFLibGraph.prototype.loadGraph = function(graphURI, rdfModel) {
     postProcessGraph(this.store, graphURI, rdfModel);
 };
 
-RDFLibGraph.prototype.loadGraph = async function(str, graphURI, mimeType) {
+RDFLibGraph.prototype.loadGraphFromString = async function(str, graphURI, mimeType) {
     const newStore = await stringToDataset(mimeType, str);
     postProcessGraph(this.store, graphURI, newStore);
 };
