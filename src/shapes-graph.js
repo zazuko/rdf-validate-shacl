@@ -1,3 +1,5 @@
+/* globals $data */
+
 // A simple SHACL validator in JavaScript based on SHACL-JS.
 
 // Design:
