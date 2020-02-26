@@ -69,10 +69,7 @@ ValidationReport.prototype.conforms = function () {
 
 ValidationReport.prototype.results = function () {
   var results = this.validationNode['http://www.w3.org/ns/shacl#result'] || []
-  var that = this
-  return results.map(function (result) {
-    return new ValidationResult(that.findNode(result['@id']), this.graph)
-  })
+  return results.map((result) => new ValidationResult(this.findNode(result['@id']), this.graph))
 }
 
 ValidationReport.prototype.findNode = function (id) {
