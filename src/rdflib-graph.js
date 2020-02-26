@@ -6,48 +6,53 @@ var TermFactory = require('./rdfquery/term-factory')
 /**
  * Creates a new RDFLibGraph wrapping a provided `Dataset` or creating
  * a new one if no dataset is provided
+ *
  * @param store rdfjs Dataset object
  * @constructor
  */
-var RDFLibGraph = function (store) {
-  if (store != null) {
-    this.store = store
-  } else {
+class RDFLibGraph {
+  constructor (store) {
+    if (store != null) {
+      this.store = store
+    } else {
+      this.store = rdf.dataset()
+    }
+  }
+
+  find (s, p, o) {
+    return new RDFLibGraphIterator(this.store, s, p, o)
+  }
+
+  query () {
+    return RDFQuery(this)
+  }
+
+  loadGraph (graphURI, rdfModel) {
+    postProcessGraph(this.store, graphURI, rdfModel)
+  }
+
+  clear () {
     this.store = rdf.dataset()
   }
 }
 
-RDFLibGraph.prototype.find = function (s, p, o) {
-  return new RDFLibGraphIterator(this.store, s, p, o)
-}
+class RDFLibGraphIterator {
+  constructor (store, s, p, o) {
+    this.index = 0
+    // TODO: Could probably make a lazy iterator since Dataset is already an iterator
+    this.ss = store.match(s, p, o).toArray()
+  }
 
-RDFLibGraph.prototype.query = function () {
-  return RDFQuery(this)
-}
+  close () {
+    // Do nothing
+  }
 
-RDFLibGraph.prototype.loadGraph = function (graphURI, rdfModel) {
-  postProcessGraph(this.store, graphURI, rdfModel)
-}
-
-RDFLibGraph.prototype.clear = function () {
-  this.store = rdf.dataset()
-}
-
-var RDFLibGraphIterator = function (store, s, p, o) {
-  this.index = 0
-  // TODO: Could probably make a lazy iterator since Dataset is already an iterator
-  this.ss = store.match(s, p, o).toArray()
-}
-
-RDFLibGraphIterator.prototype.close = function () {
-  // Do nothing
-}
-
-RDFLibGraphIterator.prototype.next = function () {
-  if (this.index >= this.ss.length) {
-    return null
-  } else {
-    return this.ss[this.index++]
+  next () {
+    if (this.index >= this.ss.length) {
+      return null
+    } else {
+      return this.ss[this.index++]
+    }
   }
 }
 
