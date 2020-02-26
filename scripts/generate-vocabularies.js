@@ -6,7 +6,7 @@ const { serializeQuads } = require('./dataset-serializer')
 
 const vocabularies = [
   ['./vocabularies/dash.ttl', 'src/vocabularies/dash.js'],
-  ['./node_modules/@zazuko/rdf-vocabularies/ontologies/sh.nq', 'src/vocabularies/shacl.js'],
+  ['./node_modules/@zazuko/rdf-vocabularies/ontologies/sh.nq', 'src/vocabularies/shacl.js']
 ]
 
 async function main () {

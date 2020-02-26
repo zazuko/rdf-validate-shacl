@@ -5,7 +5,7 @@ function serializerTerm (term) {
   }
 
   if (term.termType === 'DefaultGraph') {
-    return `factory.defaultGraph()`
+    return 'factory.defaultGraph()'
   }
 
   if (term.termType === 'Literal') {
@@ -36,7 +36,7 @@ function serializeQuad (quad) {
 
 function serializeQuads (quads) {
   const blankNodes = new Set()
-  for (quad of quads) {
+  for (const quad of quads) {
     if (quad.subject.termType === 'BlankNode') blankNodes.add(quad.subject.value)
     if (quad.predicate.termType === 'BlankNode') blankNodes.add(quad.predicate.value)
     if (quad.object.termType === 'BlankNode') blankNodes.add(quad.object.value)
