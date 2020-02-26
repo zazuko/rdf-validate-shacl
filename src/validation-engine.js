@@ -215,7 +215,7 @@ ValidationEngine.prototype.validateNodeAgainstConstraint = function (focusNode, 
     return true
   } else {
     if (T('sh:PropertyConstraintComponent').equals(constraint.component.node)) {
-      var errorFound = false
+      let errorFound = false
       for (var i = 0; i < valueNodes.length; i++) {
         if (this.validateNodeAgainstShape(valueNodes[i], this.context.shapesGraph.getShape(constraint.paramValue), rdfDataGraph)) {
           errorFound = true
@@ -223,26 +223,26 @@ ValidationEngine.prototype.validateNodeAgainstConstraint = function (focusNode, 
       }
       return errorFound
     } else {
-      var validationFunction = constraint.shape.isPropertyShape()
+      const validationFunction = constraint.shape.isPropertyShape()
         ? constraint.component.propertyValidationFunction
         : constraint.component.nodeValidationFunction
       if (validationFunction) {
-        var generic = constraint.shape.isPropertyShape()
+        const generic = constraint.shape.isPropertyShape()
           ? constraint.component.propertyValidationFunctionGeneric
           : constraint.component.nodeValidationFunctionGeneric
         if (generic) {
           // Generic sh:validator is called for each value node separately
-          var errorFound = false
+          let errorFound = false
           for (i = 0; i < valueNodes.length; i++) {
             if (this.maxErrorsReached()) {
               break
             }
-            var iterationError = false
-            var valueNode = valueNodes[i]
+            let iterationError = false
+            const valueNode = valueNodes[i]
             // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
             this.recordErrorsLevel++
             // }
-            var obj = validationFunction.execute(focusNode, valueNode, constraint)
+            const obj = validationFunction.execute(focusNode, valueNode, constraint)
             // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
             this.recordErrorsLevel--
             // }
@@ -267,13 +267,13 @@ ValidationEngine.prototype.validateNodeAgainstConstraint = function (focusNode, 
           // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
           this.recordErrorsLevel++
           // }
-          obj = validationFunction.execute(focusNode, null, constraint)
+          const obj = validationFunction.execute(focusNode, null, constraint)
           // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
           this.recordErrorsLevel--
           // }
           if (Array.isArray(obj)) {
-            var errorFound = false
-            for (var a = 0; a < obj.length; a++) {
+            let errorFound = false
+            for (let a = 0; a < obj.length; a++) {
               if (this.createResultFromObject(obj[a], constraint, focusNode)) {
                 errorFound = true
               }
@@ -304,7 +304,7 @@ ValidationEngine.prototype.maxErrorsReached = function () {
 ValidationEngine.prototype.withSubstitutions = function (msg, constraint) {
   var str = msg.value
   var values = constraint.parameterValues
-  for (var key in values) {
+  for (const key in values) {
     var label = nodeLabel(values[key], this.context.$shapes)
     str = str.replace('{$' + key + '}', label)
     str = str.replace('{?' + key + '}', label)

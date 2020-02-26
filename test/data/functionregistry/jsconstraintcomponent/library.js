@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+
 function hasMaxLength ($value, $customMaxLength) {
   if ($value.termType === 'Literal') {
     return $value.value.length <= $customMaxLength.value
@@ -11,3 +13,5 @@ function hasMaxLength ($value, $customMaxLength) {
 function constantValid ($focusNode, $constantValidation) {
   return $constantValidation.value === 'true'
 }
+
+/* eslint-disable no-unused-vars */

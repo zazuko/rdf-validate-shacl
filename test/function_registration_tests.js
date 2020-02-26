@@ -1,4 +1,6 @@
+/* eslint-env mocha */
 var assert = require('assert')
+var path = require('path')
 var rdf = require('rdf-ext')
 var rdfFS = require('rdf-utils-fs')
 var SHACLValidator = require('../index')
@@ -19,19 +21,19 @@ describe('registerJSLibrary', () => {
     var validator = new SHACLValidator()
 
     var url = 'http://example.org/ns/shapesConstraints.js'
-    var localFile = __dirname + '/data/functionregistry/jsconstraintcomponent/library.js'
-    var dataFile = __dirname + '/data/functionregistry/jsconstraintcomponent/data.ttl'
+    var localFile = path.join(__dirname, '/data/functionregistry/jsconstraintcomponent/library.js')
+    var dataFile = path.join(__dirname, '/data/functionregistry/jsconstraintcomponent/data.ttl')
     var data = await rdf.dataset().import(rdfFS.fromFile(dataFile))
 
     await validator.registerJSLibrary(url, localFile)
     const report = await validator.validate(data, data)
-    assert.equal(report.conforms(), false)
-    assert.equal(report.results().length, 2)
+    assert.strictEqual(report.conforms(), false)
+    assert.strictEqual(report.results().length, 2)
     report.results().forEach((result) => {
       var expected = results[result.focusNode()]
-      assert.notEqual(expected, null)
-      assert.equal(result.path(), expected.path)
-      assert.equal(result.message(), expected.message)
+      assert.notStrictEqual(expected, null)
+      assert.strictEqual(result.path(), expected.path)
+      assert.strictEqual(result.message(), expected.message)
     })
   })
 
@@ -39,19 +41,20 @@ describe('registerJSLibrary', () => {
     var validator = new SHACLValidator()
 
     var url = 'http://example.org/ns/shapesConstraints.js'
-    var jsCode = fs.readFileSync(__dirname + '/data/functionregistry/jsconstraintcomponent/library.js').toString()
-    var dataFile = __dirname + '/data/functionregistry/jsconstraintcomponent/data.ttl'
+    var jsFile = path.join(__dirname, '/data/functionregistry/jsconstraintcomponent/library.js')
+    var jsCode = fs.readFileSync(jsFile).toString()
+    var dataFile = path.join(__dirname, '/data/functionregistry/jsconstraintcomponent/data.ttl')
     var data = await rdf.dataset().import(rdfFS.fromFile(dataFile))
 
     validator.registerJSCode(url, jsCode)
     const report = await validator.validate(data, data)
-    assert.equal(report.conforms(), false)
-    assert.equal(report.results().length, 2)
+    assert.strictEqual(report.conforms(), false)
+    assert.strictEqual(report.results().length, 2)
     report.results().forEach(function (result) {
       var expected = results[result.focusNode()]
-      assert.notEqual(expected, null)
-      assert.equal(result.path(), expected.path)
-      assert.equal(result.message(), expected.message)
+      assert.notStrictEqual(expected, null)
+      assert.strictEqual(result.path(), expected.path)
+      assert.strictEqual(result.message(), expected.message)
     })
   })
 })

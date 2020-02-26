@@ -1,4 +1,6 @@
+/* eslint-env mocha */
 var assert = require('assert')
+var path = require('path')
 var SHACLValidator = require('../index')
 var fs = require('fs')
 var rdf = require('rdf-ext')
@@ -83,12 +85,12 @@ var validateReports = async function (input) {
 
   const expectedReport = await expectedResult(data)
   const report = await new SHACLValidator().validate(data, data)
-  assert.equal(report.conforms(), expectedReport.conforms())
-  assert.equal(report.results().length, expectedReport.results().length)
+  assert.strictEqual(report.conforms(), expectedReport.conforms())
+  assert.strictEqual(report.results().length, expectedReport.results().length)
   var results = report.results() || []
   var expectedResults = expectedReport.results()
   for (var i = 0; i < results.length; i++) {
-    found = false
+    let found = false
     for (var j = 0; j < expectedResults.length; j++) {
       if (// (results[i].focusNode() ===  expectedResults[j].focusNode() ) &&
         results[i].severity() === expectedResults[j].severity() &&
@@ -98,14 +100,16 @@ var validateReports = async function (input) {
         found = true
       }
     }
-    assert.equal(found, true)
+    assert.strictEqual(found, true)
   }
 }
 
 describe('integration tests', () => {
-  fs.readdirSync(__dirname + '/data/core').forEach(function (dir) {
-    fs.readdirSync(__dirname + '/data/core/' + dir).forEach(function (file) {
-      it(dir + '-test-' + file, async () => validateReports(__dirname + '/data/core/' + dir + '/' + file))
+  const rootPath = path.join(__dirname, '/data/core')
+  fs.readdirSync(rootPath).forEach(function (dir) {
+    const dirPath = path.join(rootPath, dir)
+    fs.readdirSync(dirPath).forEach(function (file) {
+      it(dir + '-test-' + file, async () => validateReports(path.join(dirPath, file)))
     })
   })
 })

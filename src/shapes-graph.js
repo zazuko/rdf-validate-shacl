@@ -116,18 +116,18 @@ var toRDFQueryPath = function ($shapes, shPath) {
   } else if (shPath.termType === 'BlankNode') {
     var util = new RDFQueryUtil($shapes)
     if (util.getObject(shPath, 'rdf:first')) {
-      var paths = util.rdfListToArray(shPath)
-      var result = []
-      for (var i = 0; i < paths.length; i++) {
+      const paths = util.rdfListToArray(shPath)
+      const result = []
+      for (let i = 0; i < paths.length; i++) {
         result.push(toRDFQueryPath($shapes, paths[i]))
       }
       return result
     }
     var alternativePath = new RDFQuery($shapes).getObject(shPath, 'sh:alternativePath')
     if (alternativePath) {
-      var paths = util.rdfListToArray(alternativePath)
-      var result = []
-      for (var i = 0; i < paths.length; i++) {
+      const paths = util.rdfListToArray(alternativePath)
+      const result = []
+      for (let i = 0; i < paths.length; i++) {
         result.push(toRDFQueryPath($shapes, paths[i]))
       }
       return { or: result }
@@ -151,7 +151,7 @@ var toRDFQueryPath = function ($shapes, shPath) {
   }
   throw new Error('Unsupported SHACL path ' + shPath)
   // TODO: implement conforming to AbstractQuery.path syntax
-  return shPath
+  // return shPath
 }
 
 // class Constraint
@@ -243,8 +243,10 @@ ConstraintComponent.prototype.findValidationFunction = function (predicate) {
     for (var i = 0; i < libraries.length; i++) { script = script + this.context.functionsRegistry[libraries[i]] }
     script = script + '\n'
     script = script + '  return function(name) { return eval(name) }\n}'
-    eval(script)
+    eval(script) // eslint-disable-line no-eval
+    /* eslint-disable no-undef */
     var findInScript = makeFindInScript(this.context.$data, this.context.$shapes, this.context, TermFactory)
+    /* eslint-enable no-undef */
     return new ValidationFunction(functionName.value, this.parameters, findInScript)
   } else {
     return null
