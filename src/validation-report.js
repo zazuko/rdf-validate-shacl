@@ -1,21 +1,15 @@
+const rdf = require('rdf-ext')
+const namespace = require('@rdfjs/namespace')
+
+const sh = namespace('http://www.w3.org/ns/shacl#', { factory: rdf })
 
 /**
  * Result of a SHACL validation.
  */
 class ValidationReport {
-  constructor (g) {
-    this.graph = g
-    this.validationNode = null
-    for (var i = 0; i < g.length; i++) {
-      var conforms = g[i]['http://www.w3.org/ns/shacl#conforms']
-      if (conforms != null && conforms[0] != null) {
-        this.validationNode = g[i]
-        break
-      }
-    }
-    if (this.validationNode == null) {
-      throw new Error('Cannot find validation report node')
-    }
+  constructor (results) {
+    this._results = groupBy(results, (quad) => quad.subject)
+      .map(([nodeId, nodeQuads]) => new ValidationResult(nodeId, nodeQuads))
   }
 
   /**
@@ -23,10 +17,7 @@ class ValidationReport {
    * otherwise.
    */
   conforms () {
-    var conforms = this.validationNode['http://www.w3.org/ns/shacl#conforms'][0]
-    if (conforms != null) {
-      return conforms['@value'] === 'true'
-    }
+    return this._results.length === 0
   }
 
   /**
@@ -34,65 +25,64 @@ class ValidationReport {
    * conform to the given shapes.
    */
   results () {
-    var results = this.validationNode['http://www.w3.org/ns/shacl#result'] || []
-    return results.map((result) => new ValidationResult(this.findNode(result['@id']), this.graph))
-  }
-
-  findNode (id) {
-    for (var i = 0; i < this.graph.length; i++) {
-      if (this.graph[i]['@id'] === id) {
-        return this.graph[i]
-      }
-    }
+    return this._results
   }
 }
 
 class ValidationResult {
-  constructor (resultNode, g) {
-    this.graph = g
-    this.resultNode = resultNode
+  constructor (nodeId, nodeQuads) {
+    this.nodeId = nodeId
+    this.quads = nodeQuads
   }
 
   message () {
-    return extractValue(this.resultNode, 'http://www.w3.org/ns/shacl#resultMessage')
+    return this._getValue(sh.resultMessage)
   }
 
   path () {
-    return extractId(this.resultNode, 'http://www.w3.org/ns/shacl#resultPath')
+    return this._getValue(sh.resultPath)
   }
 
   focusNode () {
-    return extractId(this.resultNode, 'http://www.w3.org/ns/shacl#focusNode')
+    return this._getValue(sh.focusNode)
   }
 
   severity () {
-    var severity = extractId(this.resultNode, 'http://www.w3.org/ns/shacl#resultSeverity')
-    if (severity != null) {
-      return severity.split('#')[1]
-    }
+    const severity = this._getValue(sh.resultSeverity)
+    return severity ? severity.split('#')[1] : null
   }
 
   sourceConstraintComponent () {
-    return extractId(this.resultNode, 'http://www.w3.org/ns/shacl#sourceConstraintComponent')
+    return this._getValue(sh.sourceConstraintComponent)
   }
 
   sourceShape () {
-    return extractId(this.resultNode, 'http://www.w3.org/ns/shacl#sourceShape')
+    return this._getValue(sh.sourceShape)
+  }
+
+  _getValue (predicate) {
+    const quad = this.quads.find((quad) => quad.predicate.equals(predicate))
+    return quad ? serializeTermValue(quad.object) : null
   }
 }
 
-function extractValue (node, property) {
-  var obj = node[property]
-  if (obj) {
-    return obj[0]['@value']
-  }
+function groupBy (collection, func) {
+  const groups = collection.reduce((acc, item) => {
+    const key = func(item)
+    if (!acc.get(key)) acc.set(key, [])
+    acc.get(key).push(item)
+    return acc
+  }, new Map())
+
+  return Array.from(groups)
 }
 
-function extractId (node, property) {
-  var obj = node[property]
-  if (obj) {
-    return obj[0]['@id']
+function serializeTermValue (term) {
+  if (term.termType === 'BlankNode') {
+    return `_:${term.value}`
   }
+
+  return term.value
 }
 
 module.exports = ValidationReport

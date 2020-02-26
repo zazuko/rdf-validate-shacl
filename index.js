@@ -2,15 +2,10 @@
  * Created by antoniogarrote on 08/05/2017.
  */
 
-var jsonld = require('jsonld')
-var ValidationReport = require('./src/validation-report')
 var debug = require('debug')('index')
-var error = require('debug')('index::error')
 var util = require('util')
 
-var TermFactory = require('./src/rdfquery/term-factory')
 var RDFQuery = require('./src/rdfquery')
-var T = RDFQuery.T
 var ShapesGraph = require('./src/shapes-graph')
 var ValidationEngine = require('./src/validation-engine')
 var rdflibgraph = require('./src/rdflib-graph')
@@ -40,7 +35,6 @@ class SHACLValidator {
     this.depth = 0
     this.results = null
     this.validationEngine = null
-    this.validationError = null
     this.sequence = null
     this.shapesGraph = new ShapesGraph(this)
     this.configuration = new ValidationEngineConfiguration()
@@ -120,15 +114,7 @@ class SHACLValidator {
   updateValidationEngine () {
     this.validationEngine = new ValidationEngine(this)
     this.validationEngine.setConfiguration(this.configuration)
-    try {
-      this.validationError = null
-      if (this.sequence) {
-        this.sequence = []
-      }
-      this.validationEngine.validateAll(this.$data)
-    } catch (ex) {
-      this.validationError = ex
-    }
+    this.validationEngine.validateAll(this.$data)
   }
 
   /**
@@ -137,38 +123,11 @@ class SHACLValidator {
    * It returns a ValidationReport object wrapping the RDF graph
    */
   async showValidationResults () {
-    if (this.validationError) {
-      error('Validation Failure: ' + this.validationError)
-      throw (this.validationError)
-    } else {
-      var resultGraph = rdf.dataset()
-      var reportNode = TermFactory.blankNode('report')
-      resultGraph.add(rdf.quad(reportNode, T('rdf:type'), T('sh:ValidationReport')))
-      resultGraph.add(rdf.quad(reportNode, T('sh:conforms'), T('' + (this.validationEngine.results.length === 0))))
-      var nodes = {}
+    return this.validationEngine.getReport()
+  }
 
-      for (var i = 0; i < this.validationEngine.results.length; i++) {
-        var result = this.validationEngine.results[i]
-        if (nodes[result[0].toString()] == null) {
-          nodes[result[0].toString()] = true
-          resultGraph.add(rdf.quad(reportNode, T('sh:result'), result[0]))
-        }
-        resultGraph.add(rdf.quad(result[0], result[1], result[2]))
-      }
-
-      // Unsupported bug in JSON parser bug workaround
-      var oldToString = resultGraph.toString
-      resultGraph.toString = function () {
-        var text = oldToString.call(resultGraph)
-        text = text.replace(/^\{/, '').replace(/\}$/, '')
-        return text
-      }
-      /// ///////////////
-
-      return jsonld.fromRDF(resultGraph.toString())
-        .then((doc) => jsonld.flatten(doc))
-        .then((flatDoc) => new ValidationReport(flatDoc))
-    }
+  get validationError () {
+    return this.validationEngine.validationError
   }
 
   /**

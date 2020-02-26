@@ -12,7 +12,8 @@ var results = {
     message: 'Value has more than 3 characters'
   },
   'http://datashapes.org/sh/tests/functionregistry/jsconstraintcomponent/data#InvalidExampleShape': {
-    message: 'Shape is constantly valid false'
+    message: 'Shape is constantly valid false',
+    path: null
   }
 }
 
