@@ -20,7 +20,9 @@ if (report.conforms() === false) {
 
 ## Running the tests
 
-Tests can be run using the `test` gulp task.
+```
+$ npm test
+```
 
 ## Regenerating vocabularies and libraries
 
