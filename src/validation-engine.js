@@ -1,7 +1,10 @@
+var rdf = require('rdf-ext')
 var RDFQuery = require('./rdfquery')
 var T = RDFQuery.T
 var TermFactory = require('./rdfquery/term-factory')
 var ValidationEngineConfiguration = require('./validation-engine-configuration')
+var ValidationReport = require('./validation-report')
+var error = require('debug')('validation-enging::error')
 
 class ValidationEngine {
   constructor (context, conformanceOnly) {
@@ -11,10 +14,11 @@ class ValidationEngine {
     this.recordErrorsLevel = 0
     this.violationsCount = 0
     this.setConfiguration(new ValidationEngineConfiguration())
+    this.validationError = null
   }
 
   addResultProperty (result, predicate, object) {
-    this.results.push([result, predicate, object])
+    this.results.push(rdf.quad(result, predicate, object))
   }
 
   /**
@@ -148,19 +152,26 @@ class ValidationEngine {
     if (this.maxErrorsReached()) {
       return true
     } else {
-      this.results = []
-      var foundError = false
-      var shapes = this.context.shapesGraph.getShapesWithTarget()
-      for (var i = 0; i < shapes.length; i++) {
-        var shape = shapes[i]
-        var focusNodes = shape.getTargetNodes(rdfDataGraph)
-        for (var j = 0; j < focusNodes.length; j++) {
-          if (this.validateNodeAgainstShape(focusNodes[j], shape, rdfDataGraph)) {
-            foundError = true
+      this.validationError = null
+
+      try {
+        this.results = []
+        var foundError = false
+        var shapes = this.context.shapesGraph.getShapesWithTarget()
+        for (var i = 0; i < shapes.length; i++) {
+          var shape = shapes[i]
+          var focusNodes = shape.getTargetNodes(rdfDataGraph)
+          for (var j = 0; j < focusNodes.length; j++) {
+            if (this.validateNodeAgainstShape(focusNodes[j], shape, rdfDataGraph)) {
+              foundError = true
+            }
           }
         }
+        return foundError
+      } catch (e) {
+        this.validationError = e
+        return true // Really? Why do we even return a boolean here?
       }
-      return foundError
     }
   }
 
@@ -294,6 +305,15 @@ class ValidationEngine {
 
   setConfiguration (configuration) {
     this.configuration = configuration
+  }
+
+  getReport () {
+    if (this.validationError) {
+      error('Validation Failure: ' + this.validationError)
+      throw (this.validationError)
+    } else {
+      return new ValidationReport(this.results)
+    }
   }
 }
 

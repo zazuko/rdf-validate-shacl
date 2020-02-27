@@ -1,21 +1,17 @@
+const rdf = require('rdf-ext')
+const TermFactory = require('./rdfquery/term-factory')
+const { rdf: rdfNS, sh, xsd } = require('./namespaces')
 
 /**
  * Result of a SHACL validation.
  */
 class ValidationReport {
-  constructor (g) {
-    this.graph = g
-    this.validationNode = null
-    for (var i = 0; i < g.length; i++) {
-      var conforms = g[i]['http://www.w3.org/ns/shacl#conforms']
-      if (conforms != null && conforms[0] != null) {
-        this.validationNode = g[i]
-        break
-      }
-    }
-    if (this.validationNode == null) {
-      throw new Error('Cannot find validation report node')
-    }
+  constructor (results) {
+    this._results = groupBy(results, (quad) => quad.subject)
+      .map(([nodeTerm, nodeQuads]) => new ValidationResult(nodeTerm, nodeQuads))
+
+    this.term = TermFactory.blankNode('report')
+    this._dataset = null
   }
 
   /**
@@ -23,10 +19,7 @@ class ValidationReport {
    * otherwise.
    */
   conforms () {
-    var conforms = this.validationNode['http://www.w3.org/ns/shacl#conforms'][0]
-    if (conforms != null) {
-      return conforms['@value'] === 'true'
-    }
+    return this._results.length === 0
   }
 
   /**
@@ -34,65 +27,88 @@ class ValidationReport {
    * conform to the given shapes.
    */
   results () {
-    var results = this.validationNode['http://www.w3.org/ns/shacl#result'] || []
-    return results.map((result) => new ValidationResult(this.findNode(result['@id']), this.graph))
+    return this._results
   }
 
-  findNode (id) {
-    for (var i = 0; i < this.graph.length; i++) {
-      if (this.graph[i]['@id'] === id) {
-        return this.graph[i]
-      }
+  /**
+   * Get a `DatasetCore` that contains the `sh:ValidationReport`.
+   */
+  get dataset () {
+    if (!this._dataset) {
+      this._prepareDataset()
     }
+
+    return this._dataset
+  }
+
+  _prepareDataset () {
+    const dataset = rdf.dataset()
+    dataset.add(rdf.quad(this.term, rdfNS.type, sh.ValidationReport))
+    dataset.add(rdf.quad(this.term, sh.conforms, TermFactory.literal(this.conforms(), xsd.boolean)))
+
+    this.results().forEach((result) => {
+      dataset.add(rdf.quad(this.term, sh.result, result.term))
+      result.quads.forEach((quad) => dataset.add(quad))
+    })
+
+    this._dataset = dataset
   }
 }
 
 class ValidationResult {
-  constructor (resultNode, g) {
-    this.graph = g
-    this.resultNode = resultNode
+  constructor (term, quads) {
+    this.term = term
+    this.quads = quads
   }
 
   message () {
-    return extractValue(this.resultNode, 'http://www.w3.org/ns/shacl#resultMessage')
+    return this._getValue(sh.resultMessage)
   }
 
   path () {
-    return extractId(this.resultNode, 'http://www.w3.org/ns/shacl#resultPath')
+    return this._getValue(sh.resultPath)
   }
 
   focusNode () {
-    return extractId(this.resultNode, 'http://www.w3.org/ns/shacl#focusNode')
+    return this._getValue(sh.focusNode)
   }
 
   severity () {
-    var severity = extractId(this.resultNode, 'http://www.w3.org/ns/shacl#resultSeverity')
-    if (severity != null) {
-      return severity.split('#')[1]
-    }
+    const severity = this._getValue(sh.resultSeverity)
+    return severity ? severity.split('#')[1] : null
   }
 
   sourceConstraintComponent () {
-    return extractId(this.resultNode, 'http://www.w3.org/ns/shacl#sourceConstraintComponent')
+    return this._getValue(sh.sourceConstraintComponent)
   }
 
   sourceShape () {
-    return extractId(this.resultNode, 'http://www.w3.org/ns/shacl#sourceShape')
+    return this._getValue(sh.sourceShape)
+  }
+
+  _getValue (predicate) {
+    const quad = this.quads.find((quad) => quad.predicate.equals(predicate))
+    return quad ? serializeTermValue(quad.object) : null
   }
 }
 
-function extractValue (node, property) {
-  var obj = node[property]
-  if (obj) {
-    return obj[0]['@value']
-  }
+function groupBy (collection, func) {
+  const groups = collection.reduce((acc, item) => {
+    const key = func(item)
+    if (!acc.get(key)) acc.set(key, [])
+    acc.get(key).push(item)
+    return acc
+  }, new Map())
+
+  return Array.from(groups)
 }
 
-function extractId (node, property) {
-  var obj = node[property]
-  if (obj) {
-    return obj[0]['@id']
+function serializeTermValue (term) {
+  if (term.termType === 'BlankNode') {
+    return `_:${term.value}`
   }
+
+  return term.value
 }
 
 module.exports = ValidationReport

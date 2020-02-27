@@ -10,10 +10,11 @@
   "author": "Holger Knublauch <holger@topquadrant.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "jsonld": "2.0.2",
+    "@rdfjs/namespace": "1.1.0",
     "rdf-ext": "1.3.0"
   },
   "devDependencies": {
+    "clownface": "0.12.1",
     "@rdfjs/parser-n3": "1.1.3",
     "@zazuko/rdf-vocabularies": "2020.2.11",
     "debug": "4.1.1",
