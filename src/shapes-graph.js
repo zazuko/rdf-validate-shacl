@@ -1,5 +1,3 @@
-/* globals $data */
-
 // A simple SHACL validator in JavaScript based on SHACL-JS.
 
 // Design:
@@ -147,7 +145,7 @@ class RDFQueryUtil {
 
   isInstanceOf ($instance, $class) {
     var classes = this.getSubClassesOf($class)
-    var types = $data.query().match($instance, 'rdf:type', '?type')
+    var types = this.source.query().match($instance, 'rdf:type', '?type')
     for (var n = types.nextSolution(); n; n = types.nextSolution()) {
       if (n.type.equals($class) || classes.contains(n.type)) {
         types.close()
