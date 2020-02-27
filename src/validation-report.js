@@ -1,7 +1,6 @@
 const rdf = require('rdf-ext')
-const namespace = require('@rdfjs/namespace')
-
-const sh = namespace('http://www.w3.org/ns/shacl#', { factory: rdf })
+const TermFactory = require('./rdfquery/term-factory')
+const { rdf: rdfNS, sh, xsd } = require('./namespaces')
 
 /**
  * Result of a SHACL validation.
@@ -9,7 +8,10 @@ const sh = namespace('http://www.w3.org/ns/shacl#', { factory: rdf })
 class ValidationReport {
   constructor (results) {
     this._results = groupBy(results, (quad) => quad.subject)
-      .map(([nodeId, nodeQuads]) => new ValidationResult(nodeId, nodeQuads))
+      .map(([nodeTerm, nodeQuads]) => new ValidationResult(nodeTerm, nodeQuads))
+
+    this.term = TermFactory.blankNode('report')
+    this._dataset = null
   }
 
   /**
@@ -27,12 +29,36 @@ class ValidationReport {
   results () {
     return this._results
   }
+
+  /**
+   * Get a `DatasetCore` that contains the `sh:ValidationReport`.
+   */
+  get dataset () {
+    if (!this._dataset) {
+      this._prepareDataset()
+    }
+
+    return this._dataset
+  }
+
+  _prepareDataset () {
+    const dataset = rdf.dataset()
+    dataset.add(rdf.quad(this.term, rdfNS.type, sh.ValidationReport))
+    dataset.add(rdf.quad(this.term, sh.conforms, TermFactory.literal(this.conforms(), xsd.boolean)))
+
+    this.results().forEach((result) => {
+      dataset.add(rdf.quad(this.term, sh.result, result.term))
+      result.quads.forEach((quad) => dataset.add(quad))
+    })
+
+    this._dataset = dataset
+  }
 }
 
 class ValidationResult {
-  constructor (nodeId, nodeQuads) {
-    this.nodeId = nodeId
-    this.quads = nodeQuads
+  constructor (term, quads) {
+    this.term = term
+    this.quads = quads
   }
 
   message () {
