@@ -1,20 +1,31 @@
-# SHACL.js [![Build Status](https://travis-ci.org/zazuko/shacl-js.svg?branch=master)](https://travis-ci.org/zazuko/shacl-js)
+
+# SHACL.js
+
+[![Build Status](https://travis-ci.org/zazuko/shacl-js.svg?branch=master)](https://travis-ci.org/zazuko/shacl-js)
 
 ## Usage
 
-Create a new SHACL validator and load shapes and data to trigger the validation.
-The validation function returns a `ValidationReport` object that can be used to inspect conformance rand results.
+Create a new SHACL validator and load data and shapes to trigger the validation.
+
+The validation function returns a `ValidationReport` object that can be used
+to inspect conformance and results.
 
 ```javascript
-const validator = new SHACLValidator();
-const report = await validator.validate(dataGraph, shapesGraph);
+const validator = new SHACLValidator()
+const report = await validator.validate(dataGraph, shapesGraph)
 
-console.log("Conforms? " + report.conforms());
+// Check conformance. Returns `true` or `false`.
+console.log(report.conforms())
 
-if (report.conforms() === false) {
-    report.results().forEach((result) => {
-        console.log(" - Severity: " + result.severity() + " for " + result.sourceConstraintComponent());
-    });
+for (result of report.results()) {
+  // See https://www.w3.org/TR/shacl/#results-validation-result for details
+  // about each method
+  console.log(result.message())
+  console.log(result.path())
+  console.log(result.focusNode())
+  console.log(result.severity())
+  console.log(result.sourceConstraintComponent())
+  console.log(result.sourceShape())
 }
 ```
 
