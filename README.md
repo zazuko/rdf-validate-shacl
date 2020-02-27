@@ -17,7 +17,7 @@ const report = await validator.validate(dataGraph, shapesGraph)
 // Check conformance. Returns `true` or `false`.
 console.log(report.conforms())
 
-for (result of report.results()) {
+for (const result of report.results()) {
   // See https://www.w3.org/TR/shacl/#results-validation-result for details
   // about each method
   console.log(result.message())
