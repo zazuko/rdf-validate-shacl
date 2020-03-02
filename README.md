@@ -12,7 +12,7 @@ to inspect conformance and results.
 
 ```javascript
 const validator = new SHACLValidator()
-const report = await validator.validate(dataGraph, shapesGraph)
+const report = await validator.validate(dataDataset, shapesDataset)
 
 // Check conformance. Returns `true` or `false`.
 console.log(report.conforms())

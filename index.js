@@ -42,18 +42,22 @@ class SHACLValidator {
   }
 
   /**
-  * Validates the provided data graph against the provided shapes graph
-  */
-  async validate (dataGraph, shapesGraph) {
-    await this.updateDataGraph(dataGraph)
-    return this.updateShapesGraph(shapesGraph)
+   * Validates the provided data graph against the provided shapes graph
+   *
+   * @param {DatasetCore} dataGraph - Dataset containing the data to validate
+   * @param {DatasetCore} shapesGraph - Dataset containing the SHACL shapes for validation
+   * @return {ValidationReport} - Result of the validation
+   */
+  async validate (dataDataset, shapesDataset) {
+    await this.updateDataGraph(dataDataset)
+    return this.updateShapesGraph(shapesDataset)
   }
 
   /**
    * Saves a cached version of a remote JS file used during validation
    *
-   * @param url URL of the library to cache
-   * @param localFile path to a local version of the file identified by url
+   * @param {string} url - URL of the library to cache
+   * @param {string} localFile - Path to a local version of the file identified by url
    */
   async registerJSLibrary (url, localFile) {
     const buffer = await readFile(localFile)
@@ -63,13 +67,16 @@ class SHACLValidator {
   /**
    * Saves a some JS library code using the provided URL that can be used during validation
    *
-   * @param url URL of the library to register
-   * @param libraryCode JS code for the library being registered
+   * @param {string} url - URL of the library to register
+   * @param {string} libraryCode - JS code for the library being registered
     */
   registerJSCode (url, jsCode) {
     this.functionsRegistry[url] = jsCode
   }
 
+  /**
+   * Retrieve validator configuration
+   */
   getConfiguration () {
     return this.configuration
   }
@@ -121,11 +128,16 @@ class SHACLValidator {
    * Checks for a validation error or results in the validation
    * engine to build the RDF graph with the validation report.
    * It returns a ValidationReport object wrapping the RDF graph
+   *
+   * @return {ValidationReport} - Result of the validation
    */
   async showValidationResults () {
     return this.validationEngine.getReport()
   }
 
+  /**
+   * Exception that occurred during the validation process, if any. `null` otherwise.
+   */
   get validationError () {
     return this.validationEngine.validationError
   }
@@ -133,11 +145,13 @@ class SHACLValidator {
   /**
    * Reloads the shapes graph.
    * It will load SHACL and DASH shapes constraints.
+   *
+   * @param {DatasetCore} dataset - Dataset containing the shapes for validation
    */
-  async loadShapesGraph (graph) {
+  async loadShapesGraph (dataset) {
     this.$shapes.clear()
 
-    this.$shapes.loadGraph(shapesGraphURI, graph)
+    this.$shapes.loadGraph(shapesGraphURI, dataset)
 
     this.$shapes.loadGraph('http://shacl.org', loadVocabulary('shacl'))
     this.$shapes.loadGraph('http://datashapes.org/dash', loadVocabulary('dash'))
@@ -145,10 +159,12 @@ class SHACLValidator {
 
   /**
    * Updates the data graph and validate it against the current data shapes
+   *
+   * @param {DatasetCore} dataset - Dataset containing the data to validate
    */
-  async updateDataGraph (graph) {
+  async updateDataGraph (dataset) {
     var startTime = new Date().getTime()
-    await this.loadDataGraph(graph)
+    await this.loadDataGraph(dataset)
 
     var midTime = new Date().getTime()
     this.updateValidationEngine()
@@ -161,10 +177,12 @@ class SHACLValidator {
 
   /**
    *  Updates the shapes graph from a memory model, and validates it against the current data graph
+   *
+   * @param {DatasetCore} dataset - Dataset containing the shapes for validation
    */
-  async updateShapesGraph (graph) {
+  async updateShapesGraph (dataset) {
     var startTime = new Date().getTime()
-    await this.loadShapesGraph(graph)
+    await this.loadShapesGraph(dataset)
 
     var midTime = new Date().getTime()
     this.shapesGraph = new ShapesGraph(this)
