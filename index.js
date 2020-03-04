@@ -3,14 +3,12 @@
  */
 
 var debug = require('debug')('index')
-var util = require('util')
 
 var RDFQuery = require('./src/rdfquery')
 var ShapesGraph = require('./src/shapes-graph')
 var ValidationEngine = require('./src/validation-engine')
 var rdflibgraph = require('./src/rdflib-graph')
 var RDFLibGraph = rdflibgraph.RDFLibGraph
-var fs = require('fs')
 var ValidationEngineConfiguration = require('./src/validation-engine-configuration')
 
 /********************************/
@@ -22,8 +20,6 @@ var dataGraphURI = 'urn:x-shacl:dataGraph'
 /********************************/
 
 var rdf = require('rdf-ext')
-
-const readFile = util.promisify(fs.readFile)
 
 /**
  * Validates RDF data based on a set of RDF shapes.
@@ -38,7 +34,6 @@ class SHACLValidator {
     this.sequence = null
     this.shapesGraph = new ShapesGraph(this)
     this.configuration = new ValidationEngineConfiguration()
-    this.functionsRegistry = require('./src/libraries')
   }
 
   /**
@@ -51,27 +46,6 @@ class SHACLValidator {
   async validate (dataDataset, shapesDataset) {
     await this.updateDataGraph(dataDataset)
     return this.updateShapesGraph(shapesDataset)
-  }
-
-  /**
-   * Saves a cached version of a remote JS file used during validation
-   *
-   * @param {string} url - URL of the library to cache
-   * @param {string} localFile - Path to a local version of the file identified by url
-   */
-  async registerJSLibrary (url, localFile) {
-    const buffer = await readFile(localFile)
-    this.functionsRegistry[url] = buffer.toString()
-  }
-
-  /**
-   * Saves a some JS library code using the provided URL that can be used during validation
-   *
-   * @param {string} url - URL of the library to register
-   * @param {string} libraryCode - JS code for the library being registered
-    */
-  registerJSCode (url, jsCode) {
-    this.functionsRegistry[url] = jsCode
   }
 
   /**
@@ -108,7 +82,7 @@ class SHACLValidator {
 
   /**
    * Reloads the shapes graph.
-   * It will load SHACL and DASH shapes constraints.
+   * It will load SHACL shapes constraints.
    */
   loadDataGraph (graph) {
     this.$data.clear()
@@ -144,7 +118,7 @@ class SHACLValidator {
 
   /**
    * Reloads the shapes graph.
-   * It will load SHACL and DASH shapes constraints.
+   * It will load SHACL shapes constraints.
    *
    * @param {DatasetCore} dataset - Dataset containing the shapes for validation
    */
@@ -154,7 +128,6 @@ class SHACLValidator {
     this.$shapes.loadGraph(shapesGraphURI, dataset)
 
     this.$shapes.loadGraph('http://shacl.org', loadVocabulary('shacl'))
-    this.$shapes.loadGraph('http://datashapes.org/dash', loadVocabulary('dash'))
   }
 
   /**
@@ -188,7 +161,6 @@ class SHACLValidator {
     this.shapesGraph = new ShapesGraph(this)
     var midTime2 = new Date().getTime()
 
-    await this.shapesGraph.loadJSLibraries()
     this.updateValidationEngine()
 
     var endTime = new Date().getTime()

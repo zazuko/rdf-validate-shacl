@@ -18,13 +18,10 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
-var TermFactory = require('./rdfquery/term-factory')
 var RDFQuery = require('./rdfquery')
 var NodeSet = RDFQuery.NodeSet
 var T = RDFQuery.T
 var ValidationFunction = require('./validation-function')
-
-TermFactory.registerNamespace('dash', 'http://datashapes.org/dash#')
 
 class ShapesGraph {
   constructor (context) {
@@ -33,9 +30,7 @@ class ShapesGraph {
     // Collect all defined constraint components
     var components = []
     new RDFQueryUtil(this.context.$shapes).getInstancesOf(T('sh:ConstraintComponent')).forEach(function (node) {
-      if (!T('dash:ParameterConstraintComponent').equals(node)) {
-        components.push(new ConstraintComponent(node, context))
-      }
+      components.push(new ConstraintComponent(node, context))
     })
     this.components = components
 
@@ -98,16 +93,6 @@ class ShapesGraph {
     }
 
     return this.targetShapes
-  }
-
-  async loadJSLibraries () {
-    var that = this
-    var libraries = this.context.$shapes.query()
-      .match('?library', 'sh:jsLibraryURL', '?library').getNodeArray('?library')
-    for (var i = 0; i < libraries.length; i++) {
-      libraries[i] = libraries[i].value
-    }
-    await fetchLibraries(libraries, this.context, that.context.functionsRegistry)
   }
 }
 
@@ -410,35 +395,6 @@ function toRDFQueryPath ($shapes, shPath) {
   throw new Error('Unsupported SHACL path ' + shPath)
   // TODO: implement conforming to AbstractQuery.path syntax
   // return shPath
-}
-
-async function fetchLibraries (libraries, context, acc) {
-  if (libraries.length === 0) {
-    return acc
-  } else {
-    var nextLibrary = libraries.shift()
-    if (context.functionsRegistry[nextLibrary] != null) {
-      return fetchLibraries(libraries, context, acc)
-    } else {
-      return new Promise((resolve, reject) => {
-        var response = ''
-        require('http').get(nextLibrary, (res) => {
-          res.on('data', (b) => {
-            response = response + b.toString()
-          })
-
-          res.on('error', (e) => {
-            reject(e)
-          })
-
-          res.on('end', function () {
-            acc[nextLibrary] = response
-            resolve(fetchLibraries(libraries, context, acc))
-          })
-        })
-      })
-    }
-  }
 }
 
 module.exports = ShapesGraph
