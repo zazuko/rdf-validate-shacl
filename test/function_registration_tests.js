@@ -18,7 +18,7 @@ var results = {
 }
 
 describe('registerJSLibrary', () => {
-  it('registers code via file path', async () => {
+  xit('registers code via file path', async () => {
     var validator = new SHACLValidator()
 
     var url = 'http://example.org/ns/shapesConstraints.js'
@@ -38,7 +38,7 @@ describe('registerJSLibrary', () => {
     })
   })
 
-  it('registers code with string', async () => {
+  xit('registers code with string', async () => {
     var validator = new SHACLValidator()
 
     var url = 'http://example.org/ns/shapesConstraints.js'

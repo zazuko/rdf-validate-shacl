@@ -5,12 +5,11 @@ var debug = require('debug')('validation-function')
 var globalObject = typeof window !== 'undefined' ? window : global
 
 class ValidationFunction {
-  constructor (functionName, parameters, findInScript) {
+  constructor (context, functionName, parameters, func) {
+    this.context = context
     this.funcName = functionName
-    this.func = findInScript(functionName)
-    if (!this.func) {
-      throw new Error('Cannot find validator function ' + functionName)
-    }
+    this.func = func
+
     // Get list of argument of the function, see
     // https://davidwalsh.name/javascript-arguments
     var args = this.func.toString().match(/function\s.*?\(([^)]*)\)/)[1]
@@ -45,6 +44,7 @@ class ValidationFunction {
   execute (focusNode, valueNode, constraint) {
     debug('Validating ' + this.funcName)
     var args = []
+
     for (var i = 0; i < this.funcArgs.length; i++) {
       var arg = this.funcArgs[i]
       var param = this.parameters[i]
@@ -63,6 +63,8 @@ class ValidationFunction {
         args.push('DummyShapesGraph')
       } else if (arg === 'this') {
         args.push(focusNode)
+      } else if (arg === 'context') {
+        args.push(this.context)
       } else {
         throw new Error('Unexpected validator function argument ' + arg + ' for function ' + this.funcName)
       }

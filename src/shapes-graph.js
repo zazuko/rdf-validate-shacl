@@ -250,42 +250,17 @@ var ConstraintComponent = function (node, context) {
 }
 
 ConstraintComponent.prototype.findValidationFunction = function (predicate) {
-  var functionName = this.context.$shapes.query()
-    .match(this.node, predicate, '?validator')
-    .match('?validator', 'rdf:type', 'sh:JSValidator')
-    .match('?validator', 'sh:jsFunctionName', '?functionName')
-    .getNode('?functionName')
-  var libraryNode = this.context.$shapes.query()
-    .match(this.node, predicate, '?validator')
-    .match('?validator', 'rdf:type', 'sh:JSValidator')
-    .match('?validator', 'sh:jsLibrary', '?library')
-    .getNode('?library')
+  const validatorType = predicate.value.split('#').slice(-1)[0]
+  const constraintsRegistry = require('./constraints')
+  const constraint = constraintsRegistry[this.node.value]
 
-  var libraries = []
-  while (libraryNode != null) {
-    var libraryUrl = this.context.$shapes.query().match(libraryNode, 'sh:jsLibraryURL', '?libraryUrl').getNode('?libraryUrl')
-    if (libraryUrl == null) {
-      break
-    } else {
-      libraries.unshift(libraryUrl.value)
-    }
-    libraryNode = this.context.$shapes.query().match(libraryNode, 'sh:jsLibrary', '?library').getNode('?library')
-  }
+  if (!constraint) return null
 
-  if (functionName) {
-    var script = 'var makeFindInScript = function($data, $shapes, SHACL, TermFactory) {\n' +
-        ' this.$data = $data; this.$shapes = $shapes; this.SHACL = SHACL; this.TermFactory = TermFactory;\n'
-    for (var i = 0; i < libraries.length; i++) { script = script + this.context.functionsRegistry[libraries[i]] }
-    script = script + '\n'
-    script = script + '  return function(name) { return eval(name) }\n}'
-    eval(script) // eslint-disable-line no-eval
-    /* eslint-disable no-undef */
-    var findInScript = makeFindInScript(this.context.$data, this.context.$shapes, this.context, TermFactory)
-    /* eslint-enable no-undef */
-    return new ValidationFunction(functionName.value, this.parameters, findInScript)
-  } else {
-    return null
-  }
+  const validator = constraint[validatorType]
+
+  if (!validator) return null
+
+  return new ValidationFunction(this.context, validator.func.name, this.parameters, validator.func)
 }
 
 ConstraintComponent.prototype.getParameters = function () {
