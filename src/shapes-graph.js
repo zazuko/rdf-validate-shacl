@@ -22,6 +22,7 @@ var RDFQuery = require('./rdfquery')
 var NodeSet = RDFQuery.NodeSet
 var T = RDFQuery.T
 var ValidationFunction = require('./validation-function')
+var validatorsRegistry = require('./validators-registry')
 
 class ShapesGraph {
   constructor (context) {
@@ -195,6 +196,10 @@ class Constraint {
   getParameterValue (paramName) {
     return this.parameterValues[paramName]
   }
+
+  get componentMessages () {
+    return this.component.getMessages(this.shape)
+  }
 }
 
 class ConstraintComponent {
@@ -235,16 +240,33 @@ class ConstraintComponent {
 
   findValidationFunction (predicate) {
     const validatorType = predicate.value.split('#').slice(-1)[0]
-    const constraintsRegistry = require('./constraints')
-    const constraint = constraintsRegistry[this.node.value]
-
-    if (!constraint) return null
-
-    const validator = constraint[validatorType]
+    const validator = this.findValidator(validatorType)
 
     if (!validator) return null
 
     return new ValidationFunction(this.context, validator.func.name, this.parameters, validator.func)
+  }
+
+  getMessages (shape) {
+    const generic = shape.isPropertyShape() ? this.propertyValidationFunctionGeneric : this.nodeValidationFunctionGeneric
+    const validatorType = generic ? 'validator' : (shape.isPropertyShape() ? 'propertyValidator' : 'nodeValidator')
+    const validator = this.findValidator(validatorType)
+
+    if (!validator) return []
+
+    const message = validator.message
+
+    return message ? [message] : []
+  }
+
+  findValidator (validatorType) {
+    const constraintValidators = validatorsRegistry[this.node.value]
+
+    if (!constraintValidators) return null
+
+    const validator = constraintValidators[validatorType]
+
+    return validator || null
   }
 
   getParameters () {

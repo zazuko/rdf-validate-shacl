@@ -120,24 +120,23 @@ class ValidationEngine {
    * Creates a result message from the result and the message pattern in the constraint
    */
   createResultMessages (result, constraint) {
+    // 1. Try to get message from the shape itself
     var ms = this.context.$shapes.query()
       .match(constraint.shape.shapeNode, 'sh:message', '?message')
       .getNodeArray('?message')
+
+    // 2. Try to get message from the constraint component validator
     if (ms.length === 0) {
-      var generic = constraint.shape.isPropertyShape()
-        ? constraint.component.propertyValidationFunctionGeneric
-        : constraint.component.nodeValidationFunctionGeneric
-      var predicate = generic ? T('sh:validator') : (constraint.shape.isPropertyShape() ? T('sh:propertyValidator') : T('sh:nodeValidator'))
-      ms = this.context.$shapes.query()
-        .match(constraint.component.node, predicate, '?validator')
-        .match('?validator', 'sh:message', '?message')
-        .getNodeArray('?message')
+      ms = constraint.componentMessages.map((m) => TermFactory.literal(m))
     }
+
+    // 3. Try to get message from the constraint focus node
     if (ms.length === 0) {
       ms = this.context.$shapes.query()
         .match(constraint.component.node, 'sh:message', '?message')
         .getNodeArray('?message')
     }
+
     for (var i = 0; i < ms.length; i++) {
       var m = ms[i]
       var str = this.withSubstitutions(m, constraint)
