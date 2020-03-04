@@ -92,317 +92,314 @@ function RDFQuery (graph, initialSolution) {
   return new StartQuery(graph, initialSolution || [])
 }
 
-// class AbstractQuery
+class AbstractQuery {
+  // ----------------------------------------------------------------------------
+  // Query constructor functions, can be chained together
+  // ----------------------------------------------------------------------------
 
-function AbstractQuery () {
-}
-
-// ----------------------------------------------------------------------------
-// Query constructor functions, can be chained together
-// ----------------------------------------------------------------------------
-
-/**
- * Creates a new query that adds a binding for a given variable into
- * each solution produced by the input query.
- * @param varName  the name of the variable to bind, starting with "?"
- * @param bindFunction  a function that takes a solution object
- *                      and returns a node or null based on it.
- */
-AbstractQuery.prototype.bind = function (varName, bindFunction) {
-  return new BindQuery(this, varName, bindFunction)
-}
-
-/**
- * Creates a new query that filters the solutions produced by this.
- * @param filterFunction  a function that takes a solution object
- *                        and returns true iff that solution is valid
- */
-AbstractQuery.prototype.filter = function (filterFunction) {
-  return new FilterQuery(this, filterFunction)
-}
-
-/**
- * Creates a new query that only allows the first n solutions through.
- * @param limit  the maximum number of results to allow
- */
-AbstractQuery.prototype.limit = function (limit) {
-  return new LimitQuery(this, limit)
-}
-
-/**
- * Creates a new query doing a triple match.
- * In each subject, predicate, object position, the values can either be
- * an RDF term object or null (wildcard) or a string.
- * If it is a string it may either be a variable (starting with "?")
- * or the TTL representation of an RDF term using the T() function.
- * @param s  the match subject
- * @param p  the match predicate
- * @param o  the match object
- */
-AbstractQuery.prototype.match = function (s, p, o) {
-  return new MatchQuery(this, s, p, o)
-}
-
-/**
- * Creates a new query that sorts all input solutions by the bindings
- * for a given variable.
- * @param varName  the name of the variable to sort by, starting with "?"
- */
-AbstractQuery.prototype.orderBy = function (varName) {
-  return new OrderByQuery(this, varName)
-}
-
-/**
- * Creates a new query doing a match where the predicate may be a RDF Path object.
- * Note: This is currently not using lazy evaluation and will always walk all matches.
- * Path syntax:
- * - PredicatePaths: NamedNode
- * - SequencePaths: [path1, path2]
- * - AlternativePaths: { or : [ path1, path2 ] }
- * - InversePaths: { inverse : path }   LIMITATION: Only supports NamedNodes for path here
- * - ZeroOrMorePaths: { zeroOrMore : path }
- * - OneOrMorePaths: { oneOrMore : path }
- * - ZeroOrOnePaths: { zeroOrOne : path }
- * @param s  the match subject or a variable name (string) - must have a value
- *           at execution time!
- * @param path  the match path object (e.g. a NamedNode for a simple predicate hop)
- * @param o  the match object or a variable name (string)
- */
-AbstractQuery.prototype.path = function (s, path, o) {
-  if (path && path.value && path.termType === 'NamedNode') {
-    return new MatchQuery(this, s, path, o)
-  } else {
-    return new PathQuery(this, s, path, o)
+  /**
+   * Creates a new query that adds a binding for a given variable into
+   * each solution produced by the input query.
+   * @param varName  the name of the variable to bind, starting with "?"
+   * @param bindFunction  a function that takes a solution object
+   *                      and returns a node or null based on it.
+   */
+  bind (varName, bindFunction) {
+    return new BindQuery(this, varName, bindFunction)
   }
-}
 
-// TODO: add other SPARQL-like query types
-//       - .distinct()
-//       - .union(otherQuery)
-
-// ----------------------------------------------------------------------------
-// Terminal functions - convenience functions to get values.
-// All these functions close the solution iterators.
-// ----------------------------------------------------------------------------
-
-/**
- * Adds all nodes produced by a given solution variable into a set.
- * The set must have an add(node) function.
- * @param varName  the name of the variable, starting with "?"
- * @param set  the set to add to
- */
-AbstractQuery.prototype.addAllNodes = function (varName, set) {
-  var attrName = var2Attr(varName)
-  for (var sol = this.nextSolution(); sol; sol = this.nextSolution()) {
-    var node = sol[attrName]
-    if (node) {
-      set.add(node)
-    }
+  /**
+   * Creates a new query that filters the solutions produced by this.
+   * @param filterFunction  a function that takes a solution object
+   *                        and returns true iff that solution is valid
+   */
+  filter (filterFunction) {
+    return new FilterQuery(this, filterFunction)
   }
-}
 
-/**
- * Produces an array of triple objects where each triple object has properties
- * subject, predicate and object derived from the provided template values.
- * Each of these templates can be either a variable name (starting with '?'),
- * an RDF term string (such as "rdfs:label") or a JavaScript node object.
- * @param subject  the subject node
- * @param predicate  the predicate node
- * @param object  the object node
- */
-AbstractQuery.prototype.construct = function (subject, predicate, object) {
-  var results = []
-  for (var sol = this.nextSolution(); sol; sol = this.nextSolution()) {
-    var s = null
-    if (typeof subject === 'string') {
-      if (subject.indexOf('?') === 0) {
-        s = sol[var2Attr(subject)]
-      } else {
-        s = T(subject)
-      }
+  /**
+   * Creates a new query that only allows the first n solutions through.
+   * @param limit  the maximum number of results to allow
+   */
+  limit (limit) {
+    return new LimitQuery(this, limit)
+  }
+
+  /**
+   * Creates a new query doing a triple match.
+   * In each subject, predicate, object position, the values can either be
+   * an RDF term object or null (wildcard) or a string.
+   * If it is a string it may either be a variable (starting with "?")
+   * or the TTL representation of an RDF term using the T() function.
+   * @param s  the match subject
+   * @param p  the match predicate
+   * @param o  the match object
+   */
+  match (s, p, o) {
+    return new MatchQuery(this, s, p, o)
+  }
+
+  /**
+   * Creates a new query that sorts all input solutions by the bindings
+   * for a given variable.
+   * @param varName  the name of the variable to sort by, starting with "?"
+   */
+  orderBy (varName) {
+    return new OrderByQuery(this, varName)
+  }
+
+  /**
+   * Creates a new query doing a match where the predicate may be a RDF Path object.
+   * Note: This is currently not using lazy evaluation and will always walk all matches.
+   * Path syntax:
+   * - PredicatePaths: NamedNode
+   * - SequencePaths: [path1, path2]
+   * - AlternativePaths: { or : [ path1, path2 ] }
+   * - InversePaths: { inverse : path }   LIMITATION: Only supports NamedNodes for path here
+   * - ZeroOrMorePaths: { zeroOrMore : path }
+   * - OneOrMorePaths: { oneOrMore : path }
+   * - ZeroOrOnePaths: { zeroOrOne : path }
+   * @param s  the match subject or a variable name (string) - must have a value
+   *           at execution time!
+   * @param path  the match path object (e.g. a NamedNode for a simple predicate hop)
+   * @param o  the match object or a variable name (string)
+   */
+  path (s, path, o) {
+    if (path && path.value && path.termType === 'NamedNode') {
+      return new MatchQuery(this, s, path, o)
     } else {
-      s = subject
+      return new PathQuery(this, s, path, o)
     }
-    var p = null
-    if (typeof predicate === 'string') {
-      if (predicate.indexOf('?') === 0) {
-        p = sol[var2Attr(predicate)]
-      } else {
-        p = T(predicate)
+  }
+
+  // TODO: add other SPARQL-like query types
+  //       - .distinct()
+  //       - .union(otherQuery)
+
+  // ----------------------------------------------------------------------------
+  // Terminal functions - convenience functions to get values.
+  // All these functions close the solution iterators.
+  // ----------------------------------------------------------------------------
+
+  /**
+   * Adds all nodes produced by a given solution variable into a set.
+   * The set must have an add(node) function.
+   * @param varName  the name of the variable, starting with "?"
+   * @param set  the set to add to
+   */
+  addAllNodes (varName, set) {
+    var attrName = var2Attr(varName)
+    for (var sol = this.nextSolution(); sol; sol = this.nextSolution()) {
+      var node = sol[attrName]
+      if (node) {
+        set.add(node)
       }
-    } else {
-      p = predicate
     }
+  }
 
-    var o = null
-    if (typeof object === 'string') {
-      if (object.indexOf('?') === 0) {
-        o = sol[var2Attr(object)]
+  /**
+   * Produces an array of triple objects where each triple object has properties
+   * subject, predicate and object derived from the provided template values.
+   * Each of these templates can be either a variable name (starting with '?'),
+   * an RDF term string (such as "rdfs:label") or a JavaScript node object.
+   * @param subject  the subject node
+   * @param predicate  the predicate node
+   * @param object  the object node
+   */
+  construct (subject, predicate, object) {
+    var results = []
+    for (var sol = this.nextSolution(); sol; sol = this.nextSolution()) {
+      var s = null
+      if (typeof subject === 'string') {
+        if (subject.indexOf('?') === 0) {
+          s = sol[var2Attr(subject)]
+        } else {
+          s = T(subject)
+        }
       } else {
-        o = T(object)
+        s = subject
       }
+      var p = null
+      if (typeof predicate === 'string') {
+        if (predicate.indexOf('?') === 0) {
+          p = sol[var2Attr(predicate)]
+        } else {
+          p = T(predicate)
+        }
+      } else {
+        p = predicate
+      }
+
+      var o = null
+      if (typeof object === 'string') {
+        if (object.indexOf('?') === 0) {
+          o = sol[var2Attr(object)]
+        } else {
+          o = T(object)
+        }
+      } else {
+        o = object
+      }
+
+      if (s && p && o) {
+        results.push({ subject: s, predicate: p, object: o })
+      }
+    }
+    return results
+  }
+
+  /**
+   * Executes a given function for each solution.
+   * @param callback  a function that takes a solution as argument
+   */
+  forEach (callback) {
+    for (var n = this.nextSolution(); n; n = this.nextSolution()) {
+      callback(n)
+    }
+  }
+
+  /**
+   * Executes a given function for each node in a solution set.
+   * @param varName  the name of a variable, starting with "?"
+   * @param callback  a function that takes a node as argument
+   */
+  forEachNode (varName, callback) {
+    var attrName = var2Attr(varName)
+    for (var sol = this.nextSolution(); sol; sol = this.nextSolution()) {
+      var node = sol[attrName]
+      if (node) {
+        callback(node)
+      }
+    }
+  }
+
+  /**
+   * Turns all result solutions into an array.
+   * @return an array consisting of solution objects
+   */
+  getArray () {
+    var results = []
+    for (var n = this.nextSolution(); n != null; n = this.nextSolution()) {
+      results.push(n)
+    }
+    return results
+  }
+
+  /**
+   * Gets the number of (remaining) solutions.
+   * @return the count
+   */
+  getCount () {
+    return this.getArray().length // Quick and dirty implementation
+  }
+
+  /**
+   * Gets the next solution and, if that exists, returns the binding for a
+   * given variable from that solution.
+   * @param varName  the name of the binding to get, starting with "?"
+   * @return the value of the variable or null or undefined if it doesn't exist
+   */
+  getNode (varName) {
+    var s = this.nextSolution()
+    if (s) {
+      this.close()
+      return s[var2Attr(varName)]
     } else {
-      o = object
-    }
-
-    if (s && p && o) {
-      results.push({ subject: s, predicate: p, object: o })
+      return null
     }
   }
-  return results
-}
 
-/**
- * Executes a given function for each solution.
- * @param callback  a function that takes a solution as argument
- */
-AbstractQuery.prototype.forEach = function (callback) {
-  for (var n = this.nextSolution(); n; n = this.nextSolution()) {
-    callback(n)
-  }
-}
-
-/**
- * Executes a given function for each node in a solution set.
- * @param varName  the name of a variable, starting with "?"
- * @param callback  a function that takes a node as argument
- */
-AbstractQuery.prototype.forEachNode = function (varName, callback) {
-  var attrName = var2Attr(varName)
-  for (var sol = this.nextSolution(); sol; sol = this.nextSolution()) {
-    var node = sol[attrName]
-    if (node) {
-      callback(node)
+  /**
+   * Turns all results into an array of bindings for a given variable.
+   * @return an array consisting of RDF node objects
+   */
+  getNodeArray (varName) {
+    var results = []
+    var attr = var2Attr(varName)
+    for (var n = this.nextSolution(); n != null; n = this.nextSolution()) {
+      results.push(n[attr])
     }
+    return results
   }
-}
 
-/**
- * Turns all result solutions into an array.
- * @return an array consisting of solution objects
- */
-AbstractQuery.prototype.getArray = function () {
-  var results = []
-  for (var n = this.nextSolution(); n != null; n = this.nextSolution()) {
-    results.push(n)
+  /**
+   * Turns all result bindings for a given variable into a set.
+   * The set has functions .contains and .toArray.
+   * @param varName  the name of the variable, starting with "?"
+   * @return a set consisting of RDF node objects
+   */
+  getNodeSet (varName) {
+    var results = new NodeSet()
+    var attr = var2Attr(varName)
+    for (var n = this.nextSolution(); n != null; n = this.nextSolution()) {
+      results.add(n[attr])
+    }
+    return results
   }
-  return results
-}
 
-/**
- * Gets the number of (remaining) solutions.
- * @return the count
- */
-AbstractQuery.prototype.getCount = function () {
-  return this.getArray().length // Quick and dirty implementation
-}
+  /**
+   * Queries the underlying graph for the object of a subject/predicate combination,
+   * where either subject or predicate can be a variable which is substituted with
+   * a value from the next input solution.
+   * Note that even if there are multiple solutions it will just return the "first"
+   * one and since the order of triples in RDF is undefined this may lead to random results.
+   * Unbound values produce errors.
+   * @param subject  an RDF term or a variable (starting with "?") or a TTL representation
+   * @param predicate  an RDF term or a variable (starting with "?") or a TTL representation
+   * @return the object of the "first" triple matching the subject/predicate combination
+   */
+  getObject (subject, predicate) {
+    var sol = this.nextSolution()
+    if (sol) {
+      this.close()
+      var s
+      if (typeof subject === 'string') {
+        if (subject.indexOf('?') === 0) {
+          s = sol[var2Attr(subject)]
+        } else {
+          s = T(subject)
+        }
+      } else {
+        s = subject
+      }
+      if (!s) {
+        throw new Error('getObject() called with null subject')
+      }
+      var p
+      if (typeof predicate === 'string') {
+        if (predicate.indexOf('?') === 0) {
+          p = sol[var2Attr(predicate)]
+        } else {
+          p = T(predicate)
+        }
+      } else {
+        p = predicate
+      }
+      if (!p) {
+        throw new Error('getObject() called with null predicate')
+      }
 
-/**
- * Gets the next solution and, if that exists, returns the binding for a
- * given variable from that solution.
- * @param varName  the name of the binding to get, starting with "?"
- * @return the value of the variable or null or undefined if it doesn't exist
- */
-AbstractQuery.prototype.getNode = function (varName) {
-  var s = this.nextSolution()
-  if (s) {
-    this.close()
-    return s[var2Attr(varName)]
-  } else {
+      var it = this.source.find(s, p, null)
+      var triple = it.next()
+      if (triple) {
+        it.close()
+        return triple.object
+      }
+    }
     return null
   }
-}
 
-/**
- * Turns all results into an array of bindings for a given variable.
- * @return an array consisting of RDF node objects
- */
-AbstractQuery.prototype.getNodeArray = function (varName) {
-  var results = []
-  var attr = var2Attr(varName)
-  for (var n = this.nextSolution(); n != null; n = this.nextSolution()) {
-    results.push(n[attr])
-  }
-  return results
-}
-
-/**
- * Turns all result bindings for a given variable into a set.
- * The set has functions .contains and .toArray.
- * @param varName  the name of the variable, starting with "?"
- * @return a set consisting of RDF node objects
- */
-AbstractQuery.prototype.getNodeSet = function (varName) {
-  var results = new NodeSet()
-  var attr = var2Attr(varName)
-  for (var n = this.nextSolution(); n != null; n = this.nextSolution()) {
-    results.add(n[attr])
-  }
-  return results
-}
-
-/**
- * Queries the underlying graph for the object of a subject/predicate combination,
- * where either subject or predicate can be a variable which is substituted with
- * a value from the next input solution.
- * Note that even if there are multiple solutions it will just return the "first"
- * one and since the order of triples in RDF is undefined this may lead to random results.
- * Unbound values produce errors.
- * @param subject  an RDF term or a variable (starting with "?") or a TTL representation
- * @param predicate  an RDF term or a variable (starting with "?") or a TTL representation
- * @return the object of the "first" triple matching the subject/predicate combination
- */
-AbstractQuery.prototype.getObject = function (subject, predicate) {
-  var sol = this.nextSolution()
-  if (sol) {
-    this.close()
-    var s
-    if (typeof subject === 'string') {
-      if (subject.indexOf('?') === 0) {
-        s = sol[var2Attr(subject)]
-      } else {
-        s = T(subject)
-      }
+  /**
+   * Tests if there is any solution and closes the query.
+   * @return true if there is another solution
+   */
+  hasSolution () {
+    if (this.nextSolution()) {
+      this.close()
+      return true
     } else {
-      s = subject
+      return false
     }
-    if (!s) {
-      throw new Error('getObject() called with null subject')
-    }
-    var p
-    if (typeof predicate === 'string') {
-      if (predicate.indexOf('?') === 0) {
-        p = sol[var2Attr(predicate)]
-      } else {
-        p = T(predicate)
-      }
-    } else {
-      p = predicate
-    }
-    if (!p) {
-      throw new Error('getObject() called with null predicate')
-    }
-
-    var it = this.source.find(s, p, null)
-    var triple = it.next()
-    if (triple) {
-      it.close()
-      return triple.object
-    }
-  }
-  return null
-}
-
-/**
- * Tests if there is any solution and closes the query.
- * @return true if there is another solution
- */
-AbstractQuery.prototype.hasSolution = function () {
-  if (this.nextSolution()) {
-    this.close()
-    return true
-  } else {
-    return false
   }
 }
 
@@ -440,309 +437,309 @@ function exprNotEquals (varName, node) {
 // END OF PUBLIC API ----------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-// class BindQuery
 // Takes all input solutions but adds a value for a given variable so that
 // the value is computed by a given function based on the current solution.
 // It is illegal to use a variable that already has a value from the input.
+class BindQuery extends AbstractQuery {
+  constructor (input, varName, bindFunction) {
+    super()
 
-function BindQuery (input, varName, bindFunction) {
-  this.attr = var2Attr(varName)
-  this.source = input.source
-  this.input = input
-  this.bindFunction = bindFunction
-}
-
-BindQuery.prototype = Object.create(AbstractQuery.prototype)
-
-BindQuery.prototype.close = function () {
-  this.input.close()
-}
-
-// Pulls the next result from the input Query and passes it into
-// the given bind function to add a new node
-BindQuery.prototype.nextSolution = function () {
-  var result = this.input.nextSolution()
-  if (result == null) {
-    return null
-  } else {
-    var newNode = this.bindFunction(result)
-    if (newNode) {
-      result[this.attr] = newNode
-    }
-    return result
+    this.attr = var2Attr(varName)
+    this.source = input.source
+    this.input = input
+    this.bindFunction = bindFunction
   }
-}
 
-// class FilterQuery
-// Filters the incoming solutions, only letting through those where
-// filterFunction(solution) returns true
+  close () {
+    this.input.close()
+  }
 
-function FilterQuery (input, filterFunction) {
-  this.source = input.source
-  this.input = input
-  this.filterFunction = filterFunction
-}
-
-FilterQuery.prototype = Object.create(AbstractQuery.prototype)
-
-FilterQuery.prototype.close = function () {
-  this.input.close()
-}
-
-// Pulls the next result from the input Query and passes it into
-// the given filter function
-FilterQuery.prototype.nextSolution = function () {
-  for (;;) {
+  // Pulls the next result from the input Query and passes it into
+  // the given bind function to add a new node
+  nextSolution () {
     var result = this.input.nextSolution()
     if (result == null) {
       return null
-    } else if (this.filterFunction(result) === true) {
+    } else {
+      var newNode = this.bindFunction(result)
+      if (newNode) {
+        result[this.attr] = newNode
+      }
       return result
     }
   }
 }
 
-// class LimitQuery
-// Only allows the first n values of the input query through
+// Filters the incoming solutions, only letting through those where
+// filterFunction(solution) returns true
+class FilterQuery extends AbstractQuery {
+  constructor (input, filterFunction) {
+    super()
 
-function LimitQuery (input, limit) {
-  this.source = input.source
-  this.input = input
-  this.limit = limit
-}
+    this.source = input.source
+    this.input = input
+    this.filterFunction = filterFunction
+  }
 
-LimitQuery.prototype = Object.create(AbstractQuery.prototype)
-
-LimitQuery.prototype.close = function () {
-  this.input.close()
-}
-
-// Pulls the next result from the input Query unless the number
-// of previous calls has exceeded the given limit
-LimitQuery.prototype.nextSolution = function () {
-  if (this.limit > 0) {
-    this.limit--
-    return this.input.nextSolution()
-  } else {
+  close () {
     this.input.close()
-    return null
+  }
+
+  // Pulls the next result from the input Query and passes it into
+  // the given filter function
+  nextSolution () {
+    for (;;) {
+      var result = this.input.nextSolution()
+      if (result == null) {
+        return null
+      } else if (this.filterFunction(result) === true) {
+        return result
+      }
+    }
   }
 }
 
-// class MatchQuery
+// Only allows the first n values of the input query through
+class LimitQuery extends AbstractQuery {
+  constructor (input, limit) {
+    super()
+
+    this.source = input.source
+    this.input = input
+    this.limit = limit
+  }
+
+  close () {
+    this.input.close()
+  }
+
+  // Pulls the next result from the input Query unless the number
+  // of previous calls has exceeded the given limit
+  nextSolution () {
+    if (this.limit > 0) {
+      this.limit--
+      return this.input.nextSolution()
+    } else {
+      this.input.close()
+      return null
+    }
+  }
+}
+
 // Joins the solutions from the input Query with triple matches against
 // the current input graph.
+class MatchQuery extends AbstractQuery {
+  constructor (input, s, p, o) {
+    super()
 
-function MatchQuery (input, s, p, o) {
-  this.source = input.source
-  this.input = input
-  if (typeof s === 'string') {
-    if (s.indexOf('?') === 0) {
-      this.sv = var2Attr(s)
+    this.source = input.source
+    this.input = input
+    if (typeof s === 'string') {
+      if (s.indexOf('?') === 0) {
+        this.sv = var2Attr(s)
+      } else {
+        this.s = T(s)
+      }
     } else {
-      this.s = T(s)
+      this.s = s
     }
-  } else {
-    this.s = s
+    if (typeof p === 'string') {
+      if (p.indexOf('?') === 0) {
+        this.pv = var2Attr(p)
+      } else {
+        this.p = T(p)
+      }
+    } else {
+      this.p = p
+    }
+    if (typeof o === 'string') {
+      if (o.indexOf('?') === 0) {
+        this.ov = var2Attr(o)
+      } else {
+        this.o = T(o)
+      }
+    } else {
+      this.o = o
+    }
   }
-  if (typeof p === 'string') {
-    if (p.indexOf('?') === 0) {
-      this.pv = var2Attr(p)
-    } else {
-      this.p = T(p)
+
+  close () {
+    this.input.close()
+    if (this.ownIterator) {
+      this.ownIterator.close()
     }
-  } else {
-    this.p = p
   }
-  if (typeof o === 'string') {
-    if (o.indexOf('?') === 0) {
-      this.ov = var2Attr(o)
-    } else {
-      this.o = T(o)
+
+  // This pulls the first solution from the input Query and uses it to
+  // create an "ownIterator" which applies the input solution to those
+  // specified by s, p, o.
+  // Once this "ownIterator" has been exhausted, it moves to the next
+  // solution from the input Query, and so on.
+  // At each step, it produces the union of the input solutions plus the
+  // own solutions.
+  nextSolution () {
+    var oit = this.ownIterator
+    if (oit) {
+      var n = oit.next()
+      if (n != null) {
+        var result = createSolution(this.inputSolution)
+        if (this.sv) {
+          result[this.sv] = n.subject
+        }
+        if (this.pv) {
+          result[this.pv] = n.predicate
+        }
+        if (this.ov) {
+          result[this.ov] = n.object
+        }
+        return result
+      } else {
+        delete this.ownIterator // Mark as exhausted
+      }
     }
-  } else {
-    this.o = o
+
+    // Pull from input
+    this.inputSolution = this.input.nextSolution()
+    if (this.inputSolution) {
+      var sm = this.sv ? this.inputSolution[this.sv] : this.s
+      var pm = this.pv ? this.inputSolution[this.pv] : this.p
+      var om = this.ov ? this.inputSolution[this.ov] : this.o
+      this.ownIterator = this.source.find(sm, pm, om)
+      return this.nextSolution()
+    } else {
+      return null
+    }
   }
 }
 
-MatchQuery.prototype = Object.create(AbstractQuery.prototype)
-
-MatchQuery.prototype.close = function () {
-  this.input.close()
-  if (this.ownIterator) {
-    this.ownIterator.close()
-  }
-}
-
-// This pulls the first solution from the input Query and uses it to
-// create an "ownIterator" which applies the input solution to those
-// specified by s, p, o.
-// Once this "ownIterator" has been exhausted, it moves to the next
-// solution from the input Query, and so on.
-// At each step, it produces the union of the input solutions plus the
-// own solutions.
-MatchQuery.prototype.nextSolution = function () {
-  var oit = this.ownIterator
-  if (oit) {
-    var n = oit.next()
-    if (n != null) {
-      var result = createSolution(this.inputSolution)
-      if (this.sv) {
-        result[this.sv] = n.subject
-      }
-      if (this.pv) {
-        result[this.pv] = n.predicate
-      }
-      if (this.ov) {
-        result[this.ov] = n.object
-      }
-      return result
-    } else {
-      delete this.ownIterator // Mark as exhausted
-    }
-  }
-
-  // Pull from input
-  this.inputSolution = this.input.nextSolution()
-  if (this.inputSolution) {
-    var sm = this.sv ? this.inputSolution[this.sv] : this.s
-    var pm = this.pv ? this.inputSolution[this.pv] : this.p
-    var om = this.ov ? this.inputSolution[this.ov] : this.o
-    this.ownIterator = this.source.find(sm, pm, om)
-    return this.nextSolution()
-  } else {
-    return null
-  }
-}
-
-// class OrderByQuery
 // Sorts all solutions from the input stream by a given variable
+class OrderByQuery extends AbstractQuery {
+  constructor (input, varName) {
+    super()
 
-function OrderByQuery (input, varName) {
-  this.input = input
-  this.source = input.source
-  this.attrName = var2Attr(varName)
-}
-
-OrderByQuery.prototype = Object.create(AbstractQuery.prototype)
-
-OrderByQuery.prototype.close = function () {
-  this.input.close()
-}
-
-OrderByQuery.prototype.nextSolution = function () {
-  if (!this.solutions) {
-    this.solutions = this.input.getArray()
-    var attrName = this.attrName
-    this.solutions.sort(function (s1, s2) {
-      return compareTerms(s1[attrName], s2[attrName])
-    })
-    this.index = 0
+    this.input = input
+    this.source = input.source
+    this.attrName = var2Attr(varName)
   }
-  if (this.index < this.solutions.length) {
-    return this.solutions[this.index++]
-  } else {
-    return null
+
+  close () {
+    this.input.close()
+  }
+
+  nextSolution () {
+    if (!this.solutions) {
+      this.solutions = this.input.getArray()
+      var attrName = this.attrName
+      this.solutions.sort(function (s1, s2) {
+        return compareTerms(s1[attrName], s2[attrName])
+      })
+      this.index = 0
+    }
+    if (this.index < this.solutions.length) {
+      return this.solutions[this.index++]
+    } else {
+      return null
+    }
   }
 }
 
-// class PathQuery
 // Expects subject and path to be bound and produces all bindings
 // for the object variable or matches that by evaluating the given path
+class PathQuery extends AbstractQuery {
+  constructor (input, subject, path, object) {
+    super()
 
-function PathQuery (input, subject, path, object) {
-  this.input = input
-  this.source = input.source
-  if (typeof subject === 'string' && subject.indexOf('?') === 0) {
-    this.subjectAttr = var2Attr(subject)
-  } else {
-    this.subject = subject
-  }
-  if (path == null) {
-    throw new Error('Path cannot be unbound')
-  }
-  if (typeof path === 'string') {
-    this.path_ = T(path)
-  } else {
-    this.path_ = path
-  }
-  if (typeof object === 'string' && object.indexOf('?') === 0) {
-    this.objectAttr = var2Attr(object)
-  } else {
-    this.object = object
-  }
-}
-
-PathQuery.prototype = Object.create(AbstractQuery.prototype)
-
-PathQuery.prototype.close = function () {
-  this.input.close()
-}
-
-PathQuery.prototype.nextSolution = function () {
-  var r = this.pathResults
-  if (r) {
-    var n = r[this.pathIndex++]
-    var result = createSolution(this.inputSolution)
-    if (this.objectAttr) {
-      result[this.objectAttr] = n
+    this.input = input
+    this.source = input.source
+    if (typeof subject === 'string' && subject.indexOf('?') === 0) {
+      this.subjectAttr = var2Attr(subject)
+    } else {
+      this.subject = subject
     }
-    if (this.pathIndex === r.length) {
-      delete this.pathResults // Mark as exhausted
+    if (path == null) {
+      throw new Error('Path cannot be unbound')
     }
-    return result
+    if (typeof path === 'string') {
+      this.path_ = T(path)
+    } else {
+      this.path_ = path
+    }
+    if (typeof object === 'string' && object.indexOf('?') === 0) {
+      this.objectAttr = var2Attr(object)
+    } else {
+      this.object = object
+    }
   }
 
-  // Pull from input
-  this.inputSolution = this.input.nextSolution()
-  if (this.inputSolution) {
-    var sm = this.subjectAttr ? this.inputSolution[this.subjectAttr] : this.subject
-    if (sm == null) {
-      throw new Error('Path cannot have unbound subject')
-    }
-    var om = this.objectAttr ? this.inputSolution[this.objectAttr] : this.object
-    var pathResultsSet = new NodeSet()
-    addPathValues(this.source, sm, this.path_, pathResultsSet)
-    this.pathResults = pathResultsSet.toArray()
-    if (this.pathResults.length === 0) {
-      delete this.pathResults
-    } else if (om) {
-      delete this.pathResults
-      if (pathResultsSet.contains(om)) {
-        return this.inputSolution
+  close () {
+    this.input.close()
+  }
+
+  nextSolution () {
+    var r = this.pathResults
+    if (r) {
+      var n = r[this.pathIndex++]
+      var result = createSolution(this.inputSolution)
+      if (this.objectAttr) {
+        result[this.objectAttr] = n
       }
-    } else {
-      this.pathIndex = 0
+      if (this.pathIndex === r.length) {
+        delete this.pathResults // Mark as exhausted
+      }
+      return result
     }
-    return this.nextSolution()
-  } else {
-    return null
-  }
-}
 
-// class StartQuery
-// This simply produces a single result: the initial solution
-
-function StartQuery (source, initialSolution) {
-  this.source = source
-  if (initialSolution && initialSolution.length > 0) {
-    this.solution = initialSolution
-  } else {
-    this.solution = [{}]
-  }
-}
-
-StartQuery.prototype = Object.create(AbstractQuery.prototype)
-
-StartQuery.prototype.close = function () {
-}
-
-StartQuery.prototype.nextSolution = function () {
-  if (this.solution) {
-    if (this.solution.length > 0) {
-      return this.solution.shift()
+    // Pull from input
+    this.inputSolution = this.input.nextSolution()
+    if (this.inputSolution) {
+      var sm = this.subjectAttr ? this.inputSolution[this.subjectAttr] : this.subject
+      if (sm == null) {
+        throw new Error('Path cannot have unbound subject')
+      }
+      var om = this.objectAttr ? this.inputSolution[this.objectAttr] : this.object
+      var pathResultsSet = new NodeSet()
+      addPathValues(this.source, sm, this.path_, pathResultsSet)
+      this.pathResults = pathResultsSet.toArray()
+      if (this.pathResults.length === 0) {
+        delete this.pathResults
+      } else if (om) {
+        delete this.pathResults
+        if (pathResultsSet.contains(om)) {
+          return this.inputSolution
+        }
+      } else {
+        this.pathIndex = 0
+      }
+      return this.nextSolution()
     } else {
-      delete this.solution
+      return null
+    }
+  }
+}
+
+// This simply produces a single result: the initial solution
+class StartQuery extends AbstractQuery {
+  constructor (source, initialSolution) {
+    super()
+
+    this.source = source
+    if (initialSolution && initialSolution.length > 0) {
+      this.solution = initialSolution
+    } else {
+      this.solution = [{}]
+    }
+  }
+
+  close () {
+  }
+
+  nextSolution () {
+    if (this.solution) {
+      if (this.solution.length > 0) {
+        return this.solution.shift()
+      } else {
+        delete this.solution
+      }
     }
   }
 }
@@ -802,58 +799,58 @@ function getLocalName (uri) {
   return uri.substring(index + 1)
 }
 
-// class NodeSet
 // (a super-primitive implementation for now!)
-
-function NodeSet () {
-  this.values = []
-}
-
-NodeSet.prototype.add = function (node) {
-  if (!this.contains(node)) {
-    this.values.push(node)
+class NodeSet {
+  constructor () {
+    this.values = []
   }
-}
 
-NodeSet.prototype.addAll = function (nodes) {
-  for (var i = 0; i < nodes.length; i++) {
-    this.add(nodes[i])
-  }
-}
-
-NodeSet.prototype.contains = function (node) {
-  for (var i = 0; i < this.values.length; i++) {
-    if (this.values[i].equals(node)) {
-      return true
+  add (node) {
+    if (!this.contains(node)) {
+      this.values.push(node)
     }
   }
-  return false
-}
 
-NodeSet.prototype.forEach = function (callback) {
-  for (var i = 0; i < this.values.length; i++) {
-    callback(this.values[i])
-  }
-}
-
-NodeSet.prototype.size = function () {
-  return this.values.length
-}
-
-NodeSet.prototype.toArray = function () {
-  return this.values
-}
-
-NodeSet.prototype.toString = function () {
-  var str = 'NodeSet(' + this.size() + '): ['
-  var arr = this.toArray()
-  for (var i = 0; i < arr.length; i++) {
-    if (i > 0) {
-      str += ', '
+  addAll (nodes) {
+    for (var i = 0; i < nodes.length; i++) {
+      this.add(nodes[i])
     }
-    str += arr[i]
   }
-  return str + ']'
+
+  contains (node) {
+    for (var i = 0; i < this.values.length; i++) {
+      if (this.values[i].equals(node)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  forEach (callback) {
+    for (var i = 0; i < this.values.length; i++) {
+      callback(this.values[i])
+    }
+  }
+
+  size () {
+    return this.values.length
+  }
+
+  toArray () {
+    return this.values
+  }
+
+  toString () {
+    var str = 'NodeSet(' + this.size() + '): ['
+    var arr = this.toArray()
+    for (var i = 0; i < arr.length; i++) {
+      if (i > 0) {
+        str += ', '
+      }
+      str += arr[i]
+    }
+    return str + ']'
+  }
 }
 
 function var2Attr (varName) {
