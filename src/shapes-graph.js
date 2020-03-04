@@ -212,75 +212,75 @@ class Constraint {
   }
 }
 
-// class ConstraintComponent
-// TODO: Make it a `class` once I figure out how to fix the `eval` part
-var ConstraintComponent = function (node, context) {
-  this.context = context
-  this.node = node
-  var parameters = []
-  var parameterNodes = []
-  var requiredParameters = []
-  var optionals = {}
-  var that = this
-  this.context.$shapes.query()
-    .match(node, 'sh:parameter', '?parameter')
-    .match('?parameter', 'sh:path', '?path').forEach(function (sol) {
-      parameters.push(sol.path)
-      parameterNodes.push(sol.parameter)
-      if (that.context.$shapes.query().match(sol.parameter, 'sh:optional', 'true').hasSolution()) {
-        optionals[sol.path.value] = true
-      } else {
-        requiredParameters.push(sol.path)
-      }
-    })
-  this.optionals = optionals
-  this.parameters = parameters
-  this.parameterNodes = parameterNodes
-  this.requiredParameters = requiredParameters
-  this.nodeValidationFunction = this.findValidationFunction(T('sh:nodeValidator'))
-  if (!this.nodeValidationFunction) {
-    this.nodeValidationFunction = this.findValidationFunction(T('sh:validator'))
-    this.nodeValidationFunctionGeneric = true
-  }
-  this.propertyValidationFunction = this.findValidationFunction(T('sh:propertyValidator'))
-  if (!this.propertyValidationFunction) {
-    this.propertyValidationFunction = this.findValidationFunction(T('sh:validator'))
-    this.propertyValidationFunctionGeneric = true
-  }
-}
-
-ConstraintComponent.prototype.findValidationFunction = function (predicate) {
-  const validatorType = predicate.value.split('#').slice(-1)[0]
-  const constraintsRegistry = require('./constraints')
-  const constraint = constraintsRegistry[this.node.value]
-
-  if (!constraint) return null
-
-  const validator = constraint[validatorType]
-
-  if (!validator) return null
-
-  return new ValidationFunction(this.context, validator.func.name, this.parameters, validator.func)
-}
-
-ConstraintComponent.prototype.getParameters = function () {
-  return this.parameters
-}
-
-ConstraintComponent.prototype.isComplete = function (shapeNode) {
-  for (var i = 0; i < this.parameters.length; i++) {
-    var parameter = this.parameters[i]
-    if (!this.isOptional(parameter.value)) {
-      if (!this.context.$shapes.query().match(shapeNode, parameter, null).hasSolution()) {
-        return false
-      }
+class ConstraintComponent {
+  constructor (node, context) {
+    this.context = context
+    this.node = node
+    var parameters = []
+    var parameterNodes = []
+    var requiredParameters = []
+    var optionals = {}
+    var that = this
+    this.context.$shapes.query()
+      .match(node, 'sh:parameter', '?parameter')
+      .match('?parameter', 'sh:path', '?path').forEach(function (sol) {
+        parameters.push(sol.path)
+        parameterNodes.push(sol.parameter)
+        if (that.context.$shapes.query().match(sol.parameter, 'sh:optional', 'true').hasSolution()) {
+          optionals[sol.path.value] = true
+        } else {
+          requiredParameters.push(sol.path)
+        }
+      })
+    this.optionals = optionals
+    this.parameters = parameters
+    this.parameterNodes = parameterNodes
+    this.requiredParameters = requiredParameters
+    this.nodeValidationFunction = this.findValidationFunction(T('sh:nodeValidator'))
+    if (!this.nodeValidationFunction) {
+      this.nodeValidationFunction = this.findValidationFunction(T('sh:validator'))
+      this.nodeValidationFunctionGeneric = true
+    }
+    this.propertyValidationFunction = this.findValidationFunction(T('sh:propertyValidator'))
+    if (!this.propertyValidationFunction) {
+      this.propertyValidationFunction = this.findValidationFunction(T('sh:validator'))
+      this.propertyValidationFunctionGeneric = true
     }
   }
-  return true
-}
 
-ConstraintComponent.prototype.isOptional = function (parameterURI) {
-  return this.optionals[parameterURI]
+  findValidationFunction (predicate) {
+    const validatorType = predicate.value.split('#').slice(-1)[0]
+    const constraintsRegistry = require('./constraints')
+    const constraint = constraintsRegistry[this.node.value]
+
+    if (!constraint) return null
+
+    const validator = constraint[validatorType]
+
+    if (!validator) return null
+
+    return new ValidationFunction(this.context, validator.func.name, this.parameters, validator.func)
+  }
+
+  getParameters () {
+    return this.parameters
+  }
+
+  isComplete (shapeNode) {
+    for (var i = 0; i < this.parameters.length; i++) {
+      var parameter = this.parameters[i]
+      if (!this.isOptional(parameter.value)) {
+        if (!this.context.$shapes.query().match(shapeNode, parameter, null).hasSolution()) {
+          return false
+        }
+      }
+    }
+    return true
+  }
+
+  isOptional (parameterURI) {
+    return this.optionals[parameterURI]
+  }
 }
 
 class Shape {
