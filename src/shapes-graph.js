@@ -18,13 +18,11 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
-var TermFactory = require('./rdfquery/term-factory')
 var RDFQuery = require('./rdfquery')
 var NodeSet = RDFQuery.NodeSet
 var T = RDFQuery.T
 var ValidationFunction = require('./validation-function')
-
-TermFactory.registerNamespace('dash', 'http://datashapes.org/dash#')
+var validatorsRegistry = require('./validators-registry')
 
 class ShapesGraph {
   constructor (context) {
@@ -33,9 +31,7 @@ class ShapesGraph {
     // Collect all defined constraint components
     var components = []
     new RDFQueryUtil(this.context.$shapes).getInstancesOf(T('sh:ConstraintComponent')).forEach(function (node) {
-      if (!T('dash:ParameterConstraintComponent').equals(node)) {
-        components.push(new ConstraintComponent(node, context))
-      }
+      components.push(new ConstraintComponent(node, context))
     })
     this.components = components
 
@@ -98,16 +94,6 @@ class ShapesGraph {
     }
 
     return this.targetShapes
-  }
-
-  async loadJSLibraries () {
-    var that = this
-    var libraries = this.context.$shapes.query()
-      .match('?library', 'sh:jsLibraryURL', '?library').getNodeArray('?library')
-    for (var i = 0; i < libraries.length; i++) {
-      libraries[i] = libraries[i].value
-    }
-    await fetchLibraries(libraries, this.context, that.context.functionsRegistry)
   }
 }
 
@@ -210,102 +196,98 @@ class Constraint {
   getParameterValue (paramName) {
     return this.parameterValues[paramName]
   }
-}
 
-// class ConstraintComponent
-// TODO: Make it a `class` once I figure out how to fix the `eval` part
-var ConstraintComponent = function (node, context) {
-  this.context = context
-  this.node = node
-  var parameters = []
-  var parameterNodes = []
-  var requiredParameters = []
-  var optionals = {}
-  var that = this
-  this.context.$shapes.query()
-    .match(node, 'sh:parameter', '?parameter')
-    .match('?parameter', 'sh:path', '?path').forEach(function (sol) {
-      parameters.push(sol.path)
-      parameterNodes.push(sol.parameter)
-      if (that.context.$shapes.query().match(sol.parameter, 'sh:optional', 'true').hasSolution()) {
-        optionals[sol.path.value] = true
-      } else {
-        requiredParameters.push(sol.path)
-      }
-    })
-  this.optionals = optionals
-  this.parameters = parameters
-  this.parameterNodes = parameterNodes
-  this.requiredParameters = requiredParameters
-  this.nodeValidationFunction = this.findValidationFunction(T('sh:nodeValidator'))
-  if (!this.nodeValidationFunction) {
-    this.nodeValidationFunction = this.findValidationFunction(T('sh:validator'))
-    this.nodeValidationFunctionGeneric = true
-  }
-  this.propertyValidationFunction = this.findValidationFunction(T('sh:propertyValidator'))
-  if (!this.propertyValidationFunction) {
-    this.propertyValidationFunction = this.findValidationFunction(T('sh:validator'))
-    this.propertyValidationFunctionGeneric = true
+  get componentMessages () {
+    return this.component.getMessages(this.shape)
   }
 }
 
-ConstraintComponent.prototype.findValidationFunction = function (predicate) {
-  var functionName = this.context.$shapes.query()
-    .match(this.node, predicate, '?validator')
-    .match('?validator', 'rdf:type', 'sh:JSValidator')
-    .match('?validator', 'sh:jsFunctionName', '?functionName')
-    .getNode('?functionName')
-  var libraryNode = this.context.$shapes.query()
-    .match(this.node, predicate, '?validator')
-    .match('?validator', 'rdf:type', 'sh:JSValidator')
-    .match('?validator', 'sh:jsLibrary', '?library')
-    .getNode('?library')
-
-  var libraries = []
-  while (libraryNode != null) {
-    var libraryUrl = this.context.$shapes.query().match(libraryNode, 'sh:jsLibraryURL', '?libraryUrl').getNode('?libraryUrl')
-    if (libraryUrl == null) {
-      break
-    } else {
-      libraries.unshift(libraryUrl.value)
+class ConstraintComponent {
+  constructor (node, context) {
+    this.context = context
+    this.node = node
+    var parameters = []
+    var parameterNodes = []
+    var requiredParameters = []
+    var optionals = {}
+    var that = this
+    this.context.$shapes.query()
+      .match(node, 'sh:parameter', '?parameter')
+      .match('?parameter', 'sh:path', '?path').forEach(function (sol) {
+        parameters.push(sol.path)
+        parameterNodes.push(sol.parameter)
+        if (that.context.$shapes.query().match(sol.parameter, 'sh:optional', 'true').hasSolution()) {
+          optionals[sol.path.value] = true
+        } else {
+          requiredParameters.push(sol.path)
+        }
+      })
+    this.optionals = optionals
+    this.parameters = parameters
+    this.parameterNodes = parameterNodes
+    this.requiredParameters = requiredParameters
+    this.nodeValidationFunction = this.findValidationFunction(T('sh:nodeValidator'))
+    if (!this.nodeValidationFunction) {
+      this.nodeValidationFunction = this.findValidationFunction(T('sh:validator'))
+      this.nodeValidationFunctionGeneric = true
     }
-    libraryNode = this.context.$shapes.query().match(libraryNode, 'sh:jsLibrary', '?library').getNode('?library')
-  }
-
-  if (functionName) {
-    var script = 'var makeFindInScript = function($data, $shapes, SHACL, TermFactory) {\n' +
-        ' this.$data = $data; this.$shapes = $shapes; this.SHACL = SHACL; this.TermFactory = TermFactory;\n'
-    for (var i = 0; i < libraries.length; i++) { script = script + this.context.functionsRegistry[libraries[i]] }
-    script = script + '\n'
-    script = script + '  return function(name) { return eval(name) }\n}'
-    eval(script) // eslint-disable-line no-eval
-    /* eslint-disable no-undef */
-    var findInScript = makeFindInScript(this.context.$data, this.context.$shapes, this.context, TermFactory)
-    /* eslint-enable no-undef */
-    return new ValidationFunction(functionName.value, this.parameters, findInScript)
-  } else {
-    return null
-  }
-}
-
-ConstraintComponent.prototype.getParameters = function () {
-  return this.parameters
-}
-
-ConstraintComponent.prototype.isComplete = function (shapeNode) {
-  for (var i = 0; i < this.parameters.length; i++) {
-    var parameter = this.parameters[i]
-    if (!this.isOptional(parameter.value)) {
-      if (!this.context.$shapes.query().match(shapeNode, parameter, null).hasSolution()) {
-        return false
-      }
+    this.propertyValidationFunction = this.findValidationFunction(T('sh:propertyValidator'))
+    if (!this.propertyValidationFunction) {
+      this.propertyValidationFunction = this.findValidationFunction(T('sh:validator'))
+      this.propertyValidationFunctionGeneric = true
     }
   }
-  return true
-}
 
-ConstraintComponent.prototype.isOptional = function (parameterURI) {
-  return this.optionals[parameterURI]
+  findValidationFunction (predicate) {
+    const validatorType = predicate.value.split('#').slice(-1)[0]
+    const validator = this.findValidator(validatorType)
+
+    if (!validator) return null
+
+    return new ValidationFunction(this.context, validator.func.name, this.parameters, validator.func)
+  }
+
+  getMessages (shape) {
+    const generic = shape.isPropertyShape() ? this.propertyValidationFunctionGeneric : this.nodeValidationFunctionGeneric
+    const validatorType = generic ? 'validator' : (shape.isPropertyShape() ? 'propertyValidator' : 'nodeValidator')
+    const validator = this.findValidator(validatorType)
+
+    if (!validator) return []
+
+    const message = validator.message
+
+    return message ? [message] : []
+  }
+
+  findValidator (validatorType) {
+    const constraintValidators = validatorsRegistry[this.node.value]
+
+    if (!constraintValidators) return null
+
+    const validator = constraintValidators[validatorType]
+
+    return validator || null
+  }
+
+  getParameters () {
+    return this.parameters
+  }
+
+  isComplete (shapeNode) {
+    for (var i = 0; i < this.parameters.length; i++) {
+      var parameter = this.parameters[i]
+      if (!this.isOptional(parameter.value)) {
+        if (!this.context.$shapes.query().match(shapeNode, parameter, null).hasSolution()) {
+          return false
+        }
+      }
+    }
+    return true
+  }
+
+  isOptional (parameterURI) {
+    return this.optionals[parameterURI]
+  }
 }
 
 class Shape {
@@ -435,35 +417,6 @@ function toRDFQueryPath ($shapes, shPath) {
   throw new Error('Unsupported SHACL path ' + shPath)
   // TODO: implement conforming to AbstractQuery.path syntax
   // return shPath
-}
-
-async function fetchLibraries (libraries, context, acc) {
-  if (libraries.length === 0) {
-    return acc
-  } else {
-    var nextLibrary = libraries.shift()
-    if (context.functionsRegistry[nextLibrary] != null) {
-      return fetchLibraries(libraries, context, acc)
-    } else {
-      return new Promise((resolve, reject) => {
-        var response = ''
-        require('http').get(nextLibrary, (res) => {
-          res.on('data', (b) => {
-            response = response + b.toString()
-          })
-
-          res.on('error', (e) => {
-            reject(e)
-          })
-
-          res.on('end', function () {
-            acc[nextLibrary] = response
-            resolve(fetchLibraries(libraries, context, acc))
-          })
-        })
-      })
-    }
-  }
 }
 
 module.exports = ShapesGraph

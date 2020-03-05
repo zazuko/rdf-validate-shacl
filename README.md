@@ -35,10 +35,10 @@ for (const result of report.results()) {
 $ npm test
 ```
 
-## Regenerating vocabularies and libraries
+## Regenerating vocabularies
 
-The vocabularies for SHACL and DASH are located in the `vocabularies` directory. After modifying these files, they must
-be transformed into library code using the `generate-vocabularies` gulp task.
-The JS libraries referenced in the DASH vocabulary can be found in the `shared` directory. They can be bundled into the
-library build using the `generate-libraries` gulp command. If they are not bundled, the library will try to de-reference
-them using HTTP.
+The SHACL vocabulary is imported from `@zazuko/rdf-vocabularies` and
+pre-parsed in `src/vocabularies/shacl.js`.
+
+After updating the `@zazuko/rdf-vocabularies` dependency, run
+`npm run generate-vocabularies` to regenerate the pre-parsed vocabulary.
