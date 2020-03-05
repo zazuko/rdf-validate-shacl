@@ -5,22 +5,22 @@
 
 // There is no validator for sh:property as this is expected to be
 // natively implemented by the surrounding engine.
-var RDFQuery = require('./rdfquery')
-var RDFQueryUtil = require('./rdfquery/util')
-var NodeSet = RDFQuery.NodeSet
-var T = RDFQuery.T
+const RDFQuery = require('./rdfquery')
+const RDFQueryUtil = require('./rdfquery/util')
+const NodeSet = RDFQuery.NodeSet
+const T = RDFQuery.T
 
-var XSDIntegerTypes = new NodeSet()
+const XSDIntegerTypes = new NodeSet()
 XSDIntegerTypes.add(T('xsd:integer'))
 
-var XSDDecimalTypes = new NodeSet()
+const XSDDecimalTypes = new NodeSet()
 XSDDecimalTypes.addAll(XSDIntegerTypes.toArray())
 XSDDecimalTypes.add(T('xsd:decimal'))
 XSDDecimalTypes.add(T('xsd:float'))
 
 function validateAnd ($context, $value, $and) {
-  var shapes = new RDFQueryUtil($context.$shapes).rdfListToArray($and)
-  for (var i = 0; i < shapes.length; i++) {
+  const shapes = new RDFQueryUtil($context.$shapes).rdfListToArray($and)
+  for (let i = 0; i < shapes.length; i++) {
     if (!$context.nodeConformsToShape($value, shapes[i])) {
       return false
     }
@@ -36,7 +36,7 @@ function validateClosed ($context, $value, $closed, $ignoredProperties, $current
   if (!T('true').equals($closed)) {
     return
   }
-  var allowed = $context.$shapes.query()
+  const allowed = $context.$shapes.query()
     .match($currentShape, 'sh:property', '?propertyShape')
     .match('?propertyShape', 'sh:path', '?path')
     .filter(function (solution) { return solution.path.termType === 'NamedNode' })
@@ -44,7 +44,7 @@ function validateClosed ($context, $value, $closed, $ignoredProperties, $current
   if ($ignoredProperties) {
     allowed.addAll(new RDFQueryUtil($context.$shapes).rdfListToArray($ignoredProperties))
   }
-  var results = []
+  const results = []
   $context.$data.query()
     .match($value, '?predicate', '?object')
     .filter(function (sol) { return !allowed.contains(sol.predicate) })
@@ -70,8 +70,8 @@ function validateDisjoint ($context, $this, $value, $disjoint) {
 }
 
 function validateEqualsProperty ($context, $this, $path, $equals) {
-  var results = []
-  var path = toRDFQueryPath($context, $path)
+  const results = []
+  const path = toRDFQueryPath($context, $path)
   $context.$data.query().path($this, path, '?value').forEach(
     function (solution) {
       if (!$context.$data.query().match($this, $equals, solution.value).hasSolution()) {
@@ -91,9 +91,9 @@ function validateEqualsProperty ($context, $this, $path, $equals) {
   return results
 }
 
-var validateEqualsNode = function ($context, $this, $equals) {
-  var results = []
-  var solutions = 0
+function validateEqualsNode ($context, $this, $equals) {
+  const results = []
+  let solutions = 0
   $context.$data.query().path($this, $equals, '?value').forEach(
     function (solution) {
       solutions++
@@ -116,12 +116,12 @@ function validateHasValueNode ($context, $this, $hasValue) {
 }
 
 function validateHasValueProperty ($context, $this, $path, $hasValue) {
-  var count = $context.$data.query().path($this, toRDFQueryPath($context, $path), $hasValue).getCount()
+  const count = $context.$data.query().path($this, toRDFQueryPath($context, $path), $hasValue).getCount()
   return count > 0
 }
 
 function validateIn ($context, $value, $in) {
-  var set = new NodeSet()
+  const set = new NodeSet()
   set.addAll(new RDFQueryUtil($context.$shapes).rdfListToArray($in))
   return set.contains($value)
 }
@@ -130,12 +130,12 @@ function validateLanguageIn ($context, $value, $languageIn) {
   if ($value.termType !== 'Literal') {
     return false
   }
-  var lang = $value.language
+  const lang = $value.language
   if (!lang || lang === '') {
     return false
   }
-  var ls = new RDFQueryUtil($context.$shapes).rdfListToArray($languageIn)
-  for (var i = 0; i < ls.length; i++) {
+  const ls = new RDFQueryUtil($context.$shapes).rdfListToArray($languageIn)
+  for (let i = 0; i < ls.length; i++) {
     if (lang.startsWith(ls[i].value)) {
       return true
     }
@@ -144,12 +144,12 @@ function validateLanguageIn ($context, $value, $languageIn) {
 }
 
 function validateLessThanProperty ($context, $this, $path, $lessThan) {
-  var results = []
+  const results = []
   $context.$data.query()
     .path($this, toRDFQueryPath($context, $path), '?value')
     .match($this, $lessThan, '?otherValue')
     .forEach(function (sol) {
-      var c = $context.compareNodes(sol.value, sol.otherValue)
+      const c = $context.compareNodes(sol.value, sol.otherValue)
       if (c == null || c >= 0) {
         results.push({
           value: sol.value
@@ -160,12 +160,12 @@ function validateLessThanProperty ($context, $this, $path, $lessThan) {
 }
 
 function validateLessThanOrEqualsProperty ($context, $this, $path, $lessThanOrEquals) {
-  var results = []
+  const results = []
   $context.$data.query()
     .path($this, toRDFQueryPath($context, $path), '?value')
     .match($this, $lessThanOrEquals, '?otherValue')
     .forEach(function (sol) {
-      var c = $context.compareNodes(sol.value, sol.otherValue)
+      const c = $context.compareNodes(sol.value, sol.otherValue)
       if (c == null || c > 0) {
         results.push({
           value: sol.value
@@ -176,7 +176,7 @@ function validateLessThanOrEqualsProperty ($context, $this, $path, $lessThanOrEq
 }
 
 function validateMaxCountProperty ($context, $this, $path, $maxCount) {
-  var count = $context.$data.query().path($this, toRDFQueryPath($context, $path), '?any').getCount()
+  const count = $context.$data.query().path($this, toRDFQueryPath($context, $path), '?any').getCount()
   return count <= Number($maxCount.value)
 }
 
@@ -196,7 +196,7 @@ function validateMaxLength ($context, $value, $maxLength) {
 }
 
 function validateMinCountProperty ($context, $this, $path, $minCount) {
-  var count = $context.$data.query().path($this, toRDFQueryPath($context, $path), '?any').getCount()
+  const count = $context.$data.query().path($this, toRDFQueryPath($context, $path), '?any').getCount()
   return count >= Number($minCount.value)
 }
 
@@ -240,8 +240,8 @@ function validateNot ($context, $value, $not) {
 }
 
 function validateOr ($context, $value, $or) {
-  var shapes = new RDFQueryUtil($context.$shapes).rdfListToArray($or)
-  for (var i = 0; i < shapes.length; i++) {
+  const shapes = new RDFQueryUtil($context.$shapes).rdfListToArray($or)
+  for (let i = 0; i < shapes.length; i++) {
     if ($context.nodeConformsToShape($value, shapes[i])) {
       return true
     }
@@ -253,22 +253,22 @@ function validatePattern ($context, $value, $pattern, $flags) {
   if ($value.termType === 'BlankNode') {
     return false
   }
-  var re = $flags ? new RegExp($pattern.value, $flags.value) : new RegExp($pattern.value)
+  const re = $flags ? new RegExp($pattern.value, $flags.value) : new RegExp($pattern.value)
   return re.test($value.value)
 }
 
 function validateQualifiedMaxCountProperty ($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $qualifiedMaxCount, $currentShape) {
-  var c = validateQualifiedHelper($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape)
+  const c = validateQualifiedHelper($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape)
   return $qualifiedMaxCount.termType === 'Literal' && c <= Number($qualifiedMaxCount.value)
 }
 
 function validateQualifiedMinCountProperty ($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $qualifiedMinCount, $currentShape) {
-  var c = validateQualifiedHelper($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape)
+  const c = validateQualifiedHelper($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape)
   return $qualifiedMinCount.termType === 'Literal' && c >= Number($qualifiedMinCount.value)
 }
 
 function validateQualifiedHelper ($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape) {
-  var siblingShapes = new NodeSet()
+  const siblingShapes = new NodeSet()
   if (T('true').equals($qualifiedValueShapesDisjoint)) {
     $context.$shapes.query()
       .match('?parentShape', 'sh:property', $currentShape)
@@ -287,7 +287,7 @@ function validateQualifiedHelper ($context, $this, $path, $qualifiedValueShape, 
 }
 
 function validateQualifiedConformsToASibling ($context, value, siblingShapes) {
-  for (var i = 0; i < siblingShapes.length; i++) {
+  for (let i = 0; i < siblingShapes.length; i++) {
     if ($context.nodeConformsToShape(value, siblingShapes[i])) {
       return true
     }
@@ -299,11 +299,11 @@ function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
   if (!T('true').equals($uniqueLang)) {
     return
   }
-  var map = {}
+  const map = {}
   $context.$data.query().path($this, toRDFQueryPath($context, $path), '?value').forEach(function (sol) {
-    var lang = sol.value.language
+    const lang = sol.value.language
     if (lang && lang !== '') {
-      var old = map[lang]
+      const old = map[lang]
       if (!old) {
         map[lang] = 1
       } else {
@@ -311,10 +311,10 @@ function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
       }
     }
   })
-  var results = []
-  for (var lang in map) {
+  const results = []
+  for (const lang in map) {
     if (Object.prototype.hasOwnProperty.call(map, lang)) {
-      var count = map[lang]
+      const count = map[lang]
       if (count > 1) {
         results.push('Language "' + lang + '" has been used by ' + count + ' values')
       }
@@ -324,9 +324,9 @@ function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
 }
 
 function validateXone ($context, $value, $xone) {
-  var shapes = new RDFQueryUtil($context.$shapes).rdfListToArray($xone)
-  var count = 0
-  for (var i = 0; i < shapes.length; i++) {
+  const shapes = new RDFQueryUtil($context.$shapes).rdfListToArray($xone)
+  let count = 0
+  for (let i = 0; i < shapes.length; i++) {
     if ($context.nodeConformsToShape($value, shapes[i])) {
       count++
     }
@@ -338,9 +338,9 @@ function validateXone ($context, $value, $xone) {
 
 function toRDFQueryPath ($context, shPath) {
   if (shPath.termType === 'Collection') {
-    var paths = new RDFQueryUtil($context.$shapes).rdfListToArray(shPath)
-    var result = []
-    for (var i = 0; i < paths.length; i++) {
+    const paths = new RDFQueryUtil($context.$shapes).rdfListToArray(shPath)
+    const result = []
+    for (let i = 0; i < paths.length; i++) {
       result.push(toRDFQueryPath($context, paths[i]))
     }
     return result
@@ -348,7 +348,7 @@ function toRDFQueryPath ($context, shPath) {
   if (shPath.termType === 'NamedNode') {
     return shPath
   } else if (shPath.termType === 'BlankNode') {
-    var util = new RDFQueryUtil($context.$shapes)
+    const util = new RDFQueryUtil($context.$shapes)
     if ($context.$shapes.query().getObject(shPath, 'rdf:first')) {
       const paths = util.rdfListToArray(shPath)
       const result = []
@@ -357,7 +357,7 @@ function toRDFQueryPath ($context, shPath) {
       }
       return result
     }
-    var alternativePath = $context.$shapes.query().getObject(shPath, 'sh:alternativePath')
+    const alternativePath = $context.$shapes.query().getObject(shPath, 'sh:alternativePath')
     if (alternativePath) {
       const paths = util.rdfListToArray(alternativePath)
       const result = []
@@ -366,19 +366,19 @@ function toRDFQueryPath ($context, shPath) {
       }
       return { or: result }
     }
-    var zeroOrMorePath = $context.$shapes.query().getObject(shPath, 'sh:zeroOrMorePath')
+    const zeroOrMorePath = $context.$shapes.query().getObject(shPath, 'sh:zeroOrMorePath')
     if (zeroOrMorePath) {
       return { zeroOrMore: toRDFQueryPath($context, zeroOrMorePath) }
     }
-    var oneOrMorePath = $context.$shapes.query().getObject(shPath, 'sh:oneOrMorePath')
+    const oneOrMorePath = $context.$shapes.query().getObject(shPath, 'sh:oneOrMorePath')
     if (oneOrMorePath) {
       return { oneOrMore: toRDFQueryPath($context, oneOrMorePath) }
     }
-    var zeroOrOnePath = $context.$shapes.query().getObject(shPath, 'sh:zeroOrOnePath')
+    const zeroOrOnePath = $context.$shapes.query().getObject(shPath, 'sh:zeroOrOnePath')
     if (zeroOrOnePath) {
       return { zeroOrOne: toRDFQueryPath($context, zeroOrOnePath) }
     }
-    var inversePath = $context.$shapes.query().getObject(shPath, 'sh:inversePath')
+    const inversePath = $context.$shapes.query().getObject(shPath, 'sh:inversePath')
     if (inversePath) {
       return { inverse: toRDFQueryPath($context, inversePath) }
     }

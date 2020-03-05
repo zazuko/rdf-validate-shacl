@@ -1,15 +1,15 @@
 /* eslint-env mocha */
-var assert = require('assert')
-var path = require('path')
-var SHACLValidator = require('../index')
-var fs = require('fs')
-var rdf = require('rdf-ext')
-var rdfFS = require('rdf-utils-fs')
+const assert = require('assert')
+const path = require('path')
+const SHACLValidator = require('../index')
+const fs = require('fs')
+const rdf = require('rdf-ext')
+const rdfFS = require('rdf-utils-fs')
 // expected result
-var rdflibgraph = require('../src/rdflib-graph')
-var RDFLibGraph = rdflibgraph.RDFLibGraph
+const rdflibgraph = require('../src/rdflib-graph')
+const RDFLibGraph = rdflibgraph.RDFLibGraph
 
-var ExpectedValidationResult = function (solution) {
+const ExpectedValidationResult = function (solution) {
   this._id = solution.report.value
 
   this._focusNode = solution.focusNode.termType === 'BlankNode' ? '_:' + solution.focusNode.id : solution.focusNode.value
@@ -40,12 +40,12 @@ ExpectedValidationResult.prototype.sourceShape = function () {
   return this._shape
 }
 
-var ExpectedValidationReport = function (graph) {
+const ExpectedValidationReport = function (graph) {
   this.graph = graph
 }
 
 ExpectedValidationReport.prototype.conforms = function () {
-  var conforms = this.graph.query()
+  const conforms = this.graph.query()
     .match('?report', 'rdf:type', 'sh:ValidationReport')
     .match('?report', 'sh:conforms', '?conforms')
     .getNode('?conforms')
@@ -53,14 +53,14 @@ ExpectedValidationReport.prototype.conforms = function () {
 }
 
 ExpectedValidationReport.prototype.results = function () {
-  var acc = []
-  var query = this.graph.query()
+  const acc = []
+  const query = this.graph.query()
     .match('?report', 'sh:result', '?result')
     .match('?result', 'sh:focusNode', '?focusNode')
     .match('?result', 'sh:resultSeverity', '?severity')
     .match('?result', 'sh:sourceConstraintComponent', '?constraint')
     .match('?result', 'sh:sourceShape', '?shape')
-  var solution = query.nextSolution()
+  let solution = query.nextSolution()
   while (solution != null) {
     acc.push(new ExpectedValidationResult(solution))
     solution = query.nextSolution()
@@ -68,30 +68,30 @@ ExpectedValidationReport.prototype.results = function () {
   return acc
 }
 
-var expectedResult = async function (data, mediaType) {
-  var graph = new RDFLibGraph()
+const expectedResult = async function (data, mediaType) {
+  const graph = new RDFLibGraph()
   graph.loadGraph('http://test.com/example', data)
-  var expectedValidationReport = new ExpectedValidationReport(graph)
+  const expectedValidationReport = new ExpectedValidationReport(graph)
   expectedValidationReport.results()
   return expectedValidationReport
 }
 
-var isBlank = function (s) {
+const isBlank = function (s) {
   return s != null && (s.indexOf('_:') === 0 || s.indexOf('_g_') > -1)
 }
 
-var validateReports = async function (input) {
-  var data = await rdf.dataset().import(rdfFS.fromFile(input))
+const validateReports = async function (input) {
+  const data = await rdf.dataset().import(rdfFS.fromFile(input))
 
   const expectedReport = await expectedResult(data)
   const report = await new SHACLValidator().validate(data, data)
   assert.strictEqual(report.conforms(), expectedReport.conforms())
   assert.strictEqual(report.results().length, expectedReport.results().length)
-  var results = report.results() || []
-  var expectedResults = expectedReport.results()
-  for (var i = 0; i < results.length; i++) {
+  const results = report.results() || []
+  const expectedResults = expectedReport.results()
+  for (let i = 0; i < results.length; i++) {
     let found = false
-    for (var j = 0; j < expectedResults.length; j++) {
+    for (let j = 0; j < expectedResults.length; j++) {
       if (// (results[i].focusNode() ===  expectedResults[j].focusNode() ) &&
         results[i].severity() === expectedResults[j].severity() &&
                 ((isBlank(results[i].sourceShape()) && isBlank(expectedResults[j].sourceShape())) ||

@@ -1,7 +1,7 @@
-var RDFQuery = require('./rdfquery')
-var T = RDFQuery.T
-var rdf = require('rdf-ext')
-var TermFactory = require('./rdfquery/term-factory')
+const RDFQuery = require('./rdfquery')
+const T = RDFQuery.T
+const rdf = require('rdf-ext')
+const TermFactory = require('./rdfquery/term-factory')
 
 /**
  * Creates a new RDFLibGraph wrapping a provided `Dataset` or creating
@@ -68,9 +68,9 @@ function ensureBlankId (component) {
 }
 
 function postProcessGraph (store, graphURI, newStore) {
-  var ss = newStore.match(undefined, undefined, undefined)
+  const ss = newStore.match(undefined, undefined, undefined)
   for (const quad of ss) {
-    var object = quad.object
+    const object = quad.object
     ensureBlankId(quad.subject)
     ensureBlankId(quad.predicate)
     ensureBlankId(quad.object)
@@ -83,15 +83,15 @@ function postProcessGraph (store, graphURI, newStore) {
         store.add(rdf.quad(quad.subject, quad.predicate, object, graphURI))
       }
     } else if (object.termType === 'collection') {
-      var items = object.elements
+      const items = object.elements
       store.add(rdf.quad(quad.subject, quad.predicate, createRDFListNode(store, items, 0)))
     } else {
       store.add(rdf.quad(quad.subject, quad.predicate, quad.object, graphURI))
     }
   }
 
-  for (var prefix in newStore.namespaces) {
-    var ns = newStore.namespaces[prefix]
+  for (const prefix in newStore.namespaces) {
+    const ns = newStore.namespaces[prefix]
     store.namespaces[prefix] = ns
   }
 }
@@ -100,7 +100,7 @@ function createRDFListNode (store, items, index) {
   if (index >= items.length) {
     return T('rdf:nil')
   } else {
-    var bnode = TermFactory.blankNode()
+    const bnode = TermFactory.blankNode()
     store.add(rdf.quad(bnode, T('rdf:first'), items[index]))
     store.add(rdf.quad(bnode, T('rdf:rest'), createRDFListNode(store, items, index + 1)))
     return bnode

@@ -1,16 +1,16 @@
 /* eslint-env mocha */
-var assert = require('assert')
-var path = require('path')
-var rdf = require('rdf-ext')
-var rdfFS = require('rdf-utils-fs')
-var SHACLValidator = require('../index')
+const assert = require('assert')
+const path = require('path')
+const rdf = require('rdf-ext')
+const rdfFS = require('rdf-utils-fs')
+const SHACLValidator = require('../index')
 
 describe('configuration', () => {
   it('sets validationErrorBatch', async () => {
-    var validator = new SHACLValidator()
+    const validator = new SHACLValidator()
 
-    var dataFile = path.join(__dirname, '/data/core/property/class-001.test.ttl')
-    var data = await rdf.dataset().import(rdfFS.fromFile(dataFile))
+    const dataFile = path.join(__dirname, '/data/core/property/class-001.test.ttl')
+    const data = await rdf.dataset().import(rdfFS.fromFile(dataFile))
 
     const report1 = await validator.validate(data, data)
     assert.strictEqual(report1.conforms(), false)

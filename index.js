@@ -2,24 +2,24 @@
  * Created by antoniogarrote on 08/05/2017.
  */
 
-var debug = require('debug')('index')
+const debug = require('debug')('index')
 
-var RDFQuery = require('./src/rdfquery')
-var ShapesGraph = require('./src/shapes-graph')
-var ValidationEngine = require('./src/validation-engine')
-var rdflibgraph = require('./src/rdflib-graph')
-var RDFLibGraph = rdflibgraph.RDFLibGraph
-var ValidationEngineConfiguration = require('./src/validation-engine-configuration')
+const RDFQuery = require('./src/rdfquery')
+const ShapesGraph = require('./src/shapes-graph')
+const ValidationEngine = require('./src/validation-engine')
+const rdflibgraph = require('./src/rdflib-graph')
+const RDFLibGraph = rdflibgraph.RDFLibGraph
+const ValidationEngineConfiguration = require('./src/validation-engine-configuration')
 
 /********************************/
 /* Vocabularies                 */
 /********************************/
-var shapesGraphURI = 'urn:x-shacl:shapesGraph'
-var dataGraphURI = 'urn:x-shacl:dataGraph'
+const shapesGraphURI = 'urn:x-shacl:shapesGraph'
+const dataGraphURI = 'urn:x-shacl:dataGraph'
 /********************************/
 /********************************/
 
-var rdf = require('rdf-ext')
+const rdf = require('rdf-ext')
 
 /**
  * Validates RDF data based on a set of RDF shapes.
@@ -70,10 +70,10 @@ class SHACLValidator {
 
   // Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
   nodeConformsToShape (focusNode, shapeNode) {
-    var shape = this.shapesGraph.getShape(shapeNode)
+    const shape = this.shapesGraph.getShape(shapeNode)
     try {
       this.depth++
-      var foundViolations = this.validationEngine.validateNodeAgainstShape(focusNode, shape, this.$data)
+      const foundViolations = this.validationEngine.validateNodeAgainstShape(focusNode, shape, this.$data)
       return !foundViolations
     } finally {
       this.depth--
@@ -136,13 +136,13 @@ class SHACLValidator {
    * @param {DatasetCore} dataset - Dataset containing the data to validate
    */
   async updateDataGraph (dataset) {
-    var startTime = new Date().getTime()
+    const startTime = new Date().getTime()
     await this.loadDataGraph(dataset)
 
-    var midTime = new Date().getTime()
+    const midTime = new Date().getTime()
     this.updateValidationEngine()
 
-    var endTime = new Date().getTime()
+    const endTime = new Date().getTime()
     debug('Parsing took ' + (midTime - startTime) + ' ms. Validating the data took ' + (endTime - midTime) + ' ms.')
 
     return this.showValidationResults()
@@ -154,16 +154,16 @@ class SHACLValidator {
    * @param {DatasetCore} dataset - Dataset containing the shapes for validation
    */
   async updateShapesGraph (dataset) {
-    var startTime = new Date().getTime()
+    const startTime = new Date().getTime()
     await this.loadShapesGraph(dataset)
 
-    var midTime = new Date().getTime()
+    const midTime = new Date().getTime()
     this.shapesGraph = new ShapesGraph(this)
-    var midTime2 = new Date().getTime()
+    const midTime2 = new Date().getTime()
 
     this.updateValidationEngine()
 
-    var endTime = new Date().getTime()
+    const endTime = new Date().getTime()
     debug('Parsing took ' + (midTime - startTime) + ' ms. Preparing the shapes took ' + (midTime2 - midTime) +
           ' ms. Validation the data took ' + (endTime - midTime2) + ' ms.')
 

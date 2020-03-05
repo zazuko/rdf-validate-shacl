@@ -1,10 +1,10 @@
-var rdf = require('rdf-ext')
-var RDFQuery = require('./rdfquery')
-var T = RDFQuery.T
-var TermFactory = require('./rdfquery/term-factory')
-var ValidationEngineConfiguration = require('./validation-engine-configuration')
-var ValidationReport = require('./validation-report')
-var error = require('debug')('validation-enging::error')
+const rdf = require('rdf-ext')
+const RDFQuery = require('./rdfquery')
+const T = RDFQuery.T
+const TermFactory = require('./rdfquery/term-factory')
+const ValidationEngineConfiguration = require('./validation-engine-configuration')
+const ValidationReport = require('./validation-report')
+const error = require('debug')('validation-enging::error')
 
 class ValidationEngine {
   constructor (context, conformanceOnly) {
@@ -26,10 +26,10 @@ class ValidationEngine {
    * properties for the constraint, focused node and value node
    */
   createResult (constraint, focusNode, valueNode) {
-    var result = TermFactory.blankNode()
-    var severity = constraint.shape.severity
-    var sourceConstraintComponent = constraint.component.node
-    var sourceShape = constraint.shape.shapeNode
+    const result = TermFactory.blankNode()
+    const severity = constraint.shape.severity
+    const sourceConstraintComponent = constraint.component.node
+    const sourceShape = constraint.shape.shapeNode
     this.addResultProperty(result, T('rdf:type'), T('sh:ValidationResult'))
     this.addResultProperty(result, T('sh:resultSeverity'), severity)
     this.addResultProperty(result, T('sh:sourceConstraintComponent'), sourceConstraintComponent)
@@ -60,7 +60,7 @@ class ValidationEngine {
       if (this.conformanceOnly) {
         return false
       }
-      var result = this.createResult(constraint, focusNode, valueNode)
+      const result = this.createResult(constraint, focusNode, valueNode)
       if (constraint.shape.isPropertyShape()) {
         this.addResultProperty(result, T('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
       }
@@ -77,7 +77,7 @@ class ValidationEngine {
       if (this.conformanceOnly) {
         return false
       }
-      result = this.createResult(constraint, focusNode, valueNode)
+      const result = this.createResult(constraint, focusNode, valueNode)
       if (constraint.shape.isPropertyShape()) {
         this.addResultProperty(result, T('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
       }
@@ -95,7 +95,7 @@ class ValidationEngine {
       if (this.conformanceOnly) {
         return false
       }
-      result = this.createResult(constraint, focusNode)
+      const result = this.createResult(constraint, focusNode)
       if (obj.path) {
         this.addResultProperty(result, T('sh:resultPath'), obj.path) // TODO: Make deep copy
       } else if (constraint.shape.isPropertyShape()) {
@@ -121,7 +121,7 @@ class ValidationEngine {
    */
   createResultMessages (result, constraint) {
     // 1. Try to get message from the shape itself
-    var ms = this.context.$shapes.query()
+    let ms = this.context.$shapes.query()
       .match(constraint.shape.shapeNode, 'sh:message', '?message')
       .getNodeArray('?message')
 
@@ -137,9 +137,9 @@ class ValidationEngine {
         .getNodeArray('?message')
     }
 
-    for (var i = 0; i < ms.length; i++) {
-      var m = ms[i]
-      var str = this.withSubstitutions(m, constraint)
+    for (let i = 0; i < ms.length; i++) {
+      const m = ms[i]
+      const str = this.withSubstitutions(m, constraint)
       this.addResultProperty(result, T('sh:resultMessage'), str)
     }
   }
@@ -155,12 +155,12 @@ class ValidationEngine {
 
       try {
         this.results = []
-        var foundError = false
-        var shapes = this.context.shapesGraph.getShapesWithTarget()
-        for (var i = 0; i < shapes.length; i++) {
-          var shape = shapes[i]
-          var focusNodes = shape.getTargetNodes(rdfDataGraph)
-          for (var j = 0; j < focusNodes.length; j++) {
+        let foundError = false
+        const shapes = this.context.shapesGraph.getShapesWithTarget()
+        for (let i = 0; i < shapes.length; i++) {
+          const shape = shapes[i]
+          const focusNodes = shape.getTargetNodes(rdfDataGraph)
+          for (let j = 0; j < focusNodes.length; j++) {
             if (this.validateNodeAgainstShape(focusNodes[j], shape, rdfDataGraph)) {
               foundError = true
             }
@@ -184,10 +184,10 @@ class ValidationEngine {
       if (shape.deactivated) {
         return false
       }
-      var constraints = shape.getConstraints()
-      var valueNodes = shape.getValueNodes(focusNode, rdfDataGraph)
-      var errorFound = false
-      for (var i = 0; i < constraints.length; i++) {
+      const constraints = shape.getConstraints()
+      const valueNodes = shape.getValueNodes(focusNode, rdfDataGraph)
+      let errorFound = false
+      for (let i = 0; i < constraints.length; i++) {
         if (this.validateNodeAgainstConstraint(focusNode, valueNodes, constraints[i], rdfDataGraph)) {
           errorFound = true
         }
@@ -202,7 +202,7 @@ class ValidationEngine {
     } else {
       if (T('sh:PropertyConstraintComponent').equals(constraint.component.node)) {
         let errorFound = false
-        for (var i = 0; i < valueNodes.length; i++) {
+        for (let i = 0; i < valueNodes.length; i++) {
           if (this.validateNodeAgainstShape(valueNodes[i], this.context.shapesGraph.getShape(constraint.paramValue), rdfDataGraph)) {
             errorFound = true
           }
@@ -219,7 +219,7 @@ class ValidationEngine {
           if (generic) {
             // Generic sh:validator is called for each value node separately
             let errorFound = false
-            for (i = 0; i < valueNodes.length; i++) {
+            for (let i = 0; i < valueNodes.length; i++) {
               if (this.maxErrorsReached()) {
                 break
               }
@@ -288,10 +288,10 @@ class ValidationEngine {
   }
 
   withSubstitutions (msg, constraint) {
-    var str = msg.value
-    var values = constraint.parameterValues
+    let str = msg.value
+    const values = constraint.parameterValues
     for (const key in values) {
-      var label = nodeLabel(values[key], this.context.$shapes)
+      const label = nodeLabel(values[key], this.context.$shapes)
       str = str.replace('{$' + key + '}', label)
       str = str.replace('{?' + key + '}', label)
     }
@@ -318,15 +318,15 @@ class ValidationEngine {
 
 function nodeLabel (node, store) {
   if (node.termType === 'Collection') {
-    var acc = []
-    for (var i = 0; i < node.elements.length; i++) {
+    const acc = []
+    for (let i = 0; i < node.elements.length; i++) {
       acc.push(nodeLabel(node.elements[i], store))
     }
     return acc.join(', ')
   }
   if (node.termType === 'NamedNode') {
     for (const prefix in store.namespaces) {
-      var ns = store.namespaces[prefix]
+      const ns = store.namespaces[prefix]
       if (node.value.indexOf(ns) === 0) {
         return prefix + ':' + node.value.substring(ns.length)
       }

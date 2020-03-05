@@ -33,7 +33,7 @@
 /*
 Example:
 
-  var result = $data.query().
+  const result = $data.query().
     match("owl:Class", "rdfs:label", "?label").
     match("?otherClass", "rdfs:label", "?label").
     filter(function(sol) { return !T("owl:Class").equals(sol.otherClass) }).
@@ -47,13 +47,13 @@ Equivalent SPARQL:
       FILTER (owl:Class != ?otherClass) .
     } LIMIT 1
 */
-var TermFactory = require('./rdfquery/term-factory')
+const TermFactory = require('./rdfquery/term-factory')
 this.TermFactory = TermFactory
 
 // Install NodeFactory as an alias - unsure which name is best long term:
 // The official name in RDF is "term", while "node" is more commonly understood.
 // Oficially, a "node" must be in a graph though, while "terms" are independent.
-var NodeFactory = TermFactory
+const NodeFactory = TermFactory
 
 NodeFactory.registerNamespace('dc', 'http://purl.org/dc/elements/1.1/')
 NodeFactory.registerNamespace('dcterms', 'http://purl.org/dc/terms/')
@@ -188,9 +188,9 @@ class AbstractQuery {
    * @param set  the set to add to
    */
   addAllNodes (varName, set) {
-    var attrName = var2Attr(varName)
-    for (var sol = this.nextSolution(); sol; sol = this.nextSolution()) {
-      var node = sol[attrName]
+    const attrName = var2Attr(varName)
+    for (let sol = this.nextSolution(); sol; sol = this.nextSolution()) {
+      const node = sol[attrName]
       if (node) {
         set.add(node)
       }
@@ -207,9 +207,9 @@ class AbstractQuery {
    * @param object  the object node
    */
   construct (subject, predicate, object) {
-    var results = []
-    for (var sol = this.nextSolution(); sol; sol = this.nextSolution()) {
-      var s = null
+    const results = []
+    for (let sol = this.nextSolution(); sol; sol = this.nextSolution()) {
+      let s = null
       if (typeof subject === 'string') {
         if (subject.indexOf('?') === 0) {
           s = sol[var2Attr(subject)]
@@ -219,7 +219,7 @@ class AbstractQuery {
       } else {
         s = subject
       }
-      var p = null
+      let p = null
       if (typeof predicate === 'string') {
         if (predicate.indexOf('?') === 0) {
           p = sol[var2Attr(predicate)]
@@ -230,7 +230,7 @@ class AbstractQuery {
         p = predicate
       }
 
-      var o = null
+      let o = null
       if (typeof object === 'string') {
         if (object.indexOf('?') === 0) {
           o = sol[var2Attr(object)]
@@ -253,7 +253,7 @@ class AbstractQuery {
    * @param callback  a function that takes a solution as argument
    */
   forEach (callback) {
-    for (var n = this.nextSolution(); n; n = this.nextSolution()) {
+    for (let n = this.nextSolution(); n; n = this.nextSolution()) {
       callback(n)
     }
   }
@@ -264,9 +264,9 @@ class AbstractQuery {
    * @param callback  a function that takes a node as argument
    */
   forEachNode (varName, callback) {
-    var attrName = var2Attr(varName)
-    for (var sol = this.nextSolution(); sol; sol = this.nextSolution()) {
-      var node = sol[attrName]
+    const attrName = var2Attr(varName)
+    for (let sol = this.nextSolution(); sol; sol = this.nextSolution()) {
+      const node = sol[attrName]
       if (node) {
         callback(node)
       }
@@ -278,8 +278,8 @@ class AbstractQuery {
    * @return an array consisting of solution objects
    */
   getArray () {
-    var results = []
-    for (var n = this.nextSolution(); n != null; n = this.nextSolution()) {
+    const results = []
+    for (let n = this.nextSolution(); n != null; n = this.nextSolution()) {
       results.push(n)
     }
     return results
@@ -300,7 +300,7 @@ class AbstractQuery {
    * @return the value of the variable or null or undefined if it doesn't exist
    */
   getNode (varName) {
-    var s = this.nextSolution()
+    const s = this.nextSolution()
     if (s) {
       this.close()
       return s[var2Attr(varName)]
@@ -314,9 +314,9 @@ class AbstractQuery {
    * @return an array consisting of RDF node objects
    */
   getNodeArray (varName) {
-    var results = []
-    var attr = var2Attr(varName)
-    for (var n = this.nextSolution(); n != null; n = this.nextSolution()) {
+    const results = []
+    const attr = var2Attr(varName)
+    for (let n = this.nextSolution(); n != null; n = this.nextSolution()) {
       results.push(n[attr])
     }
     return results
@@ -329,9 +329,9 @@ class AbstractQuery {
    * @return a set consisting of RDF node objects
    */
   getNodeSet (varName) {
-    var results = new NodeSet()
-    var attr = var2Attr(varName)
-    for (var n = this.nextSolution(); n != null; n = this.nextSolution()) {
+    const results = new NodeSet()
+    const attr = var2Attr(varName)
+    for (let n = this.nextSolution(); n != null; n = this.nextSolution()) {
       results.add(n[attr])
     }
     return results
@@ -349,10 +349,10 @@ class AbstractQuery {
    * @return the object of the "first" triple matching the subject/predicate combination
    */
   getObject (subject, predicate) {
-    var sol = this.nextSolution()
+    const sol = this.nextSolution()
     if (sol) {
       this.close()
-      var s
+      let s
       if (typeof subject === 'string') {
         if (subject.indexOf('?') === 0) {
           s = sol[var2Attr(subject)]
@@ -365,7 +365,7 @@ class AbstractQuery {
       if (!s) {
         throw new Error('getObject() called with null subject')
       }
-      var p
+      let p
       if (typeof predicate === 'string') {
         if (predicate.indexOf('?') === 0) {
           p = sol[var2Attr(predicate)]
@@ -379,8 +379,8 @@ class AbstractQuery {
         throw new Error('getObject() called with null predicate')
       }
 
-      var it = this.source.find(s, p, null)
-      var triple = it.next()
+      const it = this.source.find(s, p, null)
+      const triple = it.next()
       if (triple) {
         it.close()
         return triple.object
@@ -457,11 +457,11 @@ class BindQuery extends AbstractQuery {
   // Pulls the next result from the input Query and passes it into
   // the given bind function to add a new node
   nextSolution () {
-    var result = this.input.nextSolution()
+    const result = this.input.nextSolution()
     if (result == null) {
       return null
     } else {
-      var newNode = this.bindFunction(result)
+      const newNode = this.bindFunction(result)
       if (newNode) {
         result[this.attr] = newNode
       }
@@ -489,7 +489,7 @@ class FilterQuery extends AbstractQuery {
   // the given filter function
   nextSolution () {
     for (;;) {
-      var result = this.input.nextSolution()
+      const result = this.input.nextSolution()
       if (result == null) {
         return null
       } else if (this.filterFunction(result) === true) {
@@ -578,11 +578,11 @@ class MatchQuery extends AbstractQuery {
   // At each step, it produces the union of the input solutions plus the
   // own solutions.
   nextSolution () {
-    var oit = this.ownIterator
+    const oit = this.ownIterator
     if (oit) {
-      var n = oit.next()
+      const n = oit.next()
       if (n != null) {
-        var result = createSolution(this.inputSolution)
+        const result = createSolution(this.inputSolution)
         if (this.sv) {
           result[this.sv] = n.subject
         }
@@ -601,9 +601,9 @@ class MatchQuery extends AbstractQuery {
     // Pull from input
     this.inputSolution = this.input.nextSolution()
     if (this.inputSolution) {
-      var sm = this.sv ? this.inputSolution[this.sv] : this.s
-      var pm = this.pv ? this.inputSolution[this.pv] : this.p
-      var om = this.ov ? this.inputSolution[this.ov] : this.o
+      const sm = this.sv ? this.inputSolution[this.sv] : this.s
+      const pm = this.pv ? this.inputSolution[this.pv] : this.p
+      const om = this.ov ? this.inputSolution[this.ov] : this.o
       this.ownIterator = this.source.find(sm, pm, om)
       return this.nextSolution()
     } else {
@@ -629,7 +629,7 @@ class OrderByQuery extends AbstractQuery {
   nextSolution () {
     if (!this.solutions) {
       this.solutions = this.input.getArray()
-      var attrName = this.attrName
+      const attrName = this.attrName
       this.solutions.sort(function (s1, s2) {
         return compareTerms(s1[attrName], s2[attrName])
       })
@@ -676,10 +676,10 @@ class PathQuery extends AbstractQuery {
   }
 
   nextSolution () {
-    var r = this.pathResults
+    const r = this.pathResults
     if (r) {
-      var n = r[this.pathIndex++]
-      var result = createSolution(this.inputSolution)
+      const n = r[this.pathIndex++]
+      const result = createSolution(this.inputSolution)
       if (this.objectAttr) {
         result[this.objectAttr] = n
       }
@@ -692,12 +692,12 @@ class PathQuery extends AbstractQuery {
     // Pull from input
     this.inputSolution = this.input.nextSolution()
     if (this.inputSolution) {
-      var sm = this.subjectAttr ? this.inputSolution[this.subjectAttr] : this.subject
+      const sm = this.subjectAttr ? this.inputSolution[this.subjectAttr] : this.subject
       if (sm == null) {
         throw new Error('Path cannot have unbound subject')
       }
-      var om = this.objectAttr ? this.inputSolution[this.objectAttr] : this.object
-      var pathResultsSet = new NodeSet()
+      const om = this.objectAttr ? this.inputSolution[this.objectAttr] : this.object
+      const pathResultsSet = new NodeSet()
       addPathValues(this.source, sm, this.path_, pathResultsSet)
       this.pathResults = pathResultsSet.toArray()
       if (this.pathResults.length === 0) {
@@ -747,8 +747,8 @@ class StartQuery extends AbstractQuery {
 // Helper functions
 
 function createSolution (base) {
-  var result = {}
-  for (var attr in base) {
+  const result = {}
+  for (const attr in base) {
     if (Object.prototype.hasOwnProperty.call(base, attr)) {
       result[attr] = base[attr]
     }
@@ -762,17 +762,17 @@ function compareTerms (t1, t2) {
   } else if (!t2) {
     return -1
   }
-  var bt = t1.termType.localeCompare(t2.termType)
+  const bt = t1.termType.localeCompare(t2.termType)
   if (bt !== 0) {
     return bt
   } else {
     // TODO: Does not handle numeric or date comparison
-    var bv = t1.value.localeCompare(t2.value)
+    const bv = t1.value.localeCompare(t2.value)
     if (bv !== 0) {
       return bv
     } else {
       if (t1.termType === 'Literal') {
-        var bd = t1.datatype.value.localeCompare(t2.datatype.value)
+        const bd = t1.datatype.value.localeCompare(t2.datatype.value)
         if (bd !== 0) {
           return bd
         } else if (T('rdf:langString').equals(t1.datatype)) {
@@ -789,7 +789,7 @@ function compareTerms (t1, t2) {
 
 function getLocalName (uri) {
   // TODO: This is not the 100% correct local name algorithm
-  var index = uri.lastIndexOf('#')
+  let index = uri.lastIndexOf('#')
   if (index < 0) {
     index = uri.lastIndexOf('/')
   }
@@ -812,13 +812,13 @@ class NodeSet {
   }
 
   addAll (nodes) {
-    for (var i = 0; i < nodes.length; i++) {
+    for (let i = 0; i < nodes.length; i++) {
       this.add(nodes[i])
     }
   }
 
   contains (node) {
-    for (var i = 0; i < this.values.length; i++) {
+    for (let i = 0; i < this.values.length; i++) {
       if (this.values[i].equals(node)) {
         return true
       }
@@ -827,7 +827,7 @@ class NodeSet {
   }
 
   forEach (callback) {
-    for (var i = 0; i < this.values.length; i++) {
+    for (let i = 0; i < this.values.length; i++) {
       callback(this.values[i])
     }
   }
@@ -841,9 +841,9 @@ class NodeSet {
   }
 
   toString () {
-    var str = 'NodeSet(' + this.size() + '): ['
-    var arr = this.toArray()
-    for (var i = 0; i < arr.length; i++) {
+    let str = 'NodeSet(' + this.size() + '): ['
+    const arr = this.toArray()
+    for (let i = 0; i < arr.length; i++) {
       if (i > 0) {
         str += ', '
       }
@@ -871,12 +871,12 @@ function addPathValues (graph, subject, path, set) {
   if (path.termType === 'NamedNode' && path.value) {
     set.addAll(RDFQuery(graph).match(subject, path, '?object').getNodeArray('?object'))
   } else if (Array.isArray(path)) {
-    var s = new NodeSet()
+    let s = new NodeSet()
     s.add(subject)
     for (let i = 0; i < path.length; i++) {
-      var a = s.toArray()
+      const a = s.toArray()
       s = new NodeSet()
-      for (var j = 0; j < a.length; j++) {
+      for (let j = 0; j < a.length; j++) {
         addPathValues(graph, a[j], path[i], s)
       }
     }
@@ -906,11 +906,11 @@ function addPathValues (graph, subject, path, set) {
 
 function walkPath (graph, subject, path, set, visited) {
   visited.add(subject)
-  var s = new NodeSet()
+  const s = new NodeSet()
   addPathValues(graph, subject, path, s)
-  var a = s.toArray()
+  const a = s.toArray()
   set.addAll(a)
-  for (var i = 0; i < a.length; i++) {
+  for (let i = 0; i < a.length; i++) {
     if (!visited.contains(a[i])) {
       walkPath(graph, a[i], path, set, visited)
     }

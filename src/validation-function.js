@@ -1,8 +1,8 @@
 // class ValidationFunction
-var RDFQuery = require('./rdfquery')
-var debug = require('debug')('validation-function')
+const RDFQuery = require('./rdfquery')
+const debug = require('debug')('validation-function')
 
-var globalObject = typeof window !== 'undefined' ? window : global
+const globalObject = typeof window !== 'undefined' ? window : global
 
 class ValidationFunction {
   constructor (context, functionName, parameters, func) {
@@ -12,23 +12,23 @@ class ValidationFunction {
 
     // Get list of argument of the function, see
     // https://davidwalsh.name/javascript-arguments
-    var args = this.func.toString().match(/function\s.*?\(([^)]*)\)/)[1]
-    var funcArgsRaw = args.split(',').map(function (arg) {
+    const args = this.func.toString().match(/function\s.*?\(([^)]*)\)/)[1]
+    const funcArgsRaw = args.split(',').map(function (arg) {
       return arg.replace(/\/\*.*\*\//, '').trim()
     }).filter(function (arg) {
       return arg
     })
     this.funcArgs = []
     this.parameters = []
-    for (var i = 0; i < funcArgsRaw.length; i++) {
-      var arg = funcArgsRaw[i]
+    for (let i = 0; i < funcArgsRaw.length; i++) {
+      let arg = funcArgsRaw[i]
       if (arg.indexOf('$') === 0) {
         arg = arg.substring(1)
       }
       this.funcArgs.push(arg)
-      for (var j = 0; j < parameters.length; j++) {
-        var parameter = parameters[j]
-        var localName = RDFQuery.getLocalName(parameter.value)
+      for (let j = 0; j < parameters.length; j++) {
+        const parameter = parameters[j]
+        const localName = RDFQuery.getLocalName(parameter.value)
         if (arg === localName) {
           this.parameters[i] = parameter
           break
@@ -43,13 +43,13 @@ class ValidationFunction {
 
   execute (focusNode, valueNode, constraint) {
     debug('Validating ' + this.funcName)
-    var args = []
+    const args = []
 
-    for (var i = 0; i < this.funcArgs.length; i++) {
-      var arg = this.funcArgs[i]
-      var param = this.parameters[i]
+    for (let i = 0; i < this.funcArgs.length; i++) {
+      const arg = this.funcArgs[i]
+      const param = this.parameters[i]
       if (param) {
-        var value = constraint.getParameterValue(arg)
+        const value = constraint.getParameterValue(arg)
         args.push(value)
       } else if (arg === 'focusNode') {
         args.push(focusNode)
