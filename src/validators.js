@@ -8,15 +8,15 @@
 const RDFQuery = require('./rdfquery')
 const RDFQueryUtil = require('./rdfquery/util')
 const NodeSet = RDFQuery.NodeSet
-const T = RDFQuery.T
+const { sh, xsd } = require('./namespaces')
 
 const XSDIntegerTypes = new NodeSet()
-XSDIntegerTypes.add(T('xsd:integer'))
+XSDIntegerTypes.add(xsd.integer)
 
 const XSDDecimalTypes = new NodeSet()
 XSDDecimalTypes.addAll(XSDIntegerTypes.toArray())
-XSDDecimalTypes.add(T('xsd:decimal'))
-XSDDecimalTypes.add(T('xsd:float'))
+XSDDecimalTypes.add(xsd.decimal)
+XSDDecimalTypes.add(xsd.float)
 
 function validateAnd ($context, $value, $and) {
   const shapes = new RDFQueryUtil($context.$shapes).rdfListToArray($and)
@@ -33,7 +33,7 @@ function validateClass ($context, $value, $class) {
 }
 
 function validateClosed ($context, $value, $closed, $ignoredProperties, $currentShape) {
-  if (!T('true').equals($closed)) {
+  if (!$context.factory.term('true').equals($closed)) {
     return
   }
   const allowed = $context.$shapes.query()
@@ -217,17 +217,17 @@ function validateMinLength ($context, $value, $minLength) {
 
 function validateNodeKind ($context, $value, $nodeKind) {
   if ($value.termType === 'BlankNode') {
-    return T('sh:BlankNode').equals($nodeKind) ||
-      T('sh:BlankNodeOrIRI').equals($nodeKind) ||
-      T('sh:BlankNodeOrLiteral').equals($nodeKind)
+    return sh.BlankNode.equals($nodeKind) ||
+      sh.BlankNodeOrIRI.equals($nodeKind) ||
+      sh.BlankNodeOrLiteral.equals($nodeKind)
   } else if ($value.termType === 'NamedNode') {
-    return T('sh:IRI').equals($nodeKind) ||
-      T('sh:BlankNodeOrIRI').equals($nodeKind) ||
-      T('sh:IRIOrLiteral').equals($nodeKind)
+    return sh.IRI.equals($nodeKind) ||
+      sh.BlankNodeOrIRI.equals($nodeKind) ||
+      sh.IRIOrLiteral.equals($nodeKind)
   } else if ($value.termType === 'Literal') {
-    return T('sh:Literal').equals($nodeKind) ||
-      T('sh:BlankNodeOrLiteral').equals($nodeKind) ||
-      T('sh:IRIOrLiteral').equals($nodeKind)
+    return sh.Literal.equals($nodeKind) ||
+      sh.BlankNodeOrLiteral.equals($nodeKind) ||
+      sh.IRIOrLiteral.equals($nodeKind)
   }
 }
 
@@ -269,7 +269,7 @@ function validateQualifiedMinCountProperty ($context, $this, $path, $qualifiedVa
 
 function validateQualifiedHelper ($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape) {
   const siblingShapes = new NodeSet()
-  if (T('true').equals($qualifiedValueShapesDisjoint)) {
+  if ($context.factory.term('true').equals($qualifiedValueShapesDisjoint)) {
     $context.$shapes.query()
       .match('?parentShape', 'sh:property', $currentShape)
       .match('?parentShape', 'sh:property', '?sibling')
@@ -296,7 +296,7 @@ function validateQualifiedConformsToASibling ($context, value, siblingShapes) {
 }
 
 function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
-  if (!T('true').equals($uniqueLang)) {
+  if (!$context.factory.term('true').equals($uniqueLang)) {
     return
   }
   const map = {}

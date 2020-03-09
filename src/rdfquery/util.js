@@ -1,6 +1,6 @@
 const RDFQuery = require('../rdfquery')
 const NodeSet = RDFQuery.NodeSet
-const T = RDFQuery.T
+const { rdf, rdfs } = require('../namespaces')
 
 class RDFQueryUtil {
   constructor ($source) {
@@ -30,7 +30,7 @@ class RDFQueryUtil {
 
   getSubClassesOf ($class) {
     const set = new NodeSet()
-    this.walkSubjects(set, $class, T('rdfs:subClassOf'))
+    this.walkSubjects(set, $class, rdfs.subClassOf)
     return set
   }
 
@@ -51,9 +51,9 @@ class RDFQueryUtil {
       return $rdfList.elements
     } else {
       const array = []
-      while (!T('rdf:nil').equals($rdfList)) {
-        array.push(this.getObject($rdfList, T('rdf:first')))
-        $rdfList = this.getObject($rdfList, T('rdf:rest'))
+      while (!rdf.nil.equals($rdfList)) {
+        array.push(this.getObject($rdfList, rdf.first))
+        $rdfList = this.getObject($rdfList, rdf.rest)
       }
       return array
     }

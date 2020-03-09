@@ -5,6 +5,7 @@
 const debug = require('debug')('index')
 
 const RDFQuery = require('./src/rdfquery')
+const DataFactory = require('./src/data-factory')
 const ShapesGraph = require('./src/shapes-graph')
 const ValidationEngine = require('./src/validation-engine')
 const rdflibgraph = require('./src/rdflib-graph')
@@ -19,15 +20,16 @@ const dataGraphURI = 'urn:x-shacl:dataGraph'
 /********************************/
 /********************************/
 
-const rdf = require('rdf-ext')
-
 /**
  * Validates RDF data based on a set of RDF shapes.
  */
 class SHACLValidator {
-  constructor () {
-    this.$data = new RDFLibGraph()
-    this.$shapes = new RDFLibGraph()
+  constructor (options) {
+    options = options || {}
+
+    this.factory = new DataFactory(options.factory || require('@rdfjs/dataset'))
+    this.$data = new RDFLibGraph({ factory: this.factory })
+    this.$shapes = new RDFLibGraph({ factory: this.factory })
     this.depth = 0
     this.results = null
     this.validationEngine = null
@@ -127,7 +129,7 @@ class SHACLValidator {
 
     this.$shapes.loadGraph(shapesGraphURI, dataset)
 
-    this.$shapes.loadGraph('http://shacl.org', loadVocabulary('shacl'))
+    this.$shapes.loadGraph('http://shacl.org', this._loadVocabulary('shacl'))
   }
 
   /**
@@ -169,16 +171,12 @@ class SHACLValidator {
 
     return this.showValidationResults()
   }
-}
 
-// Expose the RDF interface
-// TODO: Check $rdf was exposed on the validator. Do we need that?
-// SHACLValidator.$rdf = $rdf;
-
-function loadVocabulary (vocab) {
-  const vocabFactory = require(`./src/vocabularies/${vocab}`)
-  const quads = vocabFactory(rdf)
-  return rdf.dataset(quads)
+  _loadVocabulary (vocab) {
+    const vocabFactory = require(`./src/vocabularies/${vocab}`)
+    const quads = vocabFactory(this.factory)
+    return this.factory.dataset(quads)
+  }
 }
 
 module.exports = SHACLValidator

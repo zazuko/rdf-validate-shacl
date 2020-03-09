@@ -1,14 +1,12 @@
-const rdf = require('rdf-ext')
-const RDFQuery = require('./rdfquery')
-const T = RDFQuery.T
-const TermFactory = require('./rdfquery/term-factory')
 const ValidationEngineConfiguration = require('./validation-engine-configuration')
 const ValidationReport = require('./validation-report')
+const { sh } = require('./namespaces')
 const error = require('debug')('validation-enging::error')
 
 class ValidationEngine {
   constructor (context, conformanceOnly) {
     this.context = context
+    this.factory = context.factory
     this.conformanceOnly = conformanceOnly
     this.results = []
     this.recordErrorsLevel = 0
@@ -18,7 +16,7 @@ class ValidationEngine {
   }
 
   addResultProperty (result, predicate, object) {
-    this.results.push(rdf.quad(result, predicate, object))
+    this.results.push(this.factory.quad(result, predicate, object))
   }
 
   /**
@@ -26,17 +24,17 @@ class ValidationEngine {
    * properties for the constraint, focused node and value node
    */
   createResult (constraint, focusNode, valueNode) {
-    const result = TermFactory.blankNode()
+    const result = this.factory.blankNode()
     const severity = constraint.shape.severity
     const sourceConstraintComponent = constraint.component.node
     const sourceShape = constraint.shape.shapeNode
-    this.addResultProperty(result, T('rdf:type'), T('sh:ValidationResult'))
-    this.addResultProperty(result, T('sh:resultSeverity'), severity)
-    this.addResultProperty(result, T('sh:sourceConstraintComponent'), sourceConstraintComponent)
-    this.addResultProperty(result, T('sh:sourceShape'), sourceShape)
-    this.addResultProperty(result, T('sh:focusNode'), focusNode)
+    this.addResultProperty(result, this.factory.term('rdf:type'), this.factory.term('sh:ValidationResult'))
+    this.addResultProperty(result, this.factory.term('sh:resultSeverity'), severity)
+    this.addResultProperty(result, this.factory.term('sh:sourceConstraintComponent'), sourceConstraintComponent)
+    this.addResultProperty(result, this.factory.term('sh:sourceShape'), sourceShape)
+    this.addResultProperty(result, this.factory.term('sh:focusNode'), focusNode)
     if (valueNode) {
-      this.addResultProperty(result, T('sh:value'), valueNode)
+      this.addResultProperty(result, this.factory.term('sh:value'), valueNode)
     }
     return result
   }
@@ -62,7 +60,7 @@ class ValidationEngine {
       }
       const result = this.createResult(constraint, focusNode, valueNode)
       if (constraint.shape.isPropertyShape()) {
-        this.addResultProperty(result, T('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
+        this.addResultProperty(result, this.factory.term('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
       }
       this.createResultMessages(result, constraint)
       return true
@@ -79,9 +77,9 @@ class ValidationEngine {
       }
       const result = this.createResult(constraint, focusNode, valueNode)
       if (constraint.shape.isPropertyShape()) {
-        this.addResultProperty(result, T('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
+        this.addResultProperty(result, this.factory.term('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
       }
-      this.addResultProperty(result, T('sh:resultMessage'), TermFactory.literal(obj, T('xsd:string')))
+      this.addResultProperty(result, this.factory.term('sh:resultMessage'), this.factory.literal(obj, this.factory.term('xsd:string')))
       this.createResultMessages(result, constraint)
       return true
     } else if (typeof obj === 'object') {
@@ -97,17 +95,17 @@ class ValidationEngine {
       }
       const result = this.createResult(constraint, focusNode)
       if (obj.path) {
-        this.addResultProperty(result, T('sh:resultPath'), obj.path) // TODO: Make deep copy
+        this.addResultProperty(result, this.factory.term('sh:resultPath'), obj.path) // TODO: Make deep copy
       } else if (constraint.shape.isPropertyShape()) {
-        this.addResultProperty(result, T('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
+        this.addResultProperty(result, this.factory.term('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
       }
       if (obj.value) {
-        this.addResultProperty(result, T('sh:value'), obj.value)
+        this.addResultProperty(result, this.factory.term('sh:value'), obj.value)
       } else if (valueNode) {
-        this.addResultProperty(result, T('sh:value'), valueNode)
+        this.addResultProperty(result, this.factory.term('sh:value'), valueNode)
       }
       if (obj.message) {
-        this.addResultProperty(result, T('sh:resultMessage'), TermFactory.literal(obj.message, T('xsd:string')))
+        this.addResultProperty(result, this.factory.term('sh:resultMessage'), this.factory.literal(obj.message, this.factory.term('xsd:string')))
       } else {
         this.createResultMessages(result, constraint)
       }
@@ -127,7 +125,7 @@ class ValidationEngine {
 
     // 2. Try to get message from the constraint component validator
     if (ms.length === 0) {
-      ms = constraint.componentMessages.map((m) => TermFactory.literal(m))
+      ms = constraint.componentMessages.map((m) => this.factory.literal(m))
     }
 
     // 3. Try to get message from the constraint focus node
@@ -140,7 +138,7 @@ class ValidationEngine {
     for (let i = 0; i < ms.length; i++) {
       const m = ms[i]
       const str = this.withSubstitutions(m, constraint)
-      this.addResultProperty(result, T('sh:resultMessage'), str)
+      this.addResultProperty(result, this.factory.term('sh:resultMessage'), str)
     }
   }
 
@@ -200,7 +198,7 @@ class ValidationEngine {
     if (this.maxErrorsReached()) {
       return true
     } else {
-      if (T('sh:PropertyConstraintComponent').equals(constraint.component.node)) {
+      if (sh.PropertyConstraintComponent.equals(constraint.component.node)) {
         let errorFound = false
         for (let i = 0; i < valueNodes.length; i++) {
           if (this.validateNodeAgainstShape(valueNodes[i], this.context.shapesGraph.getShape(constraint.paramValue), rdfDataGraph)) {
@@ -295,7 +293,7 @@ class ValidationEngine {
       str = str.replace('{$' + key + '}', label)
       str = str.replace('{?' + key + '}', label)
     }
-    return TermFactory.literal(str, msg.language | msg.datatype)
+    return this.factory.literal(str, msg.language | msg.datatype)
   }
 
   getConfiguration () {
@@ -311,7 +309,7 @@ class ValidationEngine {
       error('Validation Failure: ' + this.validationError)
       throw (this.validationError)
     } else {
-      return new ValidationReport(this.results)
+      return new ValidationReport(this.results, { factory: this.factory })
     }
   }
 }
