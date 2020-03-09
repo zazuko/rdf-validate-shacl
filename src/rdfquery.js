@@ -47,7 +47,7 @@ Equivalent SPARQL:
       FILTER (owl:Class != ?otherClass) .
     } LIMIT 1
 */
-const DataFactory = require('./rdfquery/term-factory')
+const DataFactory = require('./data-factory')
 const { rdf } = require('./namespaces')
 
 /**

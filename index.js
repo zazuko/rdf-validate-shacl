@@ -5,7 +5,7 @@
 const debug = require('debug')('index')
 
 const RDFQuery = require('./src/rdfquery')
-const DataFactory = require('./src/rdfquery/term-factory')
+const DataFactory = require('./src/data-factory')
 const ShapesGraph = require('./src/shapes-graph')
 const ValidationEngine = require('./src/validation-engine')
 const rdflibgraph = require('./src/rdflib-graph')

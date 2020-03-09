@@ -1,4 +1,4 @@
-const DataFactory = require('./rdfquery/term-factory')
+const DataFactory = require('./data-factory')
 const { rdf: rdfNS, sh, xsd } = require('./namespaces')
 
 /**
