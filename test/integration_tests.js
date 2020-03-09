@@ -31,13 +31,13 @@ class ExpectedValidationReport {
 }
 
 class ExpectedValidationResult {
-  constructor (solution) {
-    this._id = solution.report.value
+  constructor ({ report, severity, focusNode, constraint, shape }) {
+    this._id = report.value
 
-    this._focusNode = solution.focusNode.termType === 'BlankNode' ? '_:' + solution.focusNode.id : solution.focusNode.value
-    this._severity = solution.severity.value
-    this._constraint = solution.constraint.value
-    this._shape = solution.shape.termType === 'BlankNode' ? '_:' + solution.shape.id : solution.shape.value
+    this._focusNode = focusNode.termType === 'BlankNode' ? `_:${focusNode.value}` : focusNode.value
+    this._severity = severity.value
+    this._constraint = constraint.value
+    this._shape = shape.termType === 'BlankNode' ? '_:' + shape.value : shape.value
   }
 
   id () {
@@ -79,11 +79,17 @@ const validateReports = async function (input) {
   for (let i = 0; i < results.length; i++) {
     let found = false
     for (let j = 0; j < expectedResults.length; j++) {
-      if (// (results[i].focusNode() ===  expectedResults[j].focusNode() ) &&
-        results[i].severity() === expectedResults[j].severity() &&
-                ((isBlank(results[i].sourceShape()) && isBlank(expectedResults[j].sourceShape())) ||
-                    results[i].sourceShape() === expectedResults[j].sourceShape()) &&
-                results[i].sourceConstraintComponent() === expectedResults[j].sourceConstraintComponent()) {
+      const result = results[i]
+      const expectedResult = expectedResults[j]
+      if (
+        result.focusNode() === expectedResult.focusNode() &&
+        result.severity() === expectedResult.severity() &&
+        (
+          (isBlank(result.sourceShape()) && isBlank(expectedResult.sourceShape())) ||
+          result.sourceShape() === expectedResult.sourceShape()
+        ) &&
+        result.sourceConstraintComponent() === expectedResult.sourceConstraintComponent()
+      ) {
         found = true
       }
     }
