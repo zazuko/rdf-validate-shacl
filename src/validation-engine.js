@@ -1,7 +1,5 @@
-const rdf = require('rdf-ext')
 const RDFQuery = require('./rdfquery')
 const T = RDFQuery.T
-const TermFactory = require('./rdfquery/term-factory')
 const ValidationEngineConfiguration = require('./validation-engine-configuration')
 const ValidationReport = require('./validation-report')
 const error = require('debug')('validation-enging::error')
@@ -9,6 +7,7 @@ const error = require('debug')('validation-enging::error')
 class ValidationEngine {
   constructor (context, conformanceOnly) {
     this.context = context
+    this.factory = context.factory
     this.conformanceOnly = conformanceOnly
     this.results = []
     this.recordErrorsLevel = 0
@@ -18,7 +17,7 @@ class ValidationEngine {
   }
 
   addResultProperty (result, predicate, object) {
-    this.results.push(rdf.quad(result, predicate, object))
+    this.results.push(this.factory.quad(result, predicate, object))
   }
 
   /**
@@ -26,7 +25,7 @@ class ValidationEngine {
    * properties for the constraint, focused node and value node
    */
   createResult (constraint, focusNode, valueNode) {
-    const result = TermFactory.blankNode()
+    const result = this.factory.blankNode()
     const severity = constraint.shape.severity
     const sourceConstraintComponent = constraint.component.node
     const sourceShape = constraint.shape.shapeNode
@@ -81,7 +80,7 @@ class ValidationEngine {
       if (constraint.shape.isPropertyShape()) {
         this.addResultProperty(result, T('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
       }
-      this.addResultProperty(result, T('sh:resultMessage'), TermFactory.literal(obj, T('xsd:string')))
+      this.addResultProperty(result, T('sh:resultMessage'), this.factory.literal(obj, T('xsd:string')))
       this.createResultMessages(result, constraint)
       return true
     } else if (typeof obj === 'object') {
@@ -107,7 +106,7 @@ class ValidationEngine {
         this.addResultProperty(result, T('sh:value'), valueNode)
       }
       if (obj.message) {
-        this.addResultProperty(result, T('sh:resultMessage'), TermFactory.literal(obj.message, T('xsd:string')))
+        this.addResultProperty(result, T('sh:resultMessage'), this.factory.literal(obj.message, T('xsd:string')))
       } else {
         this.createResultMessages(result, constraint)
       }
@@ -127,7 +126,7 @@ class ValidationEngine {
 
     // 2. Try to get message from the constraint component validator
     if (ms.length === 0) {
-      ms = constraint.componentMessages.map((m) => TermFactory.literal(m))
+      ms = constraint.componentMessages.map((m) => this.factory.literal(m))
     }
 
     // 3. Try to get message from the constraint focus node
@@ -295,7 +294,7 @@ class ValidationEngine {
       str = str.replace('{$' + key + '}', label)
       str = str.replace('{?' + key + '}', label)
     }
-    return TermFactory.literal(str, msg.language | msg.datatype)
+    return this.factory.literal(str, msg.language | msg.datatype)
   }
 
   getConfiguration () {
@@ -311,7 +310,7 @@ class ValidationEngine {
       error('Validation Failure: ' + this.validationError)
       throw (this.validationError)
     } else {
-      return new ValidationReport(this.results)
+      return new ValidationReport(this.results, { factory: this.factory })
     }
   }
 }

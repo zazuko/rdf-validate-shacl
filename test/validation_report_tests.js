@@ -92,4 +92,12 @@ describe('ValidationReport', () => {
       assert.strictEqual(report.term.termType, 'BlankNode')
     })
   })
+
+  it('uses injected factory', () => {
+    class MyTerm {}
+    const factory = { blankNode: (id) => new MyTerm() }
+    const report = new ValidationReport([], { factory })
+
+    assert.ok(report.term instanceof MyTerm)
+  })
 })

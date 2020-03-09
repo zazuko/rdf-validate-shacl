@@ -1,7 +1,5 @@
 const RDFQuery = require('./rdfquery')
 const T = RDFQuery.T
-const rdf = require('rdf-ext')
-const TermFactory = require('./rdfquery/term-factory')
 
 /**
  * Creates a new RDFLibGraph wrapping a provided `Dataset` or creating
@@ -11,12 +9,10 @@ const TermFactory = require('./rdfquery/term-factory')
  * @constructor
  */
 class RDFLibGraph {
-  constructor (store) {
-    if (store != null) {
-      this.store = store
-    } else {
-      this.store = rdf.dataset()
-    }
+  constructor (options) {
+    options = options || {}
+    this.factory = options.factory || require('@rdfjs/dataset')
+    this.store = options.dataset || this.factory.dataset()
   }
 
   find (s, p, o) {
@@ -28,11 +24,11 @@ class RDFLibGraph {
   }
 
   loadGraph (graphURI, rdfModel) {
-    postProcessGraph(this.store, graphURI, rdfModel)
+    postProcessGraph(this.store, graphURI, rdfModel, this.factory)
   }
 
   clear () {
-    this.store = rdf.dataset()
+    this.store = this.factory.dataset()
   }
 }
 
@@ -40,7 +36,7 @@ class RDFLibGraphIterator {
   constructor (store, s, p, o) {
     this.index = 0
     // TODO: Could probably make a lazy iterator since Dataset is already an iterator
-    this.ss = store.match(s, p, o).toArray()
+    this.ss = [...store.match(s, p, o)]
   }
 
   close () {
@@ -67,7 +63,7 @@ function ensureBlankId (component) {
   return component
 }
 
-function postProcessGraph (store, graphURI, newStore) {
+function postProcessGraph (store, graphURI, newStore, factory) {
   const ss = newStore.match(undefined, undefined, undefined)
   for (const quad of ss) {
     const object = quad.object
@@ -76,17 +72,17 @@ function postProcessGraph (store, graphURI, newStore) {
     ensureBlankId(quad.object)
     if (T('xsd:boolean').equals(object.datatype)) {
       if (object.value === '0' || object.value === 'false') {
-        store.add(rdf.quad(quad.subject, quad.predicate, T('false'), graphURI))
+        store.add(factory.quad(quad.subject, quad.predicate, T('false'), graphURI))
       } else if (object.value === '1' || object.value === 'true') {
-        store.add(rdf.quad(quad.subject, quad.predicate, T('true'), graphURI))
+        store.add(factory.quad(quad.subject, quad.predicate, T('true'), graphURI))
       } else {
-        store.add(rdf.quad(quad.subject, quad.predicate, object, graphURI))
+        store.add(factory.quad(quad.subject, quad.predicate, object, graphURI))
       }
     } else if (object.termType === 'collection') {
       const items = object.elements
-      store.add(rdf.quad(quad.subject, quad.predicate, createRDFListNode(store, items, 0)))
+      store.add(factory.quad(quad.subject, quad.predicate, createRDFListNode(store, items, 0, factory)))
     } else {
-      store.add(rdf.quad(quad.subject, quad.predicate, quad.object, graphURI))
+      store.add(factory.quad(quad.subject, quad.predicate, quad.object, graphURI))
     }
   }
 
@@ -96,13 +92,13 @@ function postProcessGraph (store, graphURI, newStore) {
   }
 }
 
-function createRDFListNode (store, items, index) {
+function createRDFListNode (store, items, index, factory) {
   if (index >= items.length) {
     return T('rdf:nil')
   } else {
-    const bnode = TermFactory.blankNode()
-    store.add(rdf.quad(bnode, T('rdf:first'), items[index]))
-    store.add(rdf.quad(bnode, T('rdf:rest'), createRDFListNode(store, items, index + 1)))
+    const bnode = factory.blankNode()
+    store.add(factory.quad(bnode, T('rdf:first'), items[index]))
+    store.add(factory.quad(bnode, T('rdf:rest'), createRDFListNode(store, items, index + 1, factory)))
     return bnode
   }
 };
