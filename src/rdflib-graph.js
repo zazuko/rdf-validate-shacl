@@ -1,5 +1,6 @@
+const DataFactory = require('./rdfquery/term-factory')
 const RDFQuery = require('./rdfquery')
-const T = RDFQuery.T
+const { xsd } = require('./namespaces')
 
 /**
  * Creates a new RDFLibGraph wrapping a provided `Dataset` or creating
@@ -11,7 +12,7 @@ const T = RDFQuery.T
 class RDFLibGraph {
   constructor (options) {
     options = options || {}
-    this.factory = options.factory || require('@rdfjs/dataset')
+    this.factory = new DataFactory(options.factory || require('@rdfjs/dataset'))
     this.store = options.dataset || this.factory.dataset()
   }
 
@@ -70,11 +71,11 @@ function postProcessGraph (store, graphURI, newStore, factory) {
     ensureBlankId(quad.subject)
     ensureBlankId(quad.predicate)
     ensureBlankId(quad.object)
-    if (T('xsd:boolean').equals(object.datatype)) {
+    if (xsd.boolean.equals(object.datatype)) {
       if (object.value === '0' || object.value === 'false') {
-        store.add(factory.quad(quad.subject, quad.predicate, T('false'), graphURI))
+        store.add(factory.quad(quad.subject, quad.predicate, factory.term('false'), graphURI))
       } else if (object.value === '1' || object.value === 'true') {
-        store.add(factory.quad(quad.subject, quad.predicate, T('true'), graphURI))
+        store.add(factory.quad(quad.subject, quad.predicate, factory.term('true'), graphURI))
       } else {
         store.add(factory.quad(quad.subject, quad.predicate, object, graphURI))
       }
@@ -94,11 +95,11 @@ function postProcessGraph (store, graphURI, newStore, factory) {
 
 function createRDFListNode (store, items, index, factory) {
   if (index >= items.length) {
-    return T('rdf:nil')
+    return factory.term('rdf:nil')
   } else {
     const bnode = factory.blankNode()
-    store.add(factory.quad(bnode, T('rdf:first'), items[index]))
-    store.add(factory.quad(bnode, T('rdf:rest'), createRDFListNode(store, items, index + 1, factory)))
+    store.add(factory.quad(bnode, factory.term('rdf:first'), items[index]))
+    store.add(factory.quad(bnode, factory.term('rdf:rest'), createRDFListNode(store, items, index + 1, factory)))
     return bnode
   }
 };

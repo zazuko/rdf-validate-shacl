@@ -47,37 +47,8 @@ Equivalent SPARQL:
       FILTER (owl:Class != ?otherClass) .
     } LIMIT 1
 */
-const TermFactory = require('./rdfquery/term-factory')
-this.TermFactory = TermFactory
-
-// Install NodeFactory as an alias - unsure which name is best long term:
-// The official name in RDF is "term", while "node" is more commonly understood.
-// Oficially, a "node" must be in a graph though, while "terms" are independent.
-const NodeFactory = TermFactory
-
-NodeFactory.registerNamespace('dc', 'http://purl.org/dc/elements/1.1/')
-NodeFactory.registerNamespace('dcterms', 'http://purl.org/dc/terms/')
-NodeFactory.registerNamespace('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#')
-NodeFactory.registerNamespace('rdfs', 'http://www.w3.org/2000/01/rdf-schema#')
-NodeFactory.registerNamespace('schema', 'http://schema.org/')
-NodeFactory.registerNamespace('sh', 'http://www.w3.org/ns/shacl#')
-NodeFactory.registerNamespace('skos', 'http://www.w3.org/2004/02/skos/core#')
-NodeFactory.registerNamespace('owl', 'http://www.w3.org/2002/07/owl#')
-NodeFactory.registerNamespace('xsd', 'http://www.w3.org/2001/XMLSchema#')
-
-// Candidates:
-// NodeFactory.registerNamespace("prov", "http://www.w3.org/ns/prov#");
-
-/**
- * A shortcut for NodeFactory.term(str) - turns a TTL string representation of an RDF
- * term into a proper RDF term.
- * This will also use the globally registered namespace prefixes.
- * @param str  the string representation, e.g. "owl:Thing"
- * @returns
- */
-function T (str) {
-  return NodeFactory.term(str)
-}
+const DataFactory = require('./rdfquery/term-factory')
+const { rdf } = require('./namespaces')
 
 /**
  * Creates a query object for a given graph and optional initial solution.
@@ -88,11 +59,18 @@ function T (str) {
  * @param initialSolution  the initial solutions or null for none
  * @returns a query object
  */
-function RDFQuery (graph, initialSolution) {
-  return new StartQuery(graph, initialSolution || [])
+function RDFQuery (graph, initialSolution, options) {
+  options = options || {}
+  const factory = new DataFactory(options.factory || require('@rdfjs/dataset'))
+
+  return new StartQuery(factory, graph, initialSolution || [])
 }
 
 class AbstractQuery {
+  constructor (factory) {
+    this.factory = factory
+  }
+
   // ----------------------------------------------------------------------------
   // Query constructor functions, can be chained together
   // ----------------------------------------------------------------------------
@@ -105,7 +83,7 @@ class AbstractQuery {
    *                      and returns a node or null based on it.
    */
   bind (varName, bindFunction) {
-    return new BindQuery(this, varName, bindFunction)
+    return new BindQuery(this.factory, this, varName, bindFunction)
   }
 
   /**
@@ -114,7 +92,7 @@ class AbstractQuery {
    *                        and returns true iff that solution is valid
    */
   filter (filterFunction) {
-    return new FilterQuery(this, filterFunction)
+    return new FilterQuery(this.factory, this, filterFunction)
   }
 
   /**
@@ -122,7 +100,7 @@ class AbstractQuery {
    * @param limit  the maximum number of results to allow
    */
   limit (limit) {
-    return new LimitQuery(this, limit)
+    return new LimitQuery(this.factory, this, limit)
   }
 
   /**
@@ -136,7 +114,7 @@ class AbstractQuery {
    * @param o  the match object
    */
   match (s, p, o) {
-    return new MatchQuery(this, s, p, o)
+    return new MatchQuery(this.factory, this, s, p, o)
   }
 
   /**
@@ -145,7 +123,7 @@ class AbstractQuery {
    * @param varName  the name of the variable to sort by, starting with "?"
    */
   orderBy (varName) {
-    return new OrderByQuery(this, varName)
+    return new OrderByQuery(this.factory, this, varName)
   }
 
   /**
@@ -166,9 +144,9 @@ class AbstractQuery {
    */
   path (s, path, o) {
     if (path && path.value && path.termType === 'NamedNode') {
-      return new MatchQuery(this, s, path, o)
+      return new MatchQuery(this.factory, this, s, path, o)
     } else {
-      return new PathQuery(this, s, path, o)
+      return new PathQuery(this.factory, this, s, path, o)
     }
   }
 
@@ -214,7 +192,7 @@ class AbstractQuery {
         if (subject.indexOf('?') === 0) {
           s = sol[var2Attr(subject)]
         } else {
-          s = T(subject)
+          s = this.factory.term(subject)
         }
       } else {
         s = subject
@@ -224,7 +202,7 @@ class AbstractQuery {
         if (predicate.indexOf('?') === 0) {
           p = sol[var2Attr(predicate)]
         } else {
-          p = T(predicate)
+          p = this.factory.term(predicate)
         }
       } else {
         p = predicate
@@ -235,7 +213,7 @@ class AbstractQuery {
         if (object.indexOf('?') === 0) {
           o = sol[var2Attr(object)]
         } else {
-          o = T(object)
+          o = this.factory.term(object)
         }
       } else {
         o = object
@@ -357,7 +335,7 @@ class AbstractQuery {
         if (subject.indexOf('?') === 0) {
           s = sol[var2Attr(subject)]
         } else {
-          s = T(subject)
+          s = this.factory.term(subject)
         }
       } else {
         s = subject
@@ -370,7 +348,7 @@ class AbstractQuery {
         if (predicate.indexOf('?') === 0) {
           p = sol[var2Attr(predicate)]
         } else {
-          p = T(predicate)
+          p = this.factory.term(predicate)
         }
       } else {
         p = predicate
@@ -441,8 +419,8 @@ function exprNotEquals (varName, node) {
 // the value is computed by a given function based on the current solution.
 // It is illegal to use a variable that already has a value from the input.
 class BindQuery extends AbstractQuery {
-  constructor (input, varName, bindFunction) {
-    super()
+  constructor (factory, input, varName, bindFunction) {
+    super(factory)
 
     this.attr = var2Attr(varName)
     this.source = input.source
@@ -473,8 +451,8 @@ class BindQuery extends AbstractQuery {
 // Filters the incoming solutions, only letting through those where
 // filterFunction(solution) returns true
 class FilterQuery extends AbstractQuery {
-  constructor (input, filterFunction) {
-    super()
+  constructor (factory, input, filterFunction) {
+    super(factory)
 
     this.source = input.source
     this.input = input
@@ -501,8 +479,8 @@ class FilterQuery extends AbstractQuery {
 
 // Only allows the first n values of the input query through
 class LimitQuery extends AbstractQuery {
-  constructor (input, limit) {
-    super()
+  constructor (factory, input, limit) {
+    super(factory)
 
     this.source = input.source
     this.input = input
@@ -529,8 +507,8 @@ class LimitQuery extends AbstractQuery {
 // Joins the solutions from the input Query with triple matches against
 // the current input graph.
 class MatchQuery extends AbstractQuery {
-  constructor (input, s, p, o) {
-    super()
+  constructor (factory, input, s, p, o) {
+    super(factory)
 
     this.source = input.source
     this.input = input
@@ -538,7 +516,7 @@ class MatchQuery extends AbstractQuery {
       if (s.indexOf('?') === 0) {
         this.sv = var2Attr(s)
       } else {
-        this.s = T(s)
+        this.s = this.factory.term(s)
       }
     } else {
       this.s = s
@@ -547,7 +525,7 @@ class MatchQuery extends AbstractQuery {
       if (p.indexOf('?') === 0) {
         this.pv = var2Attr(p)
       } else {
-        this.p = T(p)
+        this.p = this.factory.term(p)
       }
     } else {
       this.p = p
@@ -556,7 +534,7 @@ class MatchQuery extends AbstractQuery {
       if (o.indexOf('?') === 0) {
         this.ov = var2Attr(o)
       } else {
-        this.o = T(o)
+        this.o = this.factory.term(o)
       }
     } else {
       this.o = o
@@ -614,8 +592,8 @@ class MatchQuery extends AbstractQuery {
 
 // Sorts all solutions from the input stream by a given variable
 class OrderByQuery extends AbstractQuery {
-  constructor (input, varName) {
-    super()
+  constructor (factory, input, varName) {
+    super(factory)
 
     this.input = input
     this.source = input.source
@@ -646,8 +624,8 @@ class OrderByQuery extends AbstractQuery {
 // Expects subject and path to be bound and produces all bindings
 // for the object variable or matches that by evaluating the given path
 class PathQuery extends AbstractQuery {
-  constructor (input, subject, path, object) {
-    super()
+  constructor (factory, input, subject, path, object) {
+    super(factory)
 
     this.input = input
     this.source = input.source
@@ -660,7 +638,7 @@ class PathQuery extends AbstractQuery {
       throw new Error('Path cannot be unbound')
     }
     if (typeof path === 'string') {
-      this.path_ = T(path)
+      this.path_ = this.factory.term(path)
     } else {
       this.path_ = path
     }
@@ -719,8 +697,8 @@ class PathQuery extends AbstractQuery {
 
 // This simply produces a single result: the initial solution
 class StartQuery extends AbstractQuery {
-  constructor (source, initialSolution) {
-    super()
+  constructor (factory, source, initialSolution) {
+    super(factory)
 
     this.source = source
     if (initialSolution && initialSolution.length > 0) {
@@ -775,7 +753,7 @@ function compareTerms (t1, t2) {
         const bd = t1.datatype.value.localeCompare(t2.datatype.value)
         if (bd !== 0) {
           return bd
-        } else if (T('rdf:langString').equals(t1.datatype)) {
+        } else if (rdf.langString.equals(t1.datatype)) {
           return t1.language.localeCompare(t2.language)
         } else {
           return 0
@@ -917,7 +895,6 @@ function walkPath (graph, subject, path, set, visited) {
   }
 }
 
-RDFQuery.T = T
 RDFQuery.getLocalName = getLocalName
 RDFQuery.compareTerms = compareTerms
 RDFQuery.exprEquals = exprEquals

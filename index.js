@@ -5,6 +5,7 @@
 const debug = require('debug')('index')
 
 const RDFQuery = require('./src/rdfquery')
+const DataFactory = require('./src/rdfquery/term-factory')
 const ShapesGraph = require('./src/shapes-graph')
 const ValidationEngine = require('./src/validation-engine')
 const rdflibgraph = require('./src/rdflib-graph')
@@ -26,7 +27,7 @@ class SHACLValidator {
   constructor (options) {
     options = options || {}
 
-    this.factory = options.factory || require('@rdfjs/dataset')
+    this.factory = new DataFactory(options.factory || require('@rdfjs/dataset'))
     this.$data = new RDFLibGraph({ factory: this.factory })
     this.$shapes = new RDFLibGraph({ factory: this.factory })
     this.depth = 0

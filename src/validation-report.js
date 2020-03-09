@@ -1,3 +1,4 @@
+const DataFactory = require('./rdfquery/term-factory')
 const { rdf: rdfNS, sh, xsd } = require('./namespaces')
 
 /**
@@ -6,7 +7,7 @@ const { rdf: rdfNS, sh, xsd } = require('./namespaces')
 class ValidationReport {
   constructor (results, options) {
     options = options || {}
-    this.factory = options.factory || require('@rdfjs/dataset')
+    this.factory = new DataFactory(options.factory || require('@rdfjs/dataset'))
 
     this._results = groupBy(results, (quad) => quad.subject)
       .map(([nodeTerm, nodeQuads]) => new ValidationResult(nodeTerm, nodeQuads))
@@ -44,11 +45,11 @@ class ValidationReport {
 
   _prepareDataset () {
     const dataset = this.factory.dataset()
-    dataset.add(this.factory.quad(this.term, rdfNS.type, sh.ValidationReport))
+    dataset.add(this.factory.quad(this.term, rdfNS.type, this.factory.term('sh:ValidationReport')))
     dataset.add(this.factory.quad(this.term, sh.conforms, this.factory.literal(this.conforms(), xsd.boolean)))
 
     this.results().forEach((result) => {
-      dataset.add(this.factory.quad(this.term, sh.result, result.term))
+      dataset.add(this.factory.quad(this.term, this.factory.term('sh:result'), result.term))
       result.quads.forEach((quad) => dataset.add(quad))
     })
 
