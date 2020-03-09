@@ -289,7 +289,7 @@ class ValidationEngine {
     let str = msg.value
     const values = constraint.parameterValues
     for (const key in values) {
-      const label = nodeLabel(values[key], this.context.$shapes)
+      const label = nodeLabel(values[key])
       str = str.replace('{$' + key + '}', label)
       str = str.replace('{?' + key + '}', label)
     }
@@ -314,21 +314,16 @@ class ValidationEngine {
   }
 }
 
-function nodeLabel (node, store) {
+function nodeLabel (node) {
   if (node.termType === 'Collection') {
     const acc = []
     for (let i = 0; i < node.elements.length; i++) {
-      acc.push(nodeLabel(node.elements[i], store))
+      acc.push(nodeLabel(node.elements[i]))
     }
     return acc.join(', ')
   }
   if (node.termType === 'NamedNode') {
-    for (const prefix in store.namespaces) {
-      const ns = store.namespaces[prefix]
-      if (node.value.indexOf(ns) === 0) {
-        return prefix + ':' + node.value.substring(ns.length)
-      }
-    }
+    // TODO: shrink URI if possible
     return '<' + node.value + '>'
   } else if (node.termType === 'BlankNode') {
     return 'Blank node ' + node.value

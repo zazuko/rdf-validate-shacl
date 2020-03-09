@@ -86,11 +86,6 @@ function postProcessGraph (store, graphURI, newStore, factory) {
       store.add(factory.quad(quad.subject, quad.predicate, quad.object, graphURI))
     }
   }
-
-  for (const prefix in newStore.namespaces) {
-    const ns = newStore.namespaces[prefix]
-    store.namespaces[prefix] = ns
-  }
 }
 
 function createRDFListNode (store, items, index, factory) {
