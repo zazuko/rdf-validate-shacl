@@ -23,7 +23,7 @@ const RDFQueryUtil = require('./rdfquery/util')
 const NodeSet = require('./node-set')
 const ValidationFunction = require('./validation-function')
 const validatorsRegistry = require('./validators-registry')
-const { rdfs, sh } = require('./namespaces')
+const { rdf, rdfs, sh } = require('./namespaces')
 
 class ShapesGraph {
   constructor (context) {
@@ -309,7 +309,7 @@ function toRDFQueryPath ($shapes, shPath) {
   if (shPath.termType === 'BlankNode') {
     const util = new RDFQueryUtil($shapes)
 
-    if (util.getObject(shPath, 'rdf:first')) {
+    if (util.getObject(shPath, rdf.first)) {
       const paths = util.rdfListToArray(shPath)
       const result = []
       for (let i = 0; i < paths.length; i++) {
@@ -318,7 +318,7 @@ function toRDFQueryPath ($shapes, shPath) {
       return result
     }
 
-    const alternativePath = new RDFQuery($shapes).getObject(shPath, 'sh:alternativePath')
+    const alternativePath = util.getObject(shPath, sh.alternativePath)
     if (alternativePath) {
       const paths = util.rdfListToArray(alternativePath)
       const result = []
@@ -328,22 +328,22 @@ function toRDFQueryPath ($shapes, shPath) {
       return { or: result }
     }
 
-    const zeroOrMorePath = util.getObject(shPath, 'sh:zeroOrMorePath')
+    const zeroOrMorePath = util.getObject(shPath, sh.zeroOrMorePath)
     if (zeroOrMorePath) {
       return { zeroOrMore: toRDFQueryPath($shapes, zeroOrMorePath) }
     }
 
-    const oneOrMorePath = util.getObject(shPath, 'sh:oneOrMorePath')
+    const oneOrMorePath = util.getObject(shPath, sh.oneOrMorePath)
     if (oneOrMorePath) {
       return { oneOrMore: toRDFQueryPath($shapes, oneOrMorePath) }
     }
 
-    const zeroOrOnePath = util.getObject(shPath, 'sh:zeroOrOnePath')
+    const zeroOrOnePath = util.getObject(shPath, sh.zeroOrOnePath)
     if (zeroOrOnePath) {
       return { zeroOrOne: toRDFQueryPath($shapes, zeroOrOnePath) }
     }
 
-    const inversePath = util.getObject(shPath, 'sh:inversePath')
+    const inversePath = util.getObject(shPath, sh.inversePath)
     if (inversePath) {
       return { inverse: toRDFQueryPath($shapes, inversePath) }
     }
