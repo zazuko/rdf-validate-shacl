@@ -51,16 +51,12 @@ class ValidationFunction {
       if (param) {
         const value = constraint.getParameterValue(arg)
         args.push(value)
-      } else if (arg === 'focusNode') {
-        args.push(focusNode)
       } else if (arg === 'value') {
         args.push(valueNode)
       } else if (arg === 'currentShape') {
         args.push(constraint.shape.shapeNode)
       } else if (arg === 'path') {
         args.push(constraint.shape.path)
-      } else if (arg === 'shapesGraph') {
-        args.push('DummyShapesGraph')
       } else if (arg === 'this') {
         args.push(focusNode)
       } else if (arg === 'context') {
