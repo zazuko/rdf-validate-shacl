@@ -1,3 +1,4 @@
+const clownface = require('clownface')
 const DataFactory = require('./data-factory')
 const RDFQuery = require('./rdfquery')
 
@@ -19,6 +20,10 @@ class RDFLibGraph {
 
   find (s, p, o) {
     return new RDFLibGraphIterator(this.dataset, s, p, o)
+  }
+
+  get cf () {
+    return clownface({ dataset: this.dataset })
   }
 
   query () {
