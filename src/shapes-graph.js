@@ -30,11 +30,10 @@ class ShapesGraph {
     this.context = context
 
     // Collect all defined constraint components
-    const components = []
-    new RDFQueryUtil(this.context.$shapes).getInstancesOf(sh.ConstraintComponent).forEach(function (node) {
-      components.push(new ConstraintComponent(node, context))
-    })
-    this.components = components
+    this.components = new RDFQueryUtil(context.$shapes)
+      .getInstancesOf(sh.ConstraintComponent)
+      .toArray()
+      .map((node) => new ConstraintComponent(node, context))
 
     // Build map from parameters to constraint components
     this.parametersMap = {}
@@ -78,17 +77,21 @@ class ShapesGraph {
   }
 
   getShapesWithTarget () {
+    const $shapes = this.context.$shapes
+
     if (!this.targetShapes) {
       this.targetShapes = []
       const cs = this.getShapeNodesWithConstraints()
       for (let i = 0; i < cs.length; i++) {
         const shapeNode = cs[i]
-        if (new RDFQueryUtil(this.context.$shapes).isInstanceOf(shapeNode, rdfs.Class) ||
-                  this.context.$shapes.query().match(shapeNode, 'sh:targetClass', null).hasSolution() ||
-                  this.context.$shapes.query().match(shapeNode, 'sh:targetNode', null).hasSolution() ||
-                  this.context.$shapes.query().match(shapeNode, 'sh:targetSubjectsOf', null).hasSolution() ||
-                  this.context.$shapes.query().match(shapeNode, 'sh:targetObjectsOf', null).hasSolution() ||
-                  this.context.$shapes.query().match(shapeNode, 'sh:target', null).hasSolution()) {
+        if (
+          new RDFQueryUtil($shapes).isInstanceOf(shapeNode, rdfs.Class) ||
+          $shapes.query().match(shapeNode, 'sh:targetClass', null).hasSolution() ||
+          $shapes.query().match(shapeNode, 'sh:targetNode', null).hasSolution() ||
+          $shapes.query().match(shapeNode, 'sh:targetSubjectsOf', null).hasSolution() ||
+          $shapes.query().match(shapeNode, 'sh:targetObjectsOf', null).hasSolution() ||
+          $shapes.query().match(shapeNode, 'sh:target', null).hasSolution()
+        ) {
           this.targetShapes.push(this.getShape(shapeNode))
         }
       }
@@ -300,10 +303,14 @@ function toRDFQueryPath ($shapes, shPath) {
     }
     return result
   }
+
   if (shPath.termType === 'NamedNode') {
     return shPath
-  } else if (shPath.termType === 'BlankNode') {
+  }
+
+  if (shPath.termType === 'BlankNode') {
     const util = new RDFQueryUtil($shapes)
+
     if (util.getObject(shPath, 'rdf:first')) {
       const paths = util.rdfListToArray(shPath)
       const result = []
@@ -312,6 +319,7 @@ function toRDFQueryPath ($shapes, shPath) {
       }
       return result
     }
+
     const alternativePath = new RDFQuery($shapes).getObject(shPath, 'sh:alternativePath')
     if (alternativePath) {
       const paths = util.rdfListToArray(alternativePath)
@@ -321,23 +329,28 @@ function toRDFQueryPath ($shapes, shPath) {
       }
       return { or: result }
     }
+
     const zeroOrMorePath = util.getObject(shPath, 'sh:zeroOrMorePath')
     if (zeroOrMorePath) {
       return { zeroOrMore: toRDFQueryPath($shapes, zeroOrMorePath) }
     }
+
     const oneOrMorePath = util.getObject(shPath, 'sh:oneOrMorePath')
     if (oneOrMorePath) {
       return { oneOrMore: toRDFQueryPath($shapes, oneOrMorePath) }
     }
+
     const zeroOrOnePath = util.getObject(shPath, 'sh:zeroOrOnePath')
     if (zeroOrOnePath) {
       return { zeroOrOne: toRDFQueryPath($shapes, zeroOrOnePath) }
     }
+
     const inversePath = util.getObject(shPath, 'sh:inversePath')
     if (inversePath) {
       return { inverse: toRDFQueryPath($shapes, inversePath) }
     }
   }
+
   throw new Error('Unsupported SHACL path ' + shPath)
   // TODO: implement conforming to AbstractQuery.path syntax
   // return shPath
