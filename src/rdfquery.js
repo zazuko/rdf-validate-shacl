@@ -796,8 +796,7 @@ function addPathValues (graph, subject, path, set) {
   if (path.termType === 'NamedNode' && path.value) {
     set.addAll(RDFQuery(graph).match(subject, path, '?object').getNodeArray('?object'))
   } else if (Array.isArray(path)) {
-    let s = new NodeSet()
-    s.add(subject)
+    let s = new NodeSet([subject])
     for (let i = 0; i < path.length; i++) {
       const a = [...s]
       s = new NodeSet()

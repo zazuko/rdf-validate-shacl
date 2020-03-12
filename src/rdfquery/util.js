@@ -11,9 +11,8 @@ class RDFQueryUtil {
     const set = new NodeSet()
     const classes = this.getSubClassesOf($class)
     classes.add($class)
-    const car = classes.toArray()
-    for (let i = 0; i < car.length; i++) {
-      set.addAll(RDFQuery(this.source).match('?instance', 'rdf:type', car[i]).getNodeArray('?instance'))
+    for (const klass of classes) {
+      set.addAll(RDFQuery(this.source).match('?instance', 'rdf:type', klass).getNodeArray('?instance'))
     }
     return set
   }

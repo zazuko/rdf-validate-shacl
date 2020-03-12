@@ -10,13 +10,15 @@ const RDFQueryUtil = require('./rdfquery/util')
 const NodeSet = require('./node-set')
 const { sh, xsd } = require('./namespaces')
 
-const XSDIntegerTypes = new NodeSet()
-XSDIntegerTypes.add(xsd.integer)
+const XSDIntegerTypes = new NodeSet([
+  xsd.integer
+])
 
-const XSDDecimalTypes = new NodeSet()
-XSDDecimalTypes.addAll(XSDIntegerTypes.toArray())
-XSDDecimalTypes.add(xsd.decimal)
-XSDDecimalTypes.add(xsd.float)
+const XSDDecimalTypes = new NodeSet([
+  ...XSDIntegerTypes,
+  xsd.decimal,
+  xsd.float
+])
 
 function validateAnd ($context, $value, $and) {
   const shapes = new RDFQueryUtil($context.$shapes).rdfListToArray($and)
@@ -121,9 +123,7 @@ function validateHasValueProperty ($context, $this, $path, $hasValue) {
 }
 
 function validateIn ($context, $value, $in) {
-  const set = new NodeSet()
-  set.addAll(new RDFQueryUtil($context.$shapes).rdfListToArray($in))
-  return set.has($value)
+  return new NodeSet(new RDFQueryUtil($context.$shapes).rdfListToArray($in)).has($value)
 }
 
 function validateLanguageIn ($context, $value, $languageIn) {
