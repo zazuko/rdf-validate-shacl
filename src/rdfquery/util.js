@@ -1,5 +1,5 @@
 const RDFQuery = require('../rdfquery')
-const NodeSet = RDFQuery.NodeSet
+const NodeSet = require('../node-set')
 const { rdf, rdfs } = require('../namespaces')
 
 class RDFQueryUtil {
@@ -38,7 +38,7 @@ class RDFQueryUtil {
     const classes = this.getSubClassesOf($class)
     const types = this.source.query().match($instance, 'rdf:type', '?type')
     for (let n = types.nextSolution(); n; n = types.nextSolution()) {
-      if (n.type.equals($class) || classes.contains(n.type)) {
+      if (n.type.equals($class) || classes.has(n.type)) {
         types.close()
         return true
       }
@@ -62,7 +62,7 @@ class RDFQueryUtil {
   walkObjects ($results, $subject, $predicate) {
     const it = this.source.find($subject, $predicate, null)
     for (let n = it.next(); n; n = it.next()) {
-      if (!$results.contains(n.object)) {
+      if (!$results.has(n.object)) {
         $results.add(n.object)
         this.walkObjects($results, n.object, $predicate)
       }
@@ -72,7 +72,7 @@ class RDFQueryUtil {
   walkSubjects ($results, $object, $predicate) {
     const it = this.source.find(null, $predicate, $object)
     for (let n = it.next(); n; n = it.next()) {
-      if (!$results.contains(n.subject)) {
+      if (!$results.has(n.subject)) {
         $results.add(n.subject)
         this.walkSubjects($results, n.subject, $predicate)
       }

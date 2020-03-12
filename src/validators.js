@@ -7,7 +7,7 @@
 // natively implemented by the surrounding engine.
 const RDFQuery = require('./rdfquery')
 const RDFQueryUtil = require('./rdfquery/util')
-const NodeSet = RDFQuery.NodeSet
+const NodeSet = require('./node-set')
 const { sh, xsd } = require('./namespaces')
 
 const XSDIntegerTypes = new NodeSet()
@@ -47,7 +47,7 @@ function validateClosed ($context, $value, $closed, $ignoredProperties, $current
   const results = []
   $context.$data.query()
     .match($value, '?predicate', '?object')
-    .filter(function (sol) { return !allowed.contains(sol.predicate) })
+    .filter(function (sol) { return !allowed.has(sol.predicate) })
     .forEach(function (sol) {
       results.push({
         path: sol.predicate,
@@ -123,7 +123,7 @@ function validateHasValueProperty ($context, $this, $path, $hasValue) {
 function validateIn ($context, $value, $in) {
   const set = new NodeSet()
   set.addAll(new RDFQueryUtil($context.$shapes).rdfListToArray($in))
-  return set.contains($value)
+  return set.has($value)
 }
 
 function validateLanguageIn ($context, $value, $languageIn) {
@@ -281,7 +281,7 @@ function validateQualifiedHelper ($context, $this, $path, $qualifiedValueShape, 
     .path($this, toRDFQueryPath($context, $path), '?value')
     .filter(function (sol) {
       return $context.nodeConformsToShape(sol.value, $qualifiedValueShape) &&
-        !validateQualifiedConformsToASibling($context, sol.value, siblingShapes.toArray())
+        !validateQualifiedConformsToASibling($context, sol.value, [...siblingShapes])
     })
     .getCount()
 }
@@ -392,10 +392,10 @@ function toRDFQueryPath ($context, shPath) {
 
 // TODO: Support more datatypes
 function isValidForDatatype (lex, datatype) {
-  if (XSDIntegerTypes.contains(datatype)) {
+  if (XSDIntegerTypes.has(datatype)) {
     const r = parseInt(lex)
     return !isNaN(r)
-  } else if (XSDDecimalTypes.contains(datatype)) {
+  } else if (XSDDecimalTypes.has(datatype)) {
     const r = parseFloat(lex)
     return !isNaN(r)
   } else if (datatype.value === 'http://www.w3.org/2001/XMLSchema#boolean') {
