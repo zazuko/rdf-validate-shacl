@@ -22,6 +22,10 @@ class RDFLibGraph {
     return new RDFLibGraphIterator(this.dataset, s, p, o)
   }
 
+  match (s, p, o) {
+    return this.dataset.match(s, p, o)
+  }
+
   get cf () {
     return clownface({ dataset: this.dataset })
   }

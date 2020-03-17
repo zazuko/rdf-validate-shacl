@@ -46,15 +46,13 @@ function validateClosed ($context, $value, $closed, $ignoredProperties, $current
   if ($ignoredProperties) {
     allowed.addAll(new RDFQueryUtil($context.$shapes).rdfListToArray($ignoredProperties))
   }
+
   const results = []
-  $context.$data.query()
-    .match($value, '?predicate', '?object')
-    .filter(function (sol) { return !allowed.has(sol.predicate) })
-    .forEach(function (sol) {
-      results.push({
-        path: sol.predicate,
-        value: sol.object
-      })
+  const valueQuads = [...$context.$data.match($value, null, null)]
+  valueQuads
+    .filter(({ predicate }) => !allowed.has(predicate))
+    .forEach(({ predicate, object }) => {
+      results.push({ path: predicate, value: object })
     })
   return results
 }
@@ -82,14 +80,15 @@ function validateEqualsProperty ($context, $this, $path, $equals) {
         })
       }
     })
-  $context.$data.query().match($this, $equals, '?value').forEach(
-    function (solution) {
-      if (!$context.$data.query().path($this, path, solution.value).hasSolution()) {
-        results.push({
-          value: solution.value
-        })
-      }
-    })
+
+  const equalsQuads = [...$context.$data.match($this, $equals, null)]
+  equalsQuads.forEach(({ object }) => {
+    const value = object
+    if (!$context.$data.query().path($this, path, value).hasSolution()) {
+      results.push({ value })
+    }
+  })
+
   return results
 }
 
