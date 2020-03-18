@@ -47,6 +47,7 @@ Equivalent SPARQL:
       FILTER (owl:Class != ?otherClass) .
     } LIMIT 1
 */
+const NodeSet = require('./node-set')
 const DataFactory = require('./data-factory')
 const { rdf } = require('./namespaces')
 
@@ -302,7 +303,7 @@ class AbstractQuery {
 
   /**
    * Turns all result bindings for a given variable into a set.
-   * The set has functions .contains and .toArray.
+   *
    * @param varName  the name of the variable, starting with "?"
    * @return a set consisting of RDF node objects
    */
@@ -677,12 +678,12 @@ class PathQuery extends AbstractQuery {
       const om = this.objectAttr ? this.inputSolution[this.objectAttr] : this.object
       const pathResultsSet = new NodeSet()
       addPathValues(this.source, sm, this.path_, pathResultsSet)
-      this.pathResults = pathResultsSet.toArray()
+      this.pathResults = [...pathResultsSet]
       if (this.pathResults.length === 0) {
         delete this.pathResults
       } else if (om) {
         delete this.pathResults
-        if (pathResultsSet.contains(om)) {
+        if (pathResultsSet.has(om)) {
           return this.inputSolution
         }
       } else {
@@ -777,60 +778,6 @@ function getLocalName (uri) {
   return uri.substring(index + 1)
 }
 
-// (a super-primitive implementation for now!)
-class NodeSet {
-  constructor () {
-    this.values = []
-  }
-
-  add (node) {
-    if (!this.contains(node)) {
-      this.values.push(node)
-    }
-  }
-
-  addAll (nodes) {
-    for (let i = 0; i < nodes.length; i++) {
-      this.add(nodes[i])
-    }
-  }
-
-  contains (node) {
-    for (let i = 0; i < this.values.length; i++) {
-      if (this.values[i].equals(node)) {
-        return true
-      }
-    }
-    return false
-  }
-
-  forEach (callback) {
-    for (let i = 0; i < this.values.length; i++) {
-      callback(this.values[i])
-    }
-  }
-
-  size () {
-    return this.values.length
-  }
-
-  toArray () {
-    return this.values
-  }
-
-  toString () {
-    let str = 'NodeSet(' + this.size() + '): ['
-    const arr = this.toArray()
-    for (let i = 0; i < arr.length; i++) {
-      if (i > 0) {
-        str += ', '
-      }
-      str += arr[i]
-    }
-    return str + ']'
-  }
-}
-
 function var2Attr (varName) {
   if (!varName.indexOf('?') === 0) {
     throw new Error('Variable name must start with ?')
@@ -849,16 +796,15 @@ function addPathValues (graph, subject, path, set) {
   if (path.termType === 'NamedNode' && path.value) {
     set.addAll(RDFQuery(graph).match(subject, path, '?object').getNodeArray('?object'))
   } else if (Array.isArray(path)) {
-    let s = new NodeSet()
-    s.add(subject)
+    let s = new NodeSet([subject])
     for (let i = 0; i < path.length; i++) {
-      const a = s.toArray()
+      const a = [...s]
       s = new NodeSet()
       for (let j = 0; j < a.length; j++) {
         addPathValues(graph, a[j], path[i], s)
       }
     }
-    set.addAll(s.toArray())
+    set.addAll(s)
   } else if (path.or) {
     for (let i = 0; i < path.or.length; i++) {
       addPathValues(graph, subject, path.or[i], set)
@@ -886,10 +832,10 @@ function walkPath (graph, subject, path, set, visited) {
   visited.add(subject)
   const s = new NodeSet()
   addPathValues(graph, subject, path, s)
-  const a = s.toArray()
+  const a = [...s]
   set.addAll(a)
   for (let i = 0; i < a.length; i++) {
-    if (!visited.contains(a[i])) {
+    if (!visited.has(a[i])) {
       walkPath(graph, a[i], path, set, visited)
     }
   }
@@ -899,6 +845,5 @@ RDFQuery.getLocalName = getLocalName
 RDFQuery.compareTerms = compareTerms
 RDFQuery.exprEquals = exprEquals
 RDFQuery.exprNotEquals = exprNotEquals
-RDFQuery.NodeSet = NodeSet
 
 module.exports = RDFQuery

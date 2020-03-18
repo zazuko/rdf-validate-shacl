@@ -11,7 +11,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@rdfjs/dataset": "1.0.1",
-    "@rdfjs/namespace": "1.1.0"
+    "@rdfjs/namespace": "1.1.0",
+    "@rdfjs/term-set": "1.0.0"
   },
   "devDependencies": {
     "clownface": "0.12.1",

@@ -20,7 +20,7 @@
 
 const RDFQuery = require('./rdfquery')
 const RDFQueryUtil = require('./rdfquery/util')
-const NodeSet = RDFQuery.NodeSet
+const NodeSet = require('./node-set')
 const ValidationFunction = require('./validation-function')
 const validatorsRegistry = require('./validators-registry')
 const { rdfs, sh } = require('./namespaces')
@@ -30,10 +30,8 @@ class ShapesGraph {
     this.context = context
 
     // Collect all defined constraint components
-    this.components = new RDFQueryUtil(context.$shapes)
-      .getInstancesOf(sh.ConstraintComponent)
-      .toArray()
-      .map((node) => new ConstraintComponent(node, context))
+    const componentNodes = new RDFQueryUtil(context.$shapes).getInstancesOf(sh.ConstraintComponent)
+    this.components = [...componentNodes].map((node) => new ConstraintComponent(node, context))
 
     // Build map from parameters to constraint components
     this.parametersMap = {}
@@ -71,7 +69,7 @@ class ShapesGraph {
           this.context.$shapes.query().match('?shape', params[j], null).addAllNodes('?shape', set)
         }
       }
-      this.shapeNodesWithConstraints = set.toArray()
+      this.shapeNodesWithConstraints = [...set]
     }
     return this.shapeNodesWithConstraints
   }
@@ -235,7 +233,7 @@ class Shape {
     const that = this
     context.$shapes.query().match(shapeNode, '?predicate', '?object').forEach(function (sol) {
       const component = that.context.shapesGraph.getComponentWithParameter(sol.predicate)
-      if (component && !handled.contains(component.node)) {
+      if (component && !handled.has(component.node)) {
         const params = component.getParameters()
         if (params.length === 1) {
           self.constraints.push(new Constraint(self, component, sol.object, context.$shapes))
@@ -255,12 +253,12 @@ class Shape {
     const results = new NodeSet()
 
     if (new RDFQueryUtil(this.context.$shapes).isInstanceOf(this.shapeNode, rdfs.Class)) {
-      results.addAll(new RDFQueryUtil(rdfDataGraph).getInstancesOf(this.shapeNode).toArray())
+      results.addAll(new RDFQueryUtil(rdfDataGraph).getInstancesOf(this.shapeNode))
     }
 
     this.context.$shapes.query()
       .match(this.shapeNode, 'sh:targetClass', '?targetClass').forEachNode('?targetClass', (targetClass) => {
-        results.addAll(new RDFQueryUtil(rdfDataGraph).getInstancesOf(targetClass).toArray())
+        results.addAll(new RDFQueryUtil(rdfDataGraph).getInstancesOf(targetClass))
       })
 
     results.addAll(this.context.$shapes.query()
@@ -278,7 +276,7 @@ class Shape {
         results.addAll(rdfDataGraph.query().match(null, predicate, '?object').getNodeArray('?object'))
       })
 
-    return results.toArray()
+    return [...results]
   }
 
   getValueNodes (focusNode, rdfDataGraph) {
