@@ -77,31 +77,12 @@ class AbstractQuery {
   // ----------------------------------------------------------------------------
 
   /**
-   * Creates a new query that adds a binding for a given variable into
-   * each solution produced by the input query.
-   * @param varName  the name of the variable to bind, starting with "?"
-   * @param bindFunction  a function that takes a solution object
-   *                      and returns a node or null based on it.
-   */
-  bind (varName, bindFunction) {
-    return new BindQuery(this.factory, this, varName, bindFunction)
-  }
-
-  /**
    * Creates a new query that filters the solutions produced by this.
    * @param filterFunction  a function that takes a solution object
    *                        and returns true iff that solution is valid
    */
   filter (filterFunction) {
     return new FilterQuery(this.factory, this, filterFunction)
-  }
-
-  /**
-   * Creates a new query that only allows the first n solutions through.
-   * @param limit  the maximum number of results to allow
-   */
-  limit (limit) {
-    return new LimitQuery(this.factory, this, limit)
   }
 
   /**
@@ -116,15 +97,6 @@ class AbstractQuery {
    */
   match (s, p, o) {
     return new MatchQuery(this.factory, this, s, p, o)
-  }
-
-  /**
-   * Creates a new query that sorts all input solutions by the bindings
-   * for a given variable.
-   * @param varName  the name of the variable to sort by, starting with "?"
-   */
-  orderBy (varName) {
-    return new OrderByQuery(this.factory, this, varName)
   }
 
   /**
@@ -177,78 +149,12 @@ class AbstractQuery {
   }
 
   /**
-   * Produces an array of triple objects where each triple object has properties
-   * subject, predicate and object derived from the provided template values.
-   * Each of these templates can be either a variable name (starting with '?'),
-   * an RDF term string (such as "rdfs:label") or a JavaScript node object.
-   * @param subject  the subject node
-   * @param predicate  the predicate node
-   * @param object  the object node
-   */
-  construct (subject, predicate, object) {
-    const results = []
-    for (let sol = this.nextSolution(); sol; sol = this.nextSolution()) {
-      let s = null
-      if (typeof subject === 'string') {
-        if (subject.indexOf('?') === 0) {
-          s = sol[var2Attr(subject)]
-        } else {
-          s = this.factory.term(subject)
-        }
-      } else {
-        s = subject
-      }
-      let p = null
-      if (typeof predicate === 'string') {
-        if (predicate.indexOf('?') === 0) {
-          p = sol[var2Attr(predicate)]
-        } else {
-          p = this.factory.term(predicate)
-        }
-      } else {
-        p = predicate
-      }
-
-      let o = null
-      if (typeof object === 'string') {
-        if (object.indexOf('?') === 0) {
-          o = sol[var2Attr(object)]
-        } else {
-          o = this.factory.term(object)
-        }
-      } else {
-        o = object
-      }
-
-      if (s && p && o) {
-        results.push({ subject: s, predicate: p, object: o })
-      }
-    }
-    return results
-  }
-
-  /**
    * Executes a given function for each solution.
    * @param callback  a function that takes a solution as argument
    */
   forEach (callback) {
     for (let n = this.nextSolution(); n; n = this.nextSolution()) {
       callback(n)
-    }
-  }
-
-  /**
-   * Executes a given function for each node in a solution set.
-   * @param varName  the name of a variable, starting with "?"
-   * @param callback  a function that takes a node as argument
-   */
-  forEachNode (varName, callback) {
-    const attrName = var2Attr(varName)
-    for (let sol = this.nextSolution(); sol; sol = this.nextSolution()) {
-      const node = sol[attrName]
-      if (node) {
-        callback(node)
-      }
     }
   }
 
@@ -389,19 +295,6 @@ class AbstractQuery {
  * the binding of a given variable from that solution.
  * @param varName  the name of the variable (starting with "?")
  * @param node  the node to compare with
- * @returns true if the solution's variable equals the node
- */
-function exprEquals (varName, node) {
-  return function (sol) {
-    return node.equals(sol[var2Attr(varName)])
-  }
-}
-
-/**
- * Creates a function that takes a solution and compares a given node with
- * the binding of a given variable from that solution.
- * @param varName  the name of the variable (starting with "?")
- * @param node  the node to compare with
  * @returns true if the solution's variable does not equal the node
  */
 function exprNotEquals (varName, node) {
@@ -413,39 +306,6 @@ function exprNotEquals (varName, node) {
 // ----------------------------------------------------------------------------
 // END OF PUBLIC API ----------------------------------------------------------
 // ----------------------------------------------------------------------------
-
-// Takes all input solutions but adds a value for a given variable so that
-// the value is computed by a given function based on the current solution.
-// It is illegal to use a variable that already has a value from the input.
-class BindQuery extends AbstractQuery {
-  constructor (factory, input, varName, bindFunction) {
-    super(factory)
-
-    this.attr = var2Attr(varName)
-    this.source = input.source
-    this.input = input
-    this.bindFunction = bindFunction
-  }
-
-  close () {
-    this.input.close()
-  }
-
-  // Pulls the next result from the input Query and passes it into
-  // the given bind function to add a new node
-  nextSolution () {
-    const result = this.input.nextSolution()
-    if (result == null) {
-      return null
-    } else {
-      const newNode = this.bindFunction(result)
-      if (newNode) {
-        result[this.attr] = newNode
-      }
-      return result
-    }
-  }
-}
 
 // Filters the incoming solutions, only letting through those where
 // filterFunction(solution) returns true
@@ -472,33 +332,6 @@ class FilterQuery extends AbstractQuery {
       } else if (this.filterFunction(result) === true) {
         return result
       }
-    }
-  }
-}
-
-// Only allows the first n values of the input query through
-class LimitQuery extends AbstractQuery {
-  constructor (factory, input, limit) {
-    super(factory)
-
-    this.source = input.source
-    this.input = input
-    this.limit = limit
-  }
-
-  close () {
-    this.input.close()
-  }
-
-  // Pulls the next result from the input Query unless the number
-  // of previous calls has exceeded the given limit
-  nextSolution () {
-    if (this.limit > 0) {
-      this.limit--
-      return this.input.nextSolution()
-    } else {
-      this.input.close()
-      return null
     }
   }
 }
@@ -580,37 +413,6 @@ class MatchQuery extends AbstractQuery {
       const om = this.ov ? this.inputSolution[this.ov] : this.o
       this.ownIterator = this.source.match(sm, pm, om)[Symbol.iterator]()
       return this.nextSolution()
-    } else {
-      return null
-    }
-  }
-}
-
-// Sorts all solutions from the input stream by a given variable
-class OrderByQuery extends AbstractQuery {
-  constructor (factory, input, varName) {
-    super(factory)
-
-    this.input = input
-    this.source = input.source
-    this.attrName = var2Attr(varName)
-  }
-
-  close () {
-    this.input.close()
-  }
-
-  nextSolution () {
-    if (!this.solutions) {
-      this.solutions = this.input.getArray()
-      const attrName = this.attrName
-      this.solutions.sort(function (s1, s2) {
-        return compareTerms(s1[attrName], s2[attrName])
-      })
-      this.index = 0
-    }
-    if (this.index < this.solutions.length) {
-      return this.solutions[this.index++]
     } else {
       return null
     }
@@ -838,7 +640,6 @@ function walkPath (graph, subject, path, set, visited) {
 
 RDFQuery.getLocalName = getLocalName
 RDFQuery.compareTerms = compareTerms
-RDFQuery.exprEquals = exprEquals
 RDFQuery.exprNotEquals = exprNotEquals
 
 module.exports = RDFQuery
