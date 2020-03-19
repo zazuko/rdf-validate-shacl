@@ -18,10 +18,6 @@ class RDFLibGraph {
     this.dataset = options.dataset || this.factory.dataset()
   }
 
-  find (s, p, o) {
-    return new RDFLibGraphIterator(this.dataset, s, p, o)
-  }
-
   match (s, p, o) {
     return this.dataset.match(s, p, o)
   }
@@ -48,25 +44,4 @@ class RDFLibGraph {
   }
 }
 
-class RDFLibGraphIterator {
-  constructor (dataset, s, p, o) {
-    this.index = 0
-    // TODO: Could probably make a lazy iterator since Dataset is already an iterator
-    this.ss = [...dataset.match(s, p, o)]
-  }
-
-  close () {
-    // Do nothing
-  }
-
-  next () {
-    if (this.index >= this.ss.length) {
-      return null
-    } else {
-      return this.ss[this.index++]
-    }
-  }
-}
-
 module.exports.RDFLibGraph = RDFLibGraph
-module.exports.RDFLibGraphIterator = RDFLibGraphIterator
