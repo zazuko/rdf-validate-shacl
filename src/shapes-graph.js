@@ -87,11 +87,11 @@ class ShapesGraph {
         const shapeNode = cs[i]
         if (
           new RDFQueryUtil($shapes).isInstanceOf(shapeNode, rdfs.Class) ||
-          $shapes.query().match(shapeNode, 'sh:targetClass', null).hasSolution() ||
-          $shapes.query().match(shapeNode, 'sh:targetNode', null).hasSolution() ||
-          $shapes.query().match(shapeNode, 'sh:targetSubjectsOf', null).hasSolution() ||
-          $shapes.query().match(shapeNode, 'sh:targetObjectsOf', null).hasSolution() ||
-          $shapes.query().match(shapeNode, 'sh:target', null).hasSolution()
+          $shapes.hasMatch(shapeNode, sh.targetClass, null) ||
+          $shapes.hasMatch(shapeNode, sh.targetNode, null) ||
+          $shapes.hasMatch(shapeNode, sh.targetSubjectsOf, null) ||
+          $shapes.hasMatch(shapeNode, sh.targetObjectsOf, null) ||
+          $shapes.hasMatch(shapeNode, sh.target, null)
         ) {
           this.targetShapes.push(this.getShape(shapeNode))
         }
@@ -138,12 +138,13 @@ class ConstraintComponent {
     const requiredParameters = []
     const optionals = {}
     const that = this
+    const trueTerm = this.context.factory.term('true')
     this.context.$shapes.query()
       .match(node, 'sh:parameter', '?parameter')
       .match('?parameter', 'sh:path', '?path').forEach(function (sol) {
         parameters.push(sol.path)
         parameterNodes.push(sol.parameter)
-        if (that.context.$shapes.query().match(sol.parameter, 'sh:optional', 'true').hasSolution()) {
+        if (that.context.$shapes.hasMatch(sol.parameter, sh.optional, trueTerm)) {
           optionals[sol.path.value] = true
         } else {
           requiredParameters.push(sol.path)
@@ -205,7 +206,7 @@ class ConstraintComponent {
     for (let i = 0; i < this.parameters.length; i++) {
       const parameter = this.parameters[i]
       if (!this.isOptional(parameter.value)) {
-        if (!this.context.$shapes.query().match(shapeNode, parameter, null).hasSolution()) {
+        if (!this.context.$shapes.hasMatch(shapeNode, parameter, null)) {
           return false
         }
       }

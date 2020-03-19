@@ -1,4 +1,5 @@
 const clownface = require('clownface')
+const isMatch = require('@rdfjs/dataset/isMatch')
 const DataFactory = require('./data-factory')
 const RDFQuery = require('./rdfquery')
 
@@ -20,6 +21,16 @@ class RDFLibGraph {
 
   match (s, p, o) {
     return this.dataset.match(s, p, o)
+  }
+
+  hasMatch (s, p, o) {
+    for (const quad of this.dataset) {
+      if (isMatch(quad, s, p, o)) {
+        return true
+      }
+    }
+
+    return false
   }
 
   get cf () {

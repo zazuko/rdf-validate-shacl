@@ -66,7 +66,7 @@ function validateDatatype ($context, $value, $datatype) {
 }
 
 function validateDisjoint ($context, $this, $value, $disjoint) {
-  return !$context.$data.query().match($this, $disjoint, $value).hasSolution()
+  return !$context.$data.hasMatch($this, $disjoint, $value)
 }
 
 function validateEqualsProperty ($context, $this, $path, $equals) {
@@ -74,7 +74,7 @@ function validateEqualsProperty ($context, $this, $path, $equals) {
   const path = toRDFQueryPath($context, $path)
   $context.$data.query().path($this, path, '?value').forEach(
     function (solution) {
-      if (!$context.$data.query().match($this, $equals, solution.value).hasSolution()) {
+      if (!$context.$data.hasMatch($this, $equals, solution.value)) {
         results.push({
           value: solution.value
         })
