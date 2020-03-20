@@ -23,7 +23,8 @@ const RDFQueryUtil = require('./rdfquery/util')
 const NodeSet = require('./node-set')
 const ValidationFunction = require('./validation-function')
 const validatorsRegistry = require('./validators-registry')
-const { rdf, rdfs, sh } = require('./namespaces')
+const { toRDFQueryPath } = require('./validators')
+const { rdfs, sh } = require('./namespaces')
 
 class ShapesGraph {
   constructor (context) {
@@ -300,70 +301,6 @@ class Shape {
   isPropertyShape () {
     return this.path != null
   }
-}
-
-function toRDFQueryPath ($shapes, shPath) {
-  if (shPath.termType === 'Collection') {
-    const paths = new RDFQueryUtil($shapes).rdfListToArray(shPath)
-    const result = []
-    for (let i = 0; i < paths.length; i++) {
-      result.push(toRDFQueryPath($shapes, paths[i]))
-    }
-    return result
-  }
-
-  if (shPath.termType === 'NamedNode') {
-    return shPath
-  }
-
-  if (shPath.termType === 'BlankNode') {
-    const shPathCf = $shapes.cf.node(shPath)
-    const util = new RDFQueryUtil($shapes)
-
-    const first = shPathCf.out(rdf.first).term
-    if (first) {
-      const paths = util.rdfListToArray(shPath)
-      const result = []
-      for (let i = 0; i < paths.length; i++) {
-        result.push(toRDFQueryPath($shapes, paths[i]))
-      }
-      return result
-    }
-
-    const alternativePath = shPathCf.out(sh.alternativePath).term
-    if (alternativePath) {
-      const paths = util.rdfListToArray(alternativePath)
-      const result = []
-      for (let i = 0; i < paths.length; i++) {
-        result.push(toRDFQueryPath($shapes, paths[i]))
-      }
-      return { or: result }
-    }
-
-    const zeroOrMorePath = shPathCf.out(sh.zeroOrMorePath).term
-    if (zeroOrMorePath) {
-      return { zeroOrMore: toRDFQueryPath($shapes, zeroOrMorePath) }
-    }
-
-    const oneOrMorePath = shPathCf.out(sh.oneOrMorePath).term
-    if (oneOrMorePath) {
-      return { oneOrMore: toRDFQueryPath($shapes, oneOrMorePath) }
-    }
-
-    const zeroOrOnePath = shPathCf.out(sh.zeroOrOnePath).term
-    if (zeroOrOnePath) {
-      return { zeroOrOne: toRDFQueryPath($shapes, zeroOrOnePath) }
-    }
-
-    const inversePath = shPathCf.out(sh.inversePath).term
-    if (inversePath) {
-      return { inverse: toRDFQueryPath($shapes, inversePath) }
-    }
-  }
-
-  throw new Error('Unsupported SHACL path ' + shPath)
-  // TODO: implement conforming to AbstractQuery.path syntax
-  // return shPath
 }
 
 module.exports = ShapesGraph

@@ -71,7 +71,7 @@ function validateDisjoint ($context, $this, $value, $disjoint) {
 
 function validateEqualsProperty ($context, $this, $path, $equals) {
   const results = []
-  const path = toRDFQueryPath($context, $path)
+  const path = toRDFQueryPath($context.$shapes, $path)
   $context.$data.query().path($this, path, '?value').forEach(
     function (solution) {
       if (!$context.$data.hasMatch($this, $equals, solution.value)) {
@@ -117,7 +117,7 @@ function validateHasValueNode ($context, $this, $hasValue) {
 }
 
 function validateHasValueProperty ($context, $this, $path, $hasValue) {
-  const count = $context.$data.query().path($this, toRDFQueryPath($context, $path), $hasValue).getCount()
+  const count = $context.$data.query().path($this, toRDFQueryPath($context.$shapes, $path), $hasValue).getCount()
   return count > 0
 }
 
@@ -145,7 +145,7 @@ function validateLanguageIn ($context, $value, $languageIn) {
 function validateLessThanProperty ($context, $this, $path, $lessThan) {
   const results = []
   $context.$data.query()
-    .path($this, toRDFQueryPath($context, $path), '?value')
+    .path($this, toRDFQueryPath($context.$shapes, $path), '?value')
     .match($this, $lessThan, '?otherValue')
     .forEach(function (sol) {
       const c = $context.compareNodes(sol.value, sol.otherValue)
@@ -161,7 +161,7 @@ function validateLessThanProperty ($context, $this, $path, $lessThan) {
 function validateLessThanOrEqualsProperty ($context, $this, $path, $lessThanOrEquals) {
   const results = []
   $context.$data.query()
-    .path($this, toRDFQueryPath($context, $path), '?value')
+    .path($this, toRDFQueryPath($context.$shapes, $path), '?value')
     .match($this, $lessThanOrEquals, '?otherValue')
     .forEach(function (sol) {
       const c = $context.compareNodes(sol.value, sol.otherValue)
@@ -175,7 +175,7 @@ function validateLessThanOrEqualsProperty ($context, $this, $path, $lessThanOrEq
 }
 
 function validateMaxCountProperty ($context, $this, $path, $maxCount) {
-  const count = $context.$data.query().path($this, toRDFQueryPath($context, $path), '?any').getCount()
+  const count = $context.$data.query().path($this, toRDFQueryPath($context.$shapes, $path), '?any').getCount()
   return count <= Number($maxCount.value)
 }
 
@@ -195,7 +195,7 @@ function validateMaxLength ($context, $value, $maxLength) {
 }
 
 function validateMinCountProperty ($context, $this, $path, $minCount) {
-  const count = $context.$data.query().path($this, toRDFQueryPath($context, $path), '?any').getCount()
+  const count = $context.$data.query().path($this, toRDFQueryPath($context.$shapes, $path), '?any').getCount()
   return count >= Number($minCount.value)
 }
 
@@ -268,6 +268,7 @@ function validateQualifiedMinCountProperty ($context, $this, $path, $qualifiedVa
 
 function validateQualifiedHelper ($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape) {
   const siblingShapes = new NodeSet()
+
   if ($context.factory.term('true').equals($qualifiedValueShapesDisjoint)) {
     $context.$shapes.query()
       .match('?parentShape', 'sh:property', $currentShape)
@@ -277,7 +278,7 @@ function validateQualifiedHelper ($context, $this, $path, $qualifiedValueShape, 
       .addAllNodes('?siblingShape', siblingShapes)
   }
   return $context.$data.query()
-    .path($this, toRDFQueryPath($context, $path), '?value')
+    .path($this, toRDFQueryPath($context.$shapes, $path), '?value')
     .filter(function (sol) {
       return $context.nodeConformsToShape(sol.value, $qualifiedValueShape) &&
         !validateQualifiedConformsToASibling($context, sol.value, [...siblingShapes])
@@ -299,7 +300,7 @@ function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
     return
   }
   const map = {}
-  $context.$data.query().path($this, toRDFQueryPath($context, $path), '?value').forEach(function (sol) {
+  $context.$data.query().path($this, toRDFQueryPath($context.$shapes, $path), '?value').forEach(function (sol) {
     const lang = sol.value.language
     if (lang && lang !== '') {
       const old = map[lang]
@@ -335,27 +336,30 @@ function validateXone ($context, $value, $xone) {
 
 // Utilities ------------------------------------------------------------------
 
-function toRDFQueryPath ($context, shPath) {
+function toRDFQueryPath ($shapes, shPath) {
   if (shPath.termType === 'Collection') {
-    const paths = new RDFQueryUtil($context.$shapes).rdfListToArray(shPath)
+    const paths = new RDFQueryUtil($shapes).rdfListToArray(shPath)
     const result = []
     for (let i = 0; i < paths.length; i++) {
-      result.push(toRDFQueryPath($context, paths[i]))
+      result.push(toRDFQueryPath($shapes, paths[i]))
     }
     return result
   }
+
   if (shPath.termType === 'NamedNode') {
     return shPath
-  } else if (shPath.termType === 'BlankNode') {
-    const shPathCf = $context.$shapes.cf.node(shPath)
-    const util = new RDFQueryUtil($context.$shapes)
+  }
+
+  if (shPath.termType === 'BlankNode') {
+    const shPathCf = $shapes.cf.node(shPath)
+    const util = new RDFQueryUtil($shapes)
 
     const first = shPathCf.out(rdf.first).term
     if (first) {
       const paths = util.rdfListToArray(shPath)
       const result = []
       for (let i = 0; i < paths.length; i++) {
-        result.push(toRDFQueryPath($context, paths[i]))
+        result.push(toRDFQueryPath($shapes, paths[i]))
       }
       return result
     }
@@ -365,31 +369,32 @@ function toRDFQueryPath ($context, shPath) {
       const paths = util.rdfListToArray(alternativePath)
       const result = []
       for (let i = 0; i < paths.length; i++) {
-        result.push(toRDFQueryPath($context, paths[i]))
+        result.push(toRDFQueryPath($shapes, paths[i]))
       }
       return { or: result }
     }
 
     const zeroOrMorePath = shPathCf.out(sh.zeroOrMorePath).term
     if (zeroOrMorePath) {
-      return { zeroOrMore: toRDFQueryPath($context, zeroOrMorePath) }
+      return { zeroOrMore: toRDFQueryPath($shapes, zeroOrMorePath) }
     }
 
     const oneOrMorePath = shPathCf.out(sh.oneOrMorePath).term
     if (oneOrMorePath) {
-      return { oneOrMore: toRDFQueryPath($context, oneOrMorePath) }
+      return { oneOrMore: toRDFQueryPath($shapes, oneOrMorePath) }
     }
 
     const zeroOrOnePath = shPathCf.out(sh.zeroOrOnePath).term
     if (zeroOrOnePath) {
-      return { zeroOrOne: toRDFQueryPath($context, zeroOrOnePath) }
+      return { zeroOrOne: toRDFQueryPath($shapes, zeroOrOnePath) }
     }
 
     const inversePath = shPathCf.out(sh.inversePath).term
     if (inversePath) {
-      return { inverse: toRDFQueryPath($context, inversePath) }
+      return { inverse: toRDFQueryPath($shapes, inversePath) }
     }
   }
+
   throw new Error('Unsupported SHACL path ' + shPath)
   // TODO: implement conforming to AbstractQuery.path syntax
   // return shPath
@@ -413,6 +418,7 @@ function isValidForDatatype (lex, datatype) {
 }
 
 module.exports = {
+  toRDFQueryPath,
   validateAnd,
   validateClass,
   validateClosed,
