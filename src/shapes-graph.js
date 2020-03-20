@@ -317,9 +317,11 @@ function toRDFQueryPath ($shapes, shPath) {
   }
 
   if (shPath.termType === 'BlankNode') {
+    const shPathCf = $shapes.cf.node(shPath)
     const util = new RDFQueryUtil($shapes)
 
-    if (util.getObject(shPath, rdf.first)) {
+    const first = shPathCf.out(rdf.first).term
+    if (first) {
       const paths = util.rdfListToArray(shPath)
       const result = []
       for (let i = 0; i < paths.length; i++) {
@@ -328,7 +330,7 @@ function toRDFQueryPath ($shapes, shPath) {
       return result
     }
 
-    const alternativePath = util.getObject(shPath, sh.alternativePath)
+    const alternativePath = shPathCf.out(sh.alternativePath).term
     if (alternativePath) {
       const paths = util.rdfListToArray(alternativePath)
       const result = []
@@ -338,22 +340,22 @@ function toRDFQueryPath ($shapes, shPath) {
       return { or: result }
     }
 
-    const zeroOrMorePath = util.getObject(shPath, sh.zeroOrMorePath)
+    const zeroOrMorePath = shPathCf.out(sh.zeroOrMorePath).term
     if (zeroOrMorePath) {
       return { zeroOrMore: toRDFQueryPath($shapes, zeroOrMorePath) }
     }
 
-    const oneOrMorePath = util.getObject(shPath, sh.oneOrMorePath)
+    const oneOrMorePath = shPathCf.out(sh.oneOrMorePath).term
     if (oneOrMorePath) {
       return { oneOrMore: toRDFQueryPath($shapes, oneOrMorePath) }
     }
 
-    const zeroOrOnePath = util.getObject(shPath, sh.zeroOrOnePath)
+    const zeroOrOnePath = shPathCf.out(sh.zeroOrOnePath).term
     if (zeroOrOnePath) {
       return { zeroOrOne: toRDFQueryPath($shapes, zeroOrOnePath) }
     }
 
-    const inversePath = util.getObject(shPath, sh.inversePath)
+    const inversePath = shPathCf.out(sh.inversePath).term
     if (inversePath) {
       return { inverse: toRDFQueryPath($shapes, inversePath) }
     }

@@ -223,56 +223,6 @@ class AbstractQuery {
   }
 
   /**
-   * Queries the underlying graph for the object of a subject/predicate combination,
-   * where either subject or predicate can be a variable which is substituted with
-   * a value from the next input solution.
-   * Note that even if there are multiple solutions it will just return the "first"
-   * one and since the order of triples in RDF is undefined this may lead to random results.
-   * Unbound values produce errors.
-   * @param subject  an RDF term or a variable (starting with "?") or a TTL representation
-   * @param predicate  an RDF term or a variable (starting with "?") or a TTL representation
-   * @return the object of the "first" triple matching the subject/predicate combination
-   */
-  getObject (subject, predicate) {
-    const sol = this.nextSolution()
-    if (sol) {
-      this.close()
-      let s
-      if (typeof subject === 'string') {
-        if (subject.indexOf('?') === 0) {
-          s = sol[var2Attr(subject)]
-        } else {
-          s = this.factory.term(subject)
-        }
-      } else {
-        s = subject
-      }
-      if (!s) {
-        throw new Error('getObject() called with null subject')
-      }
-      let p
-      if (typeof predicate === 'string') {
-        if (predicate.indexOf('?') === 0) {
-          p = sol[var2Attr(predicate)]
-        } else {
-          p = this.factory.term(predicate)
-        }
-      } else {
-        p = predicate
-      }
-      if (!p) {
-        throw new Error('getObject() called with null predicate')
-      }
-
-      const object = this.source.cf.node(s).out(p).term
-      if (object) {
-        return object
-      }
-    }
-    return null
-  }
-
-  /**
    * Tests if there is any solution and closes the query.
    * @return true if there is another solution
    */

@@ -24,13 +24,6 @@ class RDFQueryUtil {
     }, new NodeSet())
   }
 
-  getObject ($subject, $predicate) {
-    return this.cf
-      .node($subject)
-      .out($predicate)
-      .term
-  }
-
   getSubClassesOf ($class) {
     const subclasses = this.cf
       .node($class)
@@ -58,8 +51,10 @@ class RDFQueryUtil {
     } else {
       const items = []
       while (!$rdfList.equals(rdf.nil)) {
-        items.push(this.getObject($rdfList, rdf.first))
-        $rdfList = this.getObject($rdfList, rdf.rest)
+        const first = this.cf.node($rdfList).out(rdf.first).term
+        items.push(first)
+        const rest = this.cf.node($rdfList).out(rdf.rest).term
+        $rdfList = rest
       }
       return items
     }
