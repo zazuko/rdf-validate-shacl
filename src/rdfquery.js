@@ -123,30 +123,10 @@ class AbstractQuery {
     }
   }
 
-  // TODO: add other SPARQL-like query types
-  //       - .distinct()
-  //       - .union(otherQuery)
-
   // ----------------------------------------------------------------------------
   // Terminal functions - convenience functions to get values.
   // All these functions close the solution iterators.
   // ----------------------------------------------------------------------------
-
-  /**
-   * Adds all nodes produced by a given solution variable into a set.
-   * The set must have an add(node) function.
-   * @param varName  the name of the variable, starting with "?"
-   * @param set  the set to add to
-   */
-  addAllNodes (varName, set) {
-    const attrName = var2Attr(varName)
-    for (let sol = this.nextSolution(); sol; sol = this.nextSolution()) {
-      const node = sol[attrName]
-      if (node) {
-        set.add(node)
-      }
-    }
-  }
 
   /**
    * Executes a given function for each solution.
@@ -179,22 +159,6 @@ class AbstractQuery {
   }
 
   /**
-   * Gets the next solution and, if that exists, returns the binding for a
-   * given variable from that solution.
-   * @param varName  the name of the binding to get, starting with "?"
-   * @return the value of the variable or null or undefined if it doesn't exist
-   */
-  getNode (varName) {
-    const s = this.nextSolution()
-    if (s) {
-      this.close()
-      return s[var2Attr(varName)]
-    } else {
-      return null
-    }
-  }
-
-  /**
    * Turns all results into an array of bindings for a given variable.
    * @return an array consisting of RDF node objects
    */
@@ -203,21 +167,6 @@ class AbstractQuery {
     const attr = var2Attr(varName)
     for (let n = this.nextSolution(); n != null; n = this.nextSolution()) {
       results.push(n[attr])
-    }
-    return results
-  }
-
-  /**
-   * Turns all result bindings for a given variable into a set.
-   *
-   * @param varName  the name of the variable, starting with "?"
-   * @return a set consisting of RDF node objects
-   */
-  getNodeSet (varName) {
-    const results = new NodeSet()
-    const attr = var2Attr(varName)
-    for (let n = this.nextSolution(); n != null; n = this.nextSolution()) {
-      results.add(n[attr])
     }
     return results
   }
@@ -233,23 +182,6 @@ class AbstractQuery {
     } else {
       return false
     }
-  }
-}
-
-// ----------------------------------------------------------------------------
-// Expression functions - may be used in filter and bind queries
-// ----------------------------------------------------------------------------
-
-/**
- * Creates a function that takes a solution and compares a given node with
- * the binding of a given variable from that solution.
- * @param varName  the name of the variable (starting with "?")
- * @param node  the node to compare with
- * @returns true if the solution's variable does not equal the node
- */
-function exprNotEquals (varName, node) {
-  return function (sol) {
-    return !node.equals(sol[var2Attr(varName)])
   }
 }
 
@@ -590,6 +522,5 @@ function walkPath (graph, subject, path, set, visited) {
 
 RDFQuery.getLocalName = getLocalName
 RDFQuery.compareTerms = compareTerms
-RDFQuery.exprNotEquals = exprNotEquals
 
 module.exports = RDFQuery
