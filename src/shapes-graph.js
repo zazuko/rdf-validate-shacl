@@ -134,27 +134,28 @@ class ConstraintComponent {
   constructor (node, context) {
     this.context = context
     this.node = node
-    const parameters = []
-    const parameterNodes = []
-    const requiredParameters = []
-    const optionals = {}
-    const that = this
+
+    this.parameters = []
+    this.parameterNodes = []
+    this.requiredParameters = []
+    this.optionals = {}
     const trueTerm = this.context.factory.term('true')
-    this.context.$shapes.query()
-      .match(node, 'sh:parameter', '?parameter')
-      .match('?parameter', 'sh:path', '?path').forEach(function (sol) {
-        parameters.push(sol.path)
-        parameterNodes.push(sol.parameter)
-        if (that.context.$shapes.hasMatch(sol.parameter, sh.optional, trueTerm)) {
-          optionals[sol.path.value] = true
-        } else {
-          requiredParameters.push(sol.path)
-        }
+    this.context.$shapes.cf
+      .node(node)
+      .out(sh.parameter)
+      .forEach(parameterCf => {
+        const parameter = parameterCf.term
+
+        parameterCf.out(sh.path).forEach(({ term: path }) => {
+          this.parameters.push(path)
+          this.parameterNodes.push(parameter)
+          if (this.context.$shapes.hasMatch(parameter, sh.optional, trueTerm)) {
+            this.optionals[path.value] = true
+          } else {
+            this.requiredParameters.push(path)
+          }
+        })
       })
-    this.optionals = optionals
-    this.parameters = parameters
-    this.parameterNodes = parameterNodes
-    this.requiredParameters = requiredParameters
 
     this.nodeValidationFunction = this.findValidationFunction(sh.nodeValidator)
     if (!this.nodeValidationFunction) {

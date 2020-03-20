@@ -5,7 +5,6 @@
 
 // There is no validator for sh:property as this is expected to be
 // natively implemented by the surrounding engine.
-const RDFQuery = require('./rdfquery')
 const RDFQueryUtil = require('./rdfquery/util')
 const NodeSet = require('./node-set')
 const { rdf, sh, xsd } = require('./namespaces')
@@ -38,11 +37,16 @@ function validateClosed ($context, $value, $closed, $ignoredProperties, $current
   if (!$context.factory.term('true').equals($closed)) {
     return
   }
-  const allowed = $context.$shapes.query()
-    .match($currentShape, 'sh:property', '?propertyShape')
-    .match('?propertyShape', 'sh:path', '?path')
-    .filter(function (solution) { return solution.path.termType === 'NamedNode' })
-    .getNodeSet('?path')
+
+  const allowed = new NodeSet(
+    $context.$shapes.cf
+      .node($currentShape)
+      .out(sh.property)
+      .out(sh.path)
+      .terms
+      .filter((term) => term.termType === 'NamedNode')
+  )
+
   if ($ignoredProperties) {
     allowed.addAll(new RDFQueryUtil($context.$shapes).rdfListToArray($ignoredProperties))
   }
@@ -270,13 +274,20 @@ function validateQualifiedHelper ($context, $this, $path, $qualifiedValueShape, 
   const siblingShapes = new NodeSet()
 
   if ($context.factory.term('true').equals($qualifiedValueShapesDisjoint)) {
-    $context.$shapes.query()
-      .match('?parentShape', 'sh:property', $currentShape)
-      .match('?parentShape', 'sh:property', '?sibling')
-      .match('?sibling', 'sh:qualifiedValueShape', '?siblingShape')
-      .filter(RDFQuery.exprNotEquals('?siblingShape', $qualifiedValueShape))
-      .addAllNodes('?siblingShape', siblingShapes)
+    const qualifiedSiblingShapes = $context.$shapes.cf
+      .node($currentShape)
+      // Move up to parent
+      .in(sh.property)
+      // Move down to all siblings
+      .out(sh.property)
+      // Select sh:qualifiedValueShape of all siblings
+      .out(sh.qualifiedValueShape)
+      .filter(({ term }) => !term.equals($qualifiedValueShape))
+      .terms
+
+    siblingShapes.addAll(qualifiedSiblingShapes)
   }
+
   return $context.$data.query()
     .path($this, toRDFQueryPath($context.$shapes, $path), '?value')
     .filter(function (sol) {
