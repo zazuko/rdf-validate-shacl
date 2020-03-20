@@ -23,7 +23,7 @@ const RDFQueryUtil = require('./rdfquery/util')
 const NodeSet = require('./node-set')
 const ValidationFunction = require('./validation-function')
 const validatorsRegistry = require('./validators-registry')
-const { rdfs, sh } = require('./namespaces')
+const { rdf, rdfs, sh } = require('./namespaces')
 
 class ShapesGraph {
   constructor (context) {
@@ -66,7 +66,10 @@ class ShapesGraph {
       for (let i = 0; i < this.components.length; i++) {
         const params = this.components[i].requiredParameters
         for (let j = 0; j < params.length; j++) {
-          this.context.$shapes.query().match('?shape', params[j], null).addAllNodes('?shape', set)
+          const shapesWithParam = [...this.context.$shapes
+            .match(null, params[j], null)]
+            .map(({ subject }) => subject)
+          set.addAll(shapesWithParam)
         }
       }
       this.shapeNodesWithConstraints = [...set]
@@ -84,11 +87,11 @@ class ShapesGraph {
         const shapeNode = cs[i]
         if (
           new RDFQueryUtil($shapes).isInstanceOf(shapeNode, rdfs.Class) ||
-          $shapes.query().match(shapeNode, 'sh:targetClass', null).hasSolution() ||
-          $shapes.query().match(shapeNode, 'sh:targetNode', null).hasSolution() ||
-          $shapes.query().match(shapeNode, 'sh:targetSubjectsOf', null).hasSolution() ||
-          $shapes.query().match(shapeNode, 'sh:targetObjectsOf', null).hasSolution() ||
-          $shapes.query().match(shapeNode, 'sh:target', null).hasSolution()
+          $shapes.hasMatch(shapeNode, sh.targetClass, null) ||
+          $shapes.hasMatch(shapeNode, sh.targetNode, null) ||
+          $shapes.hasMatch(shapeNode, sh.targetSubjectsOf, null) ||
+          $shapes.hasMatch(shapeNode, sh.targetObjectsOf, null) ||
+          $shapes.hasMatch(shapeNode, sh.target, null)
         ) {
           this.targetShapes.push(this.getShape(shapeNode))
         }
@@ -108,7 +111,7 @@ class Constraint {
     const params = component.getParameters()
     for (let i = 0; i < params.length; i++) {
       const param = params[i]
-      const value = paramValue || rdfShapesGraph.query().match(shape.shapeNode, param, '?value').getNode('?value')
+      const value = paramValue || rdfShapesGraph.cf.node(shape.shapeNode).out(param).term
       if (value) {
         const localName = RDFQuery.getLocalName(param.value)
         parameterValues[localName] = value
@@ -135,12 +138,13 @@ class ConstraintComponent {
     const requiredParameters = []
     const optionals = {}
     const that = this
+    const trueTerm = this.context.factory.term('true')
     this.context.$shapes.query()
       .match(node, 'sh:parameter', '?parameter')
       .match('?parameter', 'sh:path', '?path').forEach(function (sol) {
         parameters.push(sol.path)
         parameterNodes.push(sol.parameter)
-        if (that.context.$shapes.query().match(sol.parameter, 'sh:optional', 'true').hasSolution()) {
+        if (that.context.$shapes.hasMatch(sol.parameter, sh.optional, trueTerm)) {
           optionals[sol.path.value] = true
         } else {
           requiredParameters.push(sol.path)
@@ -202,7 +206,7 @@ class ConstraintComponent {
     for (let i = 0; i < this.parameters.length; i++) {
       const parameter = this.parameters[i]
       if (!this.isOptional(parameter.value)) {
-        if (!this.context.$shapes.query().match(shapeNode, parameter, null).hasSolution()) {
+        if (!this.context.$shapes.hasMatch(shapeNode, parameter, null)) {
           return false
         }
       }
@@ -218,20 +222,21 @@ class ConstraintComponent {
 class Shape {
   constructor (context, shapeNode) {
     this.context = context
-    this.severity = context.$shapes.query().match(shapeNode, 'sh:severity', '?severity').getNode('?severity')
+    this.severity = context.$shapes.cf.node(shapeNode).out(sh.severity).term
     if (!this.severity) {
       this.severity = context.factory.term('sh:Violation')
     }
 
-    this.deactivated = context.$shapes.query().match(shapeNode, 'sh:deactivated', 'true').hasSolution()
-    this.path = context.$shapes.query().match(shapeNode, 'sh:path', '?path').getNode('?path')
+    this.deactivated = context.$shapes.cf.node(shapeNode).out(sh.deactivated).value === 'true'
+    this.path = context.$shapes.cf.node(shapeNode).out(sh.path).term
     this.shapeNode = shapeNode
     this.constraints = []
 
     const handled = new NodeSet()
     const self = this
     const that = this
-    context.$shapes.query().match(shapeNode, '?predicate', '?object').forEach(function (sol) {
+    const shapeProperties = [...context.$shapes.match(shapeNode, null, null)]
+    shapeProperties.forEach(function (sol) {
       const component = that.context.shapesGraph.getComponentWithParameter(sol.predicate)
       if (component && !handled.has(component.node)) {
         const params = component.getParameters()
@@ -256,24 +261,29 @@ class Shape {
       results.addAll(new RDFQueryUtil(rdfDataGraph).getInstancesOf(this.shapeNode))
     }
 
-    this.context.$shapes.query()
-      .match(this.shapeNode, 'sh:targetClass', '?targetClass').forEachNode('?targetClass', (targetClass) => {
-        results.addAll(new RDFQueryUtil(rdfDataGraph).getInstancesOf(targetClass))
+    const targetClasses = [...this.context.$shapes.match(this.shapeNode, sh.targetClass, null)]
+    targetClasses.forEach(({ object: targetClass }) => {
+      results.addAll(new RDFQueryUtil(rdfDataGraph).getInstancesOf(targetClass))
+    })
+
+    results.addAll(this.context.$shapes.cf.node(this.shapeNode).out(sh.targetNode).terms)
+
+    this.context.$shapes.cf
+      .node(this.shapeNode)
+      .out(sh.targetSubjectsOf)
+      .terms
+      .forEach((predicate) => {
+        const subjects = [...rdfDataGraph.match(null, predicate, null)].map(({ subject }) => subject)
+        results.addAll(subjects)
       })
 
-    results.addAll(this.context.$shapes.query()
-      .match(this.shapeNode, 'sh:targetNode', '?targetNode').getNodeArray('?targetNode'))
-
-    this.context.$shapes.query()
-      .match(this.shapeNode, 'sh:targetSubjectsOf', '?subjectsOf')
-      .forEachNode('?subjectsOf', (predicate) => {
-        results.addAll(rdfDataGraph.query().match('?subject', predicate, null).getNodeArray('?subject'))
-      })
-
-    this.context.$shapes.query()
-      .match(this.shapeNode, 'sh:targetObjectsOf', '?objectsOf')
-      .forEachNode('?objectsOf', (predicate) => {
-        results.addAll(rdfDataGraph.query().match(null, predicate, '?object').getNodeArray('?object'))
+    this.context.$shapes.cf
+      .node(this.shapeNode)
+      .out(sh.targetObjectsOf)
+      .terms
+      .forEach((predicate) => {
+        const objects = [...rdfDataGraph.match(null, predicate, null)].map(({ object }) => object)
+        results.addAll(objects)
       })
 
     return [...results]
@@ -309,7 +319,7 @@ function toRDFQueryPath ($shapes, shPath) {
   if (shPath.termType === 'BlankNode') {
     const util = new RDFQueryUtil($shapes)
 
-    if (util.getObject(shPath, 'rdf:first')) {
+    if (util.getObject(shPath, rdf.first)) {
       const paths = util.rdfListToArray(shPath)
       const result = []
       for (let i = 0; i < paths.length; i++) {
@@ -318,7 +328,7 @@ function toRDFQueryPath ($shapes, shPath) {
       return result
     }
 
-    const alternativePath = new RDFQuery($shapes).getObject(shPath, 'sh:alternativePath')
+    const alternativePath = util.getObject(shPath, sh.alternativePath)
     if (alternativePath) {
       const paths = util.rdfListToArray(alternativePath)
       const result = []
@@ -328,22 +338,22 @@ function toRDFQueryPath ($shapes, shPath) {
       return { or: result }
     }
 
-    const zeroOrMorePath = util.getObject(shPath, 'sh:zeroOrMorePath')
+    const zeroOrMorePath = util.getObject(shPath, sh.zeroOrMorePath)
     if (zeroOrMorePath) {
       return { zeroOrMore: toRDFQueryPath($shapes, zeroOrMorePath) }
     }
 
-    const oneOrMorePath = util.getObject(shPath, 'sh:oneOrMorePath')
+    const oneOrMorePath = util.getObject(shPath, sh.oneOrMorePath)
     if (oneOrMorePath) {
       return { oneOrMore: toRDFQueryPath($shapes, oneOrMorePath) }
     }
 
-    const zeroOrOnePath = util.getObject(shPath, 'sh:zeroOrOnePath')
+    const zeroOrOnePath = util.getObject(shPath, sh.zeroOrOnePath)
     if (zeroOrOnePath) {
       return { zeroOrOne: toRDFQueryPath($shapes, zeroOrOnePath) }
     }
 
-    const inversePath = util.getObject(shPath, 'sh:inversePath')
+    const inversePath = util.getObject(shPath, sh.inversePath)
     if (inversePath) {
       return { inverse: toRDFQueryPath($shapes, inversePath) }
     }

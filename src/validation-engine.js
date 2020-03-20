@@ -119,9 +119,9 @@ class ValidationEngine {
    */
   createResultMessages (result, constraint) {
     // 1. Try to get message from the shape itself
-    let ms = this.context.$shapes.query()
-      .match(constraint.shape.shapeNode, 'sh:message', '?message')
-      .getNodeArray('?message')
+    let ms = [...this.context.$shapes
+      .match(constraint.shape.shapeNode, sh.message, null)]
+      .map(({ object }) => object)
 
     // 2. Try to get message from the constraint component validator
     if (ms.length === 0) {
@@ -130,9 +130,9 @@ class ValidationEngine {
 
     // 3. Try to get message from the constraint focus node
     if (ms.length === 0) {
-      ms = this.context.$shapes.query()
-        .match(constraint.component.node, 'sh:message', '?message')
-        .getNodeArray('?message')
+      ms = [...this.context.$shapes
+        .match(constraint.component.node, sh.message, null)]
+        .map(({ object }) => object)
     }
 
     for (let i = 0; i < ms.length; i++) {

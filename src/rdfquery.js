@@ -358,11 +358,9 @@ class AbstractQuery {
         throw new Error('getObject() called with null predicate')
       }
 
-      const it = this.source.find(s, p, null)
-      const triple = it.next()
-      if (triple) {
-        it.close()
-        return triple.object
+      const object = this.source.cf.node(s).out(p).term
+      if (object) {
+        return object
       }
     }
     return null
@@ -544,9 +542,6 @@ class MatchQuery extends AbstractQuery {
 
   close () {
     this.input.close()
-    if (this.ownIterator) {
-      this.ownIterator.close()
-    }
   }
 
   // This pulls the first solution from the input Query and uses it to
@@ -559,8 +554,8 @@ class MatchQuery extends AbstractQuery {
   nextSolution () {
     const oit = this.ownIterator
     if (oit) {
-      const n = oit.next()
-      if (n != null) {
+      const { value: n, done } = oit.next()
+      if (!done) {
         const result = createSolution(this.inputSolution)
         if (this.sv) {
           result[this.sv] = n.subject
@@ -583,7 +578,7 @@ class MatchQuery extends AbstractQuery {
       const sm = this.sv ? this.inputSolution[this.sv] : this.s
       const pm = this.pv ? this.inputSolution[this.pv] : this.p
       const om = this.ov ? this.inputSolution[this.ov] : this.o
-      this.ownIterator = this.source.find(sm, pm, om)
+      this.ownIterator = this.source.match(sm, pm, om)[Symbol.iterator]()
       return this.nextSolution()
     } else {
       return null
