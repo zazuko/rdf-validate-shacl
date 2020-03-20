@@ -235,17 +235,15 @@ class Shape {
     this.constraints = []
 
     const handled = new NodeSet()
-    const self = this
-    const that = this
     const shapeProperties = [...context.$shapes.match(shapeNode, null, null)]
-    shapeProperties.forEach(function (sol) {
-      const component = that.context.shapesGraph.getComponentWithParameter(sol.predicate)
+    shapeProperties.forEach((sol) => {
+      const component = this.context.shapesGraph.getComponentWithParameter(sol.predicate)
       if (component && !handled.has(component.node)) {
         const params = component.getParameters()
         if (params.length === 1) {
-          self.constraints.push(new Constraint(self, component, sol.object, context.$shapes))
+          this.constraints.push(new Constraint(this, component, sol.object, context.$shapes))
         } else if (component.isComplete(shapeNode)) {
-          self.constraints.push(new Constraint(self, component, undefined, context.$shapes))
+          this.constraints.push(new Constraint(this, component, undefined, context.$shapes))
           handled.add(component.node)
         }
       }

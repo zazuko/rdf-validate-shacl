@@ -13,11 +13,10 @@ class ValidationFunction {
     // Get list of argument of the function, see
     // https://davidwalsh.name/javascript-arguments
     const args = this.func.toString().match(/function\s.*?\(([^)]*)\)/)[1]
-    const funcArgsRaw = args.split(',').map(function (arg) {
-      return arg.replace(/\/\*.*\*\//, '').trim()
-    }).filter(function (arg) {
-      return arg
-    })
+    const funcArgsRaw = args
+      .split(',')
+      .map((arg) => arg.replace(/\/\*.*\*\//, '').trim())
+      .filter((arg) => arg)
     this.funcArgs = []
     this.parameters = []
     for (let i = 0; i < funcArgsRaw.length; i++) {

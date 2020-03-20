@@ -76,14 +76,11 @@ function validateDisjoint ($context, $this, $value, $disjoint) {
 function validateEqualsProperty ($context, $this, $path, $equals) {
   const results = []
   const path = toRDFQueryPath($context.$shapes, $path)
-  $context.$data.query().path($this, path, '?value').forEach(
-    function (solution) {
-      if (!$context.$data.hasMatch($this, $equals, solution.value)) {
-        results.push({
-          value: solution.value
-        })
-      }
-    })
+  $context.$data.query().path($this, path, '?value').forEach(({ value }) => {
+    if (!$context.$data.hasMatch($this, $equals, value)) {
+      results.push({ value })
+    }
+  })
 
   const equalsQuads = [...$context.$data.match($this, $equals, null)]
   equalsQuads.forEach(({ object }) => {
@@ -98,21 +95,19 @@ function validateEqualsProperty ($context, $this, $path, $equals) {
 
 function validateEqualsNode ($context, $this, $equals) {
   const results = []
+
   let solutions = 0
-  $context.$data.query().path($this, $equals, '?value').forEach(
-    function (solution) {
-      solutions++
-      if ($context.compareNodes($this, solution.value) !== 0) {
-        results.push({
-          value: solution.value
-        })
-      }
-    })
+  $context.$data.query().path($this, $equals, '?value').forEach(({ value }) => {
+    solutions++
+    if ($context.compareNodes($this, value) !== 0) {
+      results.push({ value })
+    }
+  })
+
   if (results.length === 0 && solutions === 0) {
-    results.push({
-      value: $this
-    })
+    results.push({ value: $this })
   }
+
   return results
 }
 
@@ -151,12 +146,10 @@ function validateLessThanProperty ($context, $this, $path, $lessThan) {
   $context.$data.query()
     .path($this, toRDFQueryPath($context.$shapes, $path), '?value')
     .match($this, $lessThan, '?otherValue')
-    .forEach(function (sol) {
-      const c = $context.compareNodes(sol.value, sol.otherValue)
+    .forEach(({ value, otherValue }) => {
+      const c = $context.compareNodes(value, otherValue)
       if (c == null || c >= 0) {
-        results.push({
-          value: sol.value
-        })
+        results.push({ value })
       }
     })
   return results
@@ -167,12 +160,10 @@ function validateLessThanOrEqualsProperty ($context, $this, $path, $lessThanOrEq
   $context.$data.query()
     .path($this, toRDFQueryPath($context.$shapes, $path), '?value')
     .match($this, $lessThanOrEquals, '?otherValue')
-    .forEach(function (sol) {
-      const c = $context.compareNodes(sol.value, sol.otherValue)
+    .forEach(({ value, otherValue }) => {
+      const c = $context.compareNodes(value, otherValue)
       if (c == null || c > 0) {
-        results.push({
-          value: sol.value
-        })
+        results.push({ value })
       }
     })
   return results
@@ -290,10 +281,10 @@ function validateQualifiedHelper ($context, $this, $path, $qualifiedValueShape, 
 
   return $context.$data.query()
     .path($this, toRDFQueryPath($context.$shapes, $path), '?value')
-    .filter(function (sol) {
-      return $context.nodeConformsToShape(sol.value, $qualifiedValueShape) &&
-        !validateQualifiedConformsToASibling($context, sol.value, [...siblingShapes])
-    })
+    .filter(({ value }) =>
+      $context.nodeConformsToShape(value, $qualifiedValueShape) &&
+      !validateQualifiedConformsToASibling($context, value, [...siblingShapes])
+    )
     .getCount()
 }
 
@@ -310,9 +301,10 @@ function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
   if (!$context.factory.term('true').equals($uniqueLang)) {
     return
   }
+
   const map = {}
-  $context.$data.query().path($this, toRDFQueryPath($context.$shapes, $path), '?value').forEach(function (sol) {
-    const lang = sol.value.language
+  $context.$data.query().path($this, toRDFQueryPath($context.$shapes, $path), '?value').forEach(({ value }) => {
+    const lang = value.language
     if (lang && lang !== '') {
       const old = map[lang]
       if (!old) {
@@ -322,6 +314,7 @@ function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
       }
     }
   })
+
   const results = []
   for (const lang in map) {
     if (Object.prototype.hasOwnProperty.call(map, lang)) {
