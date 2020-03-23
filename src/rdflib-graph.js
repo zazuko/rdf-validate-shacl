@@ -1,7 +1,7 @@
 const clownface = require('clownface')
 const isMatch = require('@rdfjs/dataset/isMatch')
 const DataFactory = require('./data-factory')
-const RDFQuery = require('./rdfquery')
+const { getPathObjects } = require('./property-path')
 
 /**
  * Creates a new RDFLibGraph wrapping a provided `DatasetCore` or creating
@@ -33,12 +33,12 @@ class RDFLibGraph {
     return false
   }
 
-  get cf () {
-    return clownface({ dataset: this.dataset })
+  getPathObjects (subject, path) {
+    return [...getPathObjects(this, subject, path)]
   }
 
-  query () {
-    return RDFQuery(this)
+  get cf () {
+    return clownface({ dataset: this.dataset })
   }
 
   loadGraph (graphURI, dataset) {
