@@ -23,7 +23,8 @@ const RDFQueryUtil = require('./rdfquery/util')
 const NodeSet = require('./node-set')
 const ValidationFunction = require('./validation-function')
 const validatorsRegistry = require('./validators-registry')
-const { rdf, rdfs, sh } = require('./namespaces')
+const { toRDFQueryPath } = require('./validators')
+const { rdfs, sh } = require('./namespaces')
 
 class ShapesGraph {
   constructor (context) {
@@ -133,27 +134,28 @@ class ConstraintComponent {
   constructor (node, context) {
     this.context = context
     this.node = node
-    const parameters = []
-    const parameterNodes = []
-    const requiredParameters = []
-    const optionals = {}
-    const that = this
+
+    this.parameters = []
+    this.parameterNodes = []
+    this.requiredParameters = []
+    this.optionals = {}
     const trueTerm = this.context.factory.term('true')
-    this.context.$shapes.query()
-      .match(node, 'sh:parameter', '?parameter')
-      .match('?parameter', 'sh:path', '?path').forEach(function (sol) {
-        parameters.push(sol.path)
-        parameterNodes.push(sol.parameter)
-        if (that.context.$shapes.hasMatch(sol.parameter, sh.optional, trueTerm)) {
-          optionals[sol.path.value] = true
-        } else {
-          requiredParameters.push(sol.path)
-        }
+    this.context.$shapes.cf
+      .node(node)
+      .out(sh.parameter)
+      .forEach(parameterCf => {
+        const parameter = parameterCf.term
+
+        parameterCf.out(sh.path).forEach(({ term: path }) => {
+          this.parameters.push(path)
+          this.parameterNodes.push(parameter)
+          if (this.context.$shapes.hasMatch(parameter, sh.optional, trueTerm)) {
+            this.optionals[path.value] = true
+          } else {
+            this.requiredParameters.push(path)
+          }
+        })
       })
-    this.optionals = optionals
-    this.parameters = parameters
-    this.parameterNodes = parameterNodes
-    this.requiredParameters = requiredParameters
 
     this.nodeValidationFunction = this.findValidationFunction(sh.nodeValidator)
     if (!this.nodeValidationFunction) {
@@ -233,17 +235,15 @@ class Shape {
     this.constraints = []
 
     const handled = new NodeSet()
-    const self = this
-    const that = this
     const shapeProperties = [...context.$shapes.match(shapeNode, null, null)]
-    shapeProperties.forEach(function (sol) {
-      const component = that.context.shapesGraph.getComponentWithParameter(sol.predicate)
+    shapeProperties.forEach((sol) => {
+      const component = this.context.shapesGraph.getComponentWithParameter(sol.predicate)
       if (component && !handled.has(component.node)) {
         const params = component.getParameters()
         if (params.length === 1) {
-          self.constraints.push(new Constraint(self, component, sol.object, context.$shapes))
+          this.constraints.push(new Constraint(this, component, sol.object, context.$shapes))
         } else if (component.isComplete(shapeNode)) {
-          self.constraints.push(new Constraint(self, component, undefined, context.$shapes))
+          this.constraints.push(new Constraint(this, component, undefined, context.$shapes))
           handled.add(component.node)
         }
       }
@@ -300,68 +300,6 @@ class Shape {
   isPropertyShape () {
     return this.path != null
   }
-}
-
-function toRDFQueryPath ($shapes, shPath) {
-  if (shPath.termType === 'Collection') {
-    const paths = new RDFQueryUtil($shapes).rdfListToArray(shPath)
-    const result = []
-    for (let i = 0; i < paths.length; i++) {
-      result.push(toRDFQueryPath($shapes, paths[i]))
-    }
-    return result
-  }
-
-  if (shPath.termType === 'NamedNode') {
-    return shPath
-  }
-
-  if (shPath.termType === 'BlankNode') {
-    const util = new RDFQueryUtil($shapes)
-
-    if (util.getObject(shPath, rdf.first)) {
-      const paths = util.rdfListToArray(shPath)
-      const result = []
-      for (let i = 0; i < paths.length; i++) {
-        result.push(toRDFQueryPath($shapes, paths[i]))
-      }
-      return result
-    }
-
-    const alternativePath = util.getObject(shPath, sh.alternativePath)
-    if (alternativePath) {
-      const paths = util.rdfListToArray(alternativePath)
-      const result = []
-      for (let i = 0; i < paths.length; i++) {
-        result.push(toRDFQueryPath($shapes, paths[i]))
-      }
-      return { or: result }
-    }
-
-    const zeroOrMorePath = util.getObject(shPath, sh.zeroOrMorePath)
-    if (zeroOrMorePath) {
-      return { zeroOrMore: toRDFQueryPath($shapes, zeroOrMorePath) }
-    }
-
-    const oneOrMorePath = util.getObject(shPath, sh.oneOrMorePath)
-    if (oneOrMorePath) {
-      return { oneOrMore: toRDFQueryPath($shapes, oneOrMorePath) }
-    }
-
-    const zeroOrOnePath = util.getObject(shPath, sh.zeroOrOnePath)
-    if (zeroOrOnePath) {
-      return { zeroOrOne: toRDFQueryPath($shapes, zeroOrOnePath) }
-    }
-
-    const inversePath = util.getObject(shPath, sh.inversePath)
-    if (inversePath) {
-      return { inverse: toRDFQueryPath($shapes, inversePath) }
-    }
-  }
-
-  throw new Error('Unsupported SHACL path ' + shPath)
-  // TODO: implement conforming to AbstractQuery.path syntax
-  // return shPath
 }
 
 module.exports = ShapesGraph
