@@ -98,7 +98,7 @@ function validateEqualsNode ($context, $this, $equals) {
   let solutions = 0
   $context.$data.getPathObjects($this, $equals).forEach(value => {
     solutions++
-    if ($context.compareNodes($this, value) !== 0) {
+    if (compareNodes($this, value) !== 0) {
       results.push({ value })
     }
   })
@@ -150,7 +150,7 @@ function validateLessThanProperty ($context, $this, $path, $lessThan) {
   const invalidValues = []
   for (const value of values) {
     for (const referenceValue of referenceValues) {
-      const c = $context.compareNodes(value, referenceValue)
+      const c = compareNodes(value, referenceValue)
       if (c === null || c >= 0) {
         invalidValues.push({ value })
       }
@@ -167,7 +167,7 @@ function validateLessThanOrEqualsProperty ($context, $this, $path, $lessThanOrEq
   const invalidValues = []
   for (const value of values) {
     for (const referenceValue of referenceValues) {
-      const c = $context.compareNodes(value, referenceValue)
+      const c = compareNodes(value, referenceValue)
       if (c === null || c > 0) {
         invalidValues.push({ value })
       }
@@ -430,6 +430,50 @@ function isValidForDatatype (lex, datatype) {
     return lex === 'true' || lex === 'false'
   } else {
     return true
+  }
+}
+
+function compareNodes (node1, node2) {
+  // TODO: Does not handle the case where nodes cannot be compared
+  if (node1 && node1.termType === 'Literal' && node2 && node2.termType === 'Literal') {
+    if ((node1.datatype != null) !== (node2.datatype != null)) {
+      return null
+    } else if (node1.datatype && node2.datatype && node1.datatype.value !== node2.datatype.value) {
+      return null
+    }
+  }
+  return compareTerms(node1, node2)
+}
+
+function compareTerms (t1, t2) {
+  if (!t1) {
+    return !t2 ? 0 : 1
+  } else if (!t2) {
+    return -1
+  }
+
+  const bt = t1.termType.localeCompare(t2.termType)
+  if (bt !== 0) {
+    return bt
+  } else {
+    // TODO: Does not handle numeric or date comparison
+    const bv = t1.value.localeCompare(t2.value)
+    if (bv !== 0) {
+      return bv
+    } else {
+      if (t1.termType === 'Literal') {
+        const bd = t1.datatype.value.localeCompare(t2.datatype.value)
+        if (bd !== 0) {
+          return bd
+        } else if (rdf.langString.equals(t1.datatype)) {
+          return t1.language.localeCompare(t2.language)
+        } else {
+          return 0
+        }
+      } else {
+        return 0
+      }
+    }
   }
 }
 

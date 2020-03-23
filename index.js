@@ -4,7 +4,6 @@
 
 const debug = require('debug')('index')
 
-const RDFQuery = require('./src/rdfquery')
 const DataFactory = require('./src/data-factory')
 const ShapesGraph = require('./src/shapes-graph')
 const ValidationEngine = require('./src/validation-engine')
@@ -55,19 +54,6 @@ class SHACLValidator {
    */
   getConfiguration () {
     return this.configuration
-  }
-
-  // Exposed to be available from validation functions as `SHACL.compareNodes`
-  compareNodes (node1, node2) {
-    // TODO: Does not handle the case where nodes cannot be compared
-    if (node1 && node1.termType === 'Literal' && node2 && node2.termType === 'Literal') {
-      if ((node1.datatype != null) !== (node2.datatype != null)) {
-        return null
-      } else if (node1.datatype && node2.datatype && node1.datatype.value !== node2.datatype.value) {
-        return null
-      }
-    }
-    return RDFQuery.compareTerms(node1, node2)
   }
 
   // Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
