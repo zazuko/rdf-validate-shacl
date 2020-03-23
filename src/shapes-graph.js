@@ -19,7 +19,6 @@
 // for each Constraint of the shape, producing results along the way.
 
 const RDFQuery = require('./rdfquery')
-const RDFQueryUtil = require('./rdfquery/util')
 const NodeSet = require('./node-set')
 const ValidationFunction = require('./validation-function')
 const validatorsRegistry = require('./validators-registry')
@@ -31,7 +30,7 @@ class ShapesGraph {
     this.context = context
 
     // Collect all defined constraint components
-    const componentNodes = new RDFQueryUtil(context.$shapes).getInstancesOf(sh.ConstraintComponent)
+    const componentNodes = context.$shapes.getInstancesOf(sh.ConstraintComponent)
     this.components = [...componentNodes].map((node) => new ConstraintComponent(node, context))
 
     // Build map from parameters to constraint components
@@ -87,7 +86,7 @@ class ShapesGraph {
       for (let i = 0; i < cs.length; i++) {
         const shapeNode = cs[i]
         if (
-          new RDFQueryUtil($shapes).isInstanceOf(shapeNode, rdfs.Class) ||
+          $shapes.isInstanceOf(shapeNode, rdfs.Class) ||
           $shapes.hasMatch(shapeNode, sh.targetClass, null) ||
           $shapes.hasMatch(shapeNode, sh.targetNode, null) ||
           $shapes.hasMatch(shapeNode, sh.targetSubjectsOf, null) ||
@@ -257,13 +256,13 @@ class Shape {
   getTargetNodes (rdfDataGraph) {
     const results = new NodeSet()
 
-    if (new RDFQueryUtil(this.context.$shapes).isInstanceOf(this.shapeNode, rdfs.Class)) {
-      results.addAll(new RDFQueryUtil(rdfDataGraph).getInstancesOf(this.shapeNode))
+    if (this.context.$shapes.isInstanceOf(this.shapeNode, rdfs.Class)) {
+      results.addAll(rdfDataGraph.getInstancesOf(this.shapeNode))
     }
 
     const targetClasses = [...this.context.$shapes.match(this.shapeNode, sh.targetClass, null)]
     targetClasses.forEach(({ object: targetClass }) => {
-      results.addAll(new RDFQueryUtil(rdfDataGraph).getInstancesOf(targetClass))
+      results.addAll(rdfDataGraph.getInstancesOf(targetClass))
     })
 
     results.addAll(this.context.$shapes.cf.node(this.shapeNode).out(sh.targetNode).terms)

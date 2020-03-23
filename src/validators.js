@@ -5,7 +5,6 @@
 
 // There is no validator for sh:property as this is expected to be
 // natively implemented by the surrounding engine.
-const RDFQueryUtil = require('./rdfquery/util')
 const NodeSet = require('./node-set')
 const { rdf, sh, xsd } = require('./namespaces')
 
@@ -20,7 +19,7 @@ const XSDDecimalTypes = new NodeSet([
 ])
 
 function validateAnd ($context, $value, $and) {
-  const shapes = new RDFQueryUtil($context.$shapes).rdfListToArray($and)
+  const shapes = $context.$shapes.rdfListToArray($and)
   for (let i = 0; i < shapes.length; i++) {
     if (!$context.nodeConformsToShape($value, shapes[i])) {
       return false
@@ -30,7 +29,7 @@ function validateAnd ($context, $value, $and) {
 }
 
 function validateClass ($context, $value, $class) {
-  return new RDFQueryUtil($context.$data).isInstanceOf($value, $class)
+  return $context.$data.isInstanceOf($value, $class)
 }
 
 function validateClosed ($context, $value, $closed, $ignoredProperties, $currentShape) {
@@ -48,7 +47,7 @@ function validateClosed ($context, $value, $closed, $ignoredProperties, $current
   )
 
   if ($ignoredProperties) {
-    allowed.addAll(new RDFQueryUtil($context.$shapes).rdfListToArray($ignoredProperties))
+    allowed.addAll($context.$shapes.rdfListToArray($ignoredProperties))
   }
 
   const results = []
@@ -123,7 +122,7 @@ function validateHasValueProperty ($context, $this, $path, $hasValue) {
 }
 
 function validateIn ($context, $value, $in) {
-  return new NodeSet(new RDFQueryUtil($context.$shapes).rdfListToArray($in)).has($value)
+  return new NodeSet($context.$shapes.rdfListToArray($in)).has($value)
 }
 
 function validateLanguageIn ($context, $value, $languageIn) {
@@ -134,7 +133,7 @@ function validateLanguageIn ($context, $value, $languageIn) {
   if (!lang || lang === '') {
     return false
   }
-  const ls = new RDFQueryUtil($context.$shapes).rdfListToArray($languageIn)
+  const ls = $context.$shapes.rdfListToArray($languageIn)
   for (let i = 0; i < ls.length; i++) {
     if (lang.startsWith(ls[i].value)) {
       return true
@@ -246,7 +245,7 @@ function validateNot ($context, $value, $not) {
 }
 
 function validateOr ($context, $value, $or) {
-  const shapes = new RDFQueryUtil($context.$shapes).rdfListToArray($or)
+  const shapes = $context.$shapes.rdfListToArray($or)
   for (let i = 0; i < shapes.length; i++) {
     if ($context.nodeConformsToShape($value, shapes[i])) {
       return true
@@ -342,7 +341,7 @@ function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
 }
 
 function validateXone ($context, $value, $xone) {
-  const shapes = new RDFQueryUtil($context.$shapes).rdfListToArray($xone)
+  const shapes = $context.$shapes.rdfListToArray($xone)
   let count = 0
   for (let i = 0; i < shapes.length; i++) {
     if ($context.nodeConformsToShape($value, shapes[i])) {
@@ -356,7 +355,7 @@ function validateXone ($context, $value, $xone) {
 
 function toRDFQueryPath ($shapes, shPath) {
   if (shPath.termType === 'Collection') {
-    const paths = new RDFQueryUtil($shapes).rdfListToArray(shPath)
+    const paths = $shapes.rdfListToArray(shPath)
     const result = []
     for (let i = 0; i < paths.length; i++) {
       result.push(toRDFQueryPath($shapes, paths[i]))
@@ -370,11 +369,10 @@ function toRDFQueryPath ($shapes, shPath) {
 
   if (shPath.termType === 'BlankNode') {
     const shPathCf = $shapes.cf.node(shPath)
-    const util = new RDFQueryUtil($shapes)
 
     const first = shPathCf.out(rdf.first).term
     if (first) {
-      const paths = util.rdfListToArray(shPath)
+      const paths = $shapes.rdfListToArray(shPath)
       const result = []
       for (let i = 0; i < paths.length; i++) {
         result.push(toRDFQueryPath($shapes, paths[i]))
@@ -384,7 +382,7 @@ function toRDFQueryPath ($shapes, shPath) {
 
     const alternativePath = shPathCf.out(sh.alternativePath).term
     if (alternativePath) {
-      const paths = util.rdfListToArray(alternativePath)
+      const paths = $shapes.rdfListToArray(alternativePath)
       const result = []
       for (let i = 0; i < paths.length; i++) {
         result.push(toRDFQueryPath($shapes, paths[i]))
