@@ -142,31 +142,37 @@ function validateLanguageIn ($context, $value, $languageIn) {
 }
 
 function validateLessThanProperty ($context, $this, $path, $lessThan) {
-  const results = []
-  $context.$data.query()
-    .path($this, toRDFQueryPath($context.$shapes, $path), '?value')
-    .match($this, $lessThan, '?otherValue')
-    .forEach(({ value, otherValue }) => {
-      const c = $context.compareNodes(value, otherValue)
-      if (c == null || c >= 0) {
-        results.push({ value })
+  const valuePath = toRDFQueryPath($context.$shapes, $path)
+  const values = $context.$data.query().path($this, valuePath, '?value').getNodeArray('?value')
+  const referenceValues = $context.$data.cf.node($this).out($lessThan).terms
+
+  const invalidValues = []
+  for (const value of values) {
+    for (const referenceValue of referenceValues) {
+      const c = $context.compareNodes(value, referenceValue)
+      if (c === null || c >= 0) {
+        invalidValues.push({ value })
       }
-    })
-  return results
+    }
+  }
+  return invalidValues
 }
 
 function validateLessThanOrEqualsProperty ($context, $this, $path, $lessThanOrEquals) {
-  const results = []
-  $context.$data.query()
-    .path($this, toRDFQueryPath($context.$shapes, $path), '?value')
-    .match($this, $lessThanOrEquals, '?otherValue')
-    .forEach(({ value, otherValue }) => {
-      const c = $context.compareNodes(value, otherValue)
-      if (c == null || c > 0) {
-        results.push({ value })
+  const valuePath = toRDFQueryPath($context.$shapes, $path)
+  const values = $context.$data.query().path($this, valuePath, '?value').getNodeArray('?value')
+  const referenceValues = $context.$data.cf.node($this).out($lessThanOrEquals).terms
+
+  const invalidValues = []
+  for (const value of values) {
+    for (const referenceValue of referenceValues) {
+      const c = $context.compareNodes(value, referenceValue)
+      if (c === null || c > 0) {
+        invalidValues.push({ value })
       }
-    })
-  return results
+    }
+  }
+  return invalidValues
 }
 
 function validateMaxCountProperty ($context, $this, $path, $maxCount) {
