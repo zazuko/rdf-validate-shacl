@@ -1,6 +1,6 @@
 // class ValidationFunction
-const RDFQuery = require('./rdfquery')
 const debug = require('debug')('validation-function')
+const { getLocalName } = require('./uri-utils')
 
 const globalObject = typeof window !== 'undefined' ? window : global
 
@@ -27,7 +27,7 @@ class ValidationFunction {
       this.funcArgs.push(arg)
       for (let j = 0; j < parameters.length; j++) {
         const parameter = parameters[j]
-        const localName = RDFQuery.getLocalName(parameter.value)
+        const localName = getLocalName(parameter.value)
         if (arg === localName) {
           this.parameters[i] = parameter
           break

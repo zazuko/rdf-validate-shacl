@@ -18,10 +18,10 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
-const RDFQuery = require('./rdfquery')
 const NodeSet = require('./node-set')
 const ValidationFunction = require('./validation-function')
 const validatorsRegistry = require('./validators-registry')
+const { getLocalName } = require('./uri-utils')
 const { toRDFQueryPath } = require('./validators')
 const { rdfs, sh } = require('./namespaces')
 
@@ -113,7 +113,7 @@ class Constraint {
       const param = params[i]
       const value = paramValue || rdfShapesGraph.cf.node(shape.shapeNode).out(param).term
       if (value) {
-        const localName = RDFQuery.getLocalName(param.value)
+        const localName = getLocalName(param.value)
         parameterValues[localName] = value
       }
     }
