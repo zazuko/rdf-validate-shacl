@@ -291,7 +291,8 @@ class Shape {
 
   getValueNodes (focusNode, rdfDataGraph) {
     if (this.path) {
-      return rdfDataGraph.query().path(focusNode, toRDFQueryPath(this.context.$shapes, this.path), '?object').getNodeArray('?object')
+      const path = toRDFQueryPath(this.context.$shapes, this.path)
+      return rdfDataGraph.getPathObjects(focusNode, path)
     } else {
       return [focusNode]
     }

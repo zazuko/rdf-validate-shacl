@@ -76,7 +76,7 @@ function validateDisjoint ($context, $this, $value, $disjoint) {
 function validateEqualsProperty ($context, $this, $path, $equals) {
   const results = []
   const path = toRDFQueryPath($context.$shapes, $path)
-  $context.$data.query().path($this, path, '?value').forEach(({ value }) => {
+  $context.$data.getPathObjects($this, path).forEach(value => {
     if (!$context.$data.hasMatch($this, $equals, value)) {
       results.push({ value })
     }
@@ -85,7 +85,7 @@ function validateEqualsProperty ($context, $this, $path, $equals) {
   const equalsQuads = [...$context.$data.match($this, $equals, null)]
   equalsQuads.forEach(({ object }) => {
     const value = object
-    if (!$context.$data.query().path($this, path, value).hasSolution()) {
+    if (!$context.$data.getPathObjects($this, path).some(pathValue => pathValue.equals(value))) {
       results.push({ value })
     }
   })
@@ -97,7 +97,7 @@ function validateEqualsNode ($context, $this, $equals) {
   const results = []
 
   let solutions = 0
-  $context.$data.query().path($this, $equals, '?value').forEach(({ value }) => {
+  $context.$data.getPathObjects($this, $equals).forEach(value => {
     solutions++
     if ($context.compareNodes($this, value) !== 0) {
       results.push({ value })
@@ -116,8 +116,10 @@ function validateHasValueNode ($context, $this, $hasValue) {
 }
 
 function validateHasValueProperty ($context, $this, $path, $hasValue) {
-  const count = $context.$data.query().path($this, toRDFQueryPath($context.$shapes, $path), $hasValue).getCount()
-  return count > 0
+  const path = toRDFQueryPath($context.$shapes, $path)
+  return $context.$data
+    .getPathObjects($this, path)
+    .some(value => value.equals($hasValue))
 }
 
 function validateIn ($context, $value, $in) {
@@ -143,7 +145,7 @@ function validateLanguageIn ($context, $value, $languageIn) {
 
 function validateLessThanProperty ($context, $this, $path, $lessThan) {
   const valuePath = toRDFQueryPath($context.$shapes, $path)
-  const values = $context.$data.query().path($this, valuePath, '?value').getNodeArray('?value')
+  const values = $context.$data.getPathObjects($this, valuePath)
   const referenceValues = $context.$data.cf.node($this).out($lessThan).terms
 
   const invalidValues = []
@@ -160,7 +162,7 @@ function validateLessThanProperty ($context, $this, $path, $lessThan) {
 
 function validateLessThanOrEqualsProperty ($context, $this, $path, $lessThanOrEquals) {
   const valuePath = toRDFQueryPath($context.$shapes, $path)
-  const values = $context.$data.query().path($this, valuePath, '?value').getNodeArray('?value')
+  const values = $context.$data.getPathObjects($this, valuePath)
   const referenceValues = $context.$data.cf.node($this).out($lessThanOrEquals).terms
 
   const invalidValues = []
@@ -176,7 +178,9 @@ function validateLessThanOrEqualsProperty ($context, $this, $path, $lessThanOrEq
 }
 
 function validateMaxCountProperty ($context, $this, $path, $maxCount) {
-  const count = $context.$data.query().path($this, toRDFQueryPath($context.$shapes, $path), '?any').getCount()
+  const path = toRDFQueryPath($context.$shapes, $path)
+  const count = $context.$data.getPathObjects($this, path).length
+
   return count <= Number($maxCount.value)
 }
 
@@ -196,7 +200,9 @@ function validateMaxLength ($context, $value, $maxLength) {
 }
 
 function validateMinCountProperty ($context, $this, $path, $minCount) {
-  const count = $context.$data.query().path($this, toRDFQueryPath($context.$shapes, $path), '?any').getCount()
+  const path = toRDFQueryPath($context.$shapes, $path)
+  const count = $context.$data.getPathObjects($this, path).length
+
   return count >= Number($minCount.value)
 }
 
@@ -285,13 +291,14 @@ function validateQualifiedHelper ($context, $this, $path, $qualifiedValueShape, 
     siblingShapes.addAll(qualifiedSiblingShapes)
   }
 
-  return $context.$data.query()
-    .path($this, toRDFQueryPath($context.$shapes, $path), '?value')
-    .filter(({ value }) =>
+  const path = toRDFQueryPath($context.$shapes, $path)
+  return $context.$data
+    .getPathObjects($this, path)
+    .filter(value =>
       $context.nodeConformsToShape(value, $qualifiedValueShape) &&
       !validateQualifiedConformsToASibling($context, value, [...siblingShapes])
     )
-    .getCount()
+    .length
 }
 
 function validateQualifiedConformsToASibling ($context, value, siblingShapes) {
@@ -308,8 +315,9 @@ function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
     return
   }
 
+  const path = toRDFQueryPath($context.$shapes, $path)
   const map = {}
-  $context.$data.query().path($this, toRDFQueryPath($context.$shapes, $path), '?value').forEach(({ value }) => {
+  $context.$data.getPathObjects($this, path).forEach(value => {
     const lang = value.language
     if (lang && lang !== '') {
       const old = map[lang]
