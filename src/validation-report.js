@@ -1,3 +1,4 @@
+const clownface = require('clownface')
 const DataFactory = require('./data-factory')
 const { sh } = require('./namespaces')
 
@@ -5,15 +6,24 @@ const { sh } = require('./namespaces')
  * Result of a SHACL validation.
  */
 class ValidationReport {
-  constructor (results, options) {
+  constructor (resultsQuads, options) {
     options = options || {}
     this.factory = new DataFactory(options.factory || require('@rdfjs/dataset'))
-
-    this._results = groupBy(results, (quad) => quad.subject)
-      .map(([nodeTerm, nodeQuads]) => new ValidationResult(nodeTerm, nodeQuads))
+    const { rdf, sh, xsd } = this.factory.ns
 
     this.term = this.factory.blankNode('report')
-    this._dataset = null
+    this.dataset = this.factory.dataset(resultsQuads)
+
+    // Prepare report dataset
+    const cf = clownface({ dataset: this.dataset, factory: this.factory })
+    const resultNodes = cf.node(sh.ValidationResult).in(rdf.type).terms
+    this._conforms = resultNodes.length === 0
+    cf.node(this.term)
+      .addOut(rdf.type, sh.ValidationReport)
+      .addOut(sh.conforms, this.factory.literal(this._conforms.toString(), xsd.boolean))
+      .addOut(sh.result, resultNodes)
+
+    this._results = resultNodes.map(resultNode => new ValidationResult(resultNode, this.dataset))
   }
 
   /**
@@ -21,7 +31,7 @@ class ValidationReport {
    * otherwise.
    */
   conforms () {
-    return this._results.length === 0
+    return this._conforms
   }
 
   /**
@@ -31,38 +41,13 @@ class ValidationReport {
   results () {
     return this._results
   }
-
-  /**
-   * Get a `DatasetCore` that contains the `sh:ValidationReport`.
-   */
-  get dataset () {
-    if (!this._dataset) {
-      this._prepareDataset()
-    }
-
-    return this._dataset
-  }
-
-  _prepareDataset () {
-    const dataset = this.factory.dataset()
-    const { rdf, sh, xsd } = this.factory.ns
-
-    dataset.add(this.factory.quad(this.term, rdf.type, sh.ValidationReport))
-    dataset.add(this.factory.quad(this.term, sh.conforms, this.factory.literal(this.conforms().toString(), xsd.boolean)))
-
-    this.results().forEach((result) => {
-      dataset.add(this.factory.quad(this.term, sh.result, result.term))
-      result.quads.forEach((quad) => dataset.add(quad))
-    })
-
-    this._dataset = dataset
-  }
 }
 
 class ValidationResult {
-  constructor (term, quads) {
+  constructor (term, dataset) {
     this.term = term
-    this.quads = quads
+    this.dataset = dataset
+    this.cf = clownface({ dataset: dataset }).node(term)
   }
 
   message () {
@@ -91,20 +76,9 @@ class ValidationResult {
   }
 
   _getValue (predicate) {
-    const quad = this.quads.find((quad) => quad.predicate.equals(predicate))
-    return quad ? serializeTermValue(quad.object) : null
+    const term = this.cf.out(predicate).term
+    return term ? serializeTermValue(term) : null
   }
-}
-
-function groupBy (collection, func) {
-  const groups = collection.reduce((acc, item) => {
-    const key = func(item)
-    if (!acc.get(key)) acc.set(key, [])
-    acc.get(key).push(item)
-    return acc
-  }, new Map())
-
-  return Array.from(groups)
 }
 
 function serializeTermValue (term) {
