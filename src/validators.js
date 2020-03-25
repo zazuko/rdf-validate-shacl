@@ -33,7 +33,7 @@ function validateClass ($context, $value, $class) {
 }
 
 function validateClosed ($context, $value, $closed, $ignoredProperties, $currentShape) {
-  if (!$context.factory.term('true').equals($closed)) {
+  if (!$context.factory.true.equals($closed)) {
     return
   }
 
@@ -275,7 +275,7 @@ function validateQualifiedMinCountProperty ($context, $this, $path, $qualifiedVa
 function validateQualifiedHelper ($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape) {
   const siblingShapes = new NodeSet()
 
-  if ($context.factory.term('true').equals($qualifiedValueShapesDisjoint)) {
+  if ($context.factory.true.equals($qualifiedValueShapesDisjoint)) {
     const qualifiedSiblingShapes = $context.$shapes.cf
       .node($currentShape)
       // Move up to parent
@@ -310,7 +310,7 @@ function validateQualifiedConformsToASibling ($context, value, siblingShapes) {
 }
 
 function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
-  if (!$context.factory.term('true').equals($uniqueLang)) {
+  if (!$context.factory.true.equals($uniqueLang)) {
     return
   }
 

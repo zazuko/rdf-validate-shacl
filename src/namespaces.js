@@ -1,8 +1,14 @@
 const namespace = require('@rdfjs/namespace')
 
-const sh = namespace('http://www.w3.org/ns/shacl#')
-const xsd = namespace('http://www.w3.org/2001/XMLSchema#')
-const rdf = namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#')
-const rdfs = namespace('http://www.w3.org/2000/01/rdf-schema#')
+const prepareNamespaces = (factory) => {
+  return {
+    sh: namespace('http://www.w3.org/ns/shacl#', { factory }),
+    xsd: namespace('http://www.w3.org/2001/XMLSchema#', { factory }),
+    rdf: namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#', { factory }),
+    rdfs: namespace('http://www.w3.org/2000/01/rdf-schema#', { factory })
+  }
+}
 
-module.exports = { sh, xsd, rdf, rdfs }
+const namespaces = prepareNamespaces()
+
+module.exports = { ...namespaces, prepareNamespaces }

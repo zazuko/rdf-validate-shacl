@@ -1,6 +1,5 @@
 const ValidationEngineConfiguration = require('./validation-engine-configuration')
 const ValidationReport = require('./validation-report')
-const { sh } = require('./namespaces')
 const error = require('debug')('validation-enging::error')
 
 class ValidationEngine {
@@ -24,17 +23,18 @@ class ValidationEngine {
    * properties for the constraint, focused node and value node
    */
   createResult (constraint, focusNode, valueNode) {
+    const { rdf, sh } = this.factory.ns
     const result = this.factory.blankNode()
     const severity = constraint.shape.severity
     const sourceConstraintComponent = constraint.component.node
     const sourceShape = constraint.shape.shapeNode
-    this.addResultProperty(result, this.factory.term('rdf:type'), this.factory.term('sh:ValidationResult'))
-    this.addResultProperty(result, this.factory.term('sh:resultSeverity'), severity)
-    this.addResultProperty(result, this.factory.term('sh:sourceConstraintComponent'), sourceConstraintComponent)
-    this.addResultProperty(result, this.factory.term('sh:sourceShape'), sourceShape)
-    this.addResultProperty(result, this.factory.term('sh:focusNode'), focusNode)
+    this.addResultProperty(result, rdf.type, sh.ValidationResult)
+    this.addResultProperty(result, sh.resultSeverity, severity)
+    this.addResultProperty(result, sh.sourceConstraintComponent, sourceConstraintComponent)
+    this.addResultProperty(result, sh.sourceShape, sourceShape)
+    this.addResultProperty(result, sh.focusNode, focusNode)
     if (valueNode) {
-      this.addResultProperty(result, this.factory.term('sh:value'), valueNode)
+      this.addResultProperty(result, sh.value, valueNode)
     }
     return result
   }
@@ -46,6 +46,8 @@ class ValidationEngine {
    * If none of these values is passed no error result or error message will be created.
    */
   createResultFromObject (obj, constraint, focusNode, valueNode) {
+    const { sh, xsd } = this.factory.ns
+
     if (obj === false) {
       if (this.recordErrorsLevel > 0) {
         if (this.conformanceOnly) {
@@ -60,7 +62,7 @@ class ValidationEngine {
       }
       const result = this.createResult(constraint, focusNode, valueNode)
       if (constraint.shape.isPropertyShape()) {
-        this.addResultProperty(result, this.factory.term('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
+        this.addResultProperty(result, sh.resultPath, constraint.shape.path) // TODO: Make deep copy
       }
       this.createResultMessages(result, constraint)
       return true
@@ -77,9 +79,9 @@ class ValidationEngine {
       }
       const result = this.createResult(constraint, focusNode, valueNode)
       if (constraint.shape.isPropertyShape()) {
-        this.addResultProperty(result, this.factory.term('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
+        this.addResultProperty(result, sh.resultPath, constraint.shape.path) // TODO: Make deep copy
       }
-      this.addResultProperty(result, this.factory.term('sh:resultMessage'), this.factory.literal(obj, this.factory.term('xsd:string')))
+      this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj, xsd.string))
       this.createResultMessages(result, constraint)
       return true
     } else if (typeof obj === 'object') {
@@ -95,17 +97,17 @@ class ValidationEngine {
       }
       const result = this.createResult(constraint, focusNode)
       if (obj.path) {
-        this.addResultProperty(result, this.factory.term('sh:resultPath'), obj.path) // TODO: Make deep copy
+        this.addResultProperty(result, sh.resultPath, obj.path) // TODO: Make deep copy
       } else if (constraint.shape.isPropertyShape()) {
-        this.addResultProperty(result, this.factory.term('sh:resultPath'), constraint.shape.path) // TODO: Make deep copy
+        this.addResultProperty(result, sh.resultPath, constraint.shape.path) // TODO: Make deep copy
       }
       if (obj.value) {
-        this.addResultProperty(result, this.factory.term('sh:value'), obj.value)
+        this.addResultProperty(result, sh.value, obj.value)
       } else if (valueNode) {
-        this.addResultProperty(result, this.factory.term('sh:value'), valueNode)
+        this.addResultProperty(result, sh.value, valueNode)
       }
       if (obj.message) {
-        this.addResultProperty(result, this.factory.term('sh:resultMessage'), this.factory.literal(obj.message, this.factory.term('xsd:string')))
+        this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj.message, xsd.string))
       } else {
         this.createResultMessages(result, constraint)
       }
@@ -118,6 +120,8 @@ class ValidationEngine {
    * Creates a result message from the result and the message pattern in the constraint
    */
   createResultMessages (result, constraint) {
+    const { sh } = this.factory.ns
+
     // 1. Try to get message from the shape itself
     let ms = [...this.context.$shapes
       .match(constraint.shape.shapeNode, sh.message, null)]
@@ -138,7 +142,7 @@ class ValidationEngine {
     for (let i = 0; i < ms.length; i++) {
       const m = ms[i]
       const str = this.withSubstitutions(m, constraint)
-      this.addResultProperty(result, this.factory.term('sh:resultMessage'), str)
+      this.addResultProperty(result, sh.resultMessage, str)
     }
   }
 
@@ -195,6 +199,8 @@ class ValidationEngine {
   }
 
   validateNodeAgainstConstraint (focusNode, valueNodes, constraint, rdfDataGraph) {
+    const { sh } = this.factory.ns
+
     if (this.maxErrorsReached()) {
       return true
     } else {

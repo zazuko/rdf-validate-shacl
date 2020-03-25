@@ -132,13 +132,13 @@ class Constraint {
 class ConstraintComponent {
   constructor (node, context) {
     this.context = context
+    this.factory = context.factory
     this.node = node
 
     this.parameters = []
     this.parameterNodes = []
     this.requiredParameters = []
     this.optionals = {}
-    const trueTerm = this.context.factory.term('true')
     this.context.$shapes.cf
       .node(node)
       .out(sh.parameter)
@@ -148,7 +148,7 @@ class ConstraintComponent {
         parameterCf.out(sh.path).forEach(({ term: path }) => {
           this.parameters.push(path)
           this.parameterNodes.push(parameter)
-          if (this.context.$shapes.hasMatch(parameter, sh.optional, trueTerm)) {
+          if (this.context.$shapes.hasMatch(parameter, sh.optional, this.factory.true)) {
             this.optionals[path.value] = true
           } else {
             this.requiredParameters.push(path)
@@ -225,7 +225,7 @@ class Shape {
     this.context = context
     this.severity = context.$shapes.cf.node(shapeNode).out(sh.severity).term
     if (!this.severity) {
-      this.severity = context.factory.term('sh:Violation')
+      this.severity = context.factory.ns.sh.Violation
     }
 
     this.deactivated = context.$shapes.cf.node(shapeNode).out(sh.deactivated).value === 'true'

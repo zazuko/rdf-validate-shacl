@@ -1,5 +1,5 @@
 const DataFactory = require('./data-factory')
-const { rdf: rdfNS, sh, xsd } = require('./namespaces')
+const { sh } = require('./namespaces')
 
 /**
  * Result of a SHACL validation.
@@ -45,11 +45,13 @@ class ValidationReport {
 
   _prepareDataset () {
     const dataset = this.factory.dataset()
-    dataset.add(this.factory.quad(this.term, rdfNS.type, this.factory.term('sh:ValidationReport')))
+    const { rdf, sh, xsd } = this.factory.ns
+
+    dataset.add(this.factory.quad(this.term, rdf.type, sh.ValidationReport))
     dataset.add(this.factory.quad(this.term, sh.conforms, this.factory.literal(this.conforms(), xsd.boolean)))
 
     this.results().forEach((result) => {
-      dataset.add(this.factory.quad(this.term, this.factory.term('sh:result'), result.term))
+      dataset.add(this.factory.quad(this.term, sh.result, result.term))
       result.quads.forEach((quad) => dataset.add(quad))
     })
 
