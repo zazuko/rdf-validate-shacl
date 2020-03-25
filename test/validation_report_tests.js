@@ -56,7 +56,7 @@ describe('ValidationReport', () => {
       const cf = clownface({ dataset })
       const cfReport = cf.namedNode(sh.ValidationReport).in(rdfNS.type)
       const conforms = cfReport.out(sh.conforms).values
-      assert.deepStrictEqual(conforms, [true])
+      assert.deepStrictEqual(conforms, ['true'])
       const results = cfReport.out(sh.result).values
       assert.deepStrictEqual(results, [])
     })
@@ -76,7 +76,7 @@ describe('ValidationReport', () => {
       const cf = clownface({ dataset })
       const cfReport = cf.namedNode(sh.ValidationReport).in(rdfNS.type)
       const conforms = cfReport.out(sh.conforms).values
-      assert.deepStrictEqual(conforms, [false])
+      assert.deepStrictEqual(conforms, ['false'])
       const results = cfReport.out(sh.result).map((cfResult) => cfResult.out().values)
       assert.deepStrictEqual(results, [
         ['Something is invalid', 'ex:aProperty'],

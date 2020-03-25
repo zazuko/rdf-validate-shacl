@@ -48,7 +48,7 @@ class ValidationReport {
     const { rdf, sh, xsd } = this.factory.ns
 
     dataset.add(this.factory.quad(this.term, rdf.type, sh.ValidationReport))
-    dataset.add(this.factory.quad(this.term, sh.conforms, this.factory.literal(this.conforms(), xsd.boolean)))
+    dataset.add(this.factory.quad(this.term, sh.conforms, this.factory.literal(this.conforms().toString(), xsd.boolean)))
 
     this.results().forEach((result) => {
       dataset.add(this.factory.quad(this.term, sh.result, result.term))
