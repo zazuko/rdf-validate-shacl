@@ -21,12 +21,7 @@ const XSDDecimalTypes = new NodeSet([
 function validateAnd (context, focusNode, valueNode, constraint) {
   const andNode = constraint.getParameterValue('and')
   const shapes = context.$shapes.rdfListToArray(andNode)
-  for (let i = 0; i < shapes.length; i++) {
-    if (!context.nodeConformsToShape(valueNode, shapes[i])) {
-      return false
-    }
-  }
-  return true
+  return shapes.every((shape) => context.nodeConformsToShape(valueNode, shape))
 }
 
 function validateClass (context, focusNode, valueNode, constraint) {
@@ -148,20 +143,15 @@ function validateLanguageIn (context, focusNode, valueNode, constraint) {
     return false
   }
 
-  const lang = valueNode.language
-  if (!lang || lang === '') {
+  const valueLanguage = valueNode.language
+  if (!valueLanguage || valueLanguage === '') {
     return false
   }
 
   const languageInNode = constraint.getParameterValue('languageIn')
-  const ls = context.$shapes.rdfListToArray(languageInNode)
-  for (let i = 0; i < ls.length; i++) {
-    if (lang.startsWith(ls[i].value)) {
-      return true
-    }
-  }
+  const allowedLanguages = context.$shapes.rdfListToArray(languageInNode)
 
-  return false
+  return allowedLanguages.some(allowedLanguage => valueLanguage.startsWith(allowedLanguage.value))
 }
 
 function validateLessThanProperty (context, focusNode, valueNode, constraint) {
@@ -289,12 +279,7 @@ function validateNot (context, focusNode, valueNode, constraint) {
 function validateOr (context, focusNode, valueNode, constraint) {
   const orNode = constraint.getParameterValue('or')
   const shapes = context.$shapes.rdfListToArray(orNode)
-  for (let i = 0; i < shapes.length; i++) {
-    if (context.nodeConformsToShape(valueNode, shapes[i])) {
-      return true
-    }
-  }
-  return false
+  return shapes.some(shape => context.nodeConformsToShape(valueNode, shape))
 }
 
 function validatePattern (context, focusNode, valueNode, constraint) {
@@ -401,13 +386,12 @@ function validateUniqueLangProperty (context, focusNode, valueNode, constraint) 
 function validateXone (context, focusNode, valueNode, constraint) {
   const xoneNode = constraint.getParameterValue('xone')
   const shapes = context.$shapes.rdfListToArray(xoneNode)
-  let count = 0
-  for (let i = 0; i < shapes.length; i++) {
-    if (context.nodeConformsToShape(valueNode, shapes[i])) {
-      count++
-    }
-  }
-  return count === 1
+  const conformsCount = shapes
+    .map(shape => context.nodeConformsToShape(valueNode, shape))
+    .filter(Boolean)
+    .length
+
+  return conformsCount === 1
 }
 
 // Utilities ------------------------------------------------------------------
@@ -415,11 +399,7 @@ function validateXone (context, focusNode, valueNode, constraint) {
 function toRDFQueryPath ($shapes, shPath) {
   if (shPath.termType === 'Collection') {
     const paths = $shapes.rdfListToArray(shPath)
-    const result = []
-    for (let i = 0; i < paths.length; i++) {
-      result.push(toRDFQueryPath($shapes, paths[i]))
-    }
-    return result
+    return paths.map(path => toRDFQueryPath($shapes, path))
   }
 
   if (shPath.termType === 'NamedNode') {
@@ -432,21 +412,13 @@ function toRDFQueryPath ($shapes, shPath) {
     const first = shPathCf.out(rdf.first).term
     if (first) {
       const paths = $shapes.rdfListToArray(shPath)
-      const result = []
-      for (let i = 0; i < paths.length; i++) {
-        result.push(toRDFQueryPath($shapes, paths[i]))
-      }
-      return result
+      return paths.map(path => toRDFQueryPath($shapes, path))
     }
 
     const alternativePath = shPathCf.out(sh.alternativePath).term
     if (alternativePath) {
       const paths = $shapes.rdfListToArray(alternativePath)
-      const result = []
-      for (let i = 0; i < paths.length; i++) {
-        result.push(toRDFQueryPath($shapes, paths[i]))
-      }
-      return { or: result }
+      return { or: paths.map(path => toRDFQueryPath($shapes, path)) }
     }
 
     const zeroOrMorePath = shPathCf.out(sh.zeroOrMorePath).term
