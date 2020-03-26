@@ -21,7 +21,6 @@
 const NodeSet = require('./node-set')
 const ValidationFunction = require('./validation-function')
 const validatorsRegistry = require('./validators-registry')
-const { getLocalName } = require('./uri-utils')
 const { toRDFQueryPath } = require('./validators')
 const { rdfs, sh } = require('./namespaces')
 
@@ -107,21 +106,11 @@ class Constraint {
     this.shape = shape
     this.component = component
     this.paramValue = paramValue
-    const parameterValues = {}
-    const params = component.getParameters()
-    for (let i = 0; i < params.length; i++) {
-      const param = params[i]
-      const value = paramValue || rdfShapesGraph.cf.node(shape.shapeNode).out(param).term
-      if (value) {
-        const localName = getLocalName(param.value)
-        parameterValues[localName] = value
-      }
-    }
-    this.parameterValues = parameterValues
+    this.shapeNodeCf = rdfShapesGraph.cf.node(shape.shapeNode)
   }
 
-  getParameterValue (paramName) {
-    return this.parameterValues[paramName]
+  getParameterValue (param) {
+    return this.paramValue || this.shapeNodeCf.out(param).term
   }
 
   get componentMessages () {
