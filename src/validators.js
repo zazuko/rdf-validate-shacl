@@ -397,11 +397,6 @@ function validateXone (context, focusNode, valueNode, constraint) {
 // Utilities ------------------------------------------------------------------
 
 function toRDFQueryPath ($shapes, shPath) {
-  if (shPath.termType === 'Collection') {
-    const paths = $shapes.rdfListToArray(shPath)
-    return paths.map(path => toRDFQueryPath($shapes, path))
-  }
-
   if (shPath.termType === 'NamedNode') {
     return shPath
   }
