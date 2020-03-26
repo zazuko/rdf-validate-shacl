@@ -321,13 +321,6 @@ class ValidationEngine {
 }
 
 function nodeLabel (node) {
-  if (node.termType === 'Collection') {
-    const acc = []
-    for (let i = 0; i < node.elements.length; i++) {
-      acc.push(nodeLabel(node.elements[i]))
-    }
-    return acc.join(', ')
-  }
   if (node.termType === 'NamedNode') {
     // TODO: shrink URI if possible
     return '<' + node.value + '>'
