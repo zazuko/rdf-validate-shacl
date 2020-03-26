@@ -18,40 +18,46 @@ const XSDDecimalTypes = new NodeSet([
   xsd.float
 ])
 
-function validateAnd ($context, $value, $and) {
-  const shapes = $context.$shapes.rdfListToArray($and)
+function validateAnd (context, focusNode, valueNode, constraint) {
+  const andNode = constraint.getParameterValue('and')
+  const shapes = context.$shapes.rdfListToArray(andNode)
   for (let i = 0; i < shapes.length; i++) {
-    if (!$context.nodeConformsToShape($value, shapes[i])) {
+    if (!context.nodeConformsToShape(valueNode, shapes[i])) {
       return false
     }
   }
   return true
 }
 
-function validateClass ($context, $value, $class) {
-  return $context.$data.isInstanceOf($value, $class)
+function validateClass (context, focusNode, valueNode, constraint) {
+  const classNode = constraint.getParameterValue('class')
+  return context.$data.isInstanceOf(valueNode, classNode)
 }
 
-function validateClosed ($context, $value, $closed, $ignoredProperties, $currentShape) {
-  if (!$context.factory.true.equals($closed)) {
+function validateClosed (context, focusNode, valueNode, constraint) {
+  const closedNode = constraint.getParameterValue('closed')
+  const ignoredPropertiesNode = constraint.getParameterValue('ignoredProperties')
+  const currentShape = constraint.shape.shapeNode
+
+  if (!context.factory.true.equals(closedNode)) {
     return
   }
 
   const allowed = new NodeSet(
-    $context.$shapes.cf
-      .node($currentShape)
+    context.$shapes.cf
+      .node(currentShape)
       .out(sh.property)
       .out(sh.path)
       .terms
       .filter((term) => term.termType === 'NamedNode')
   )
 
-  if ($ignoredProperties) {
-    allowed.addAll($context.$shapes.rdfListToArray($ignoredProperties))
+  if (ignoredPropertiesNode) {
+    allowed.addAll(context.$shapes.rdfListToArray(ignoredPropertiesNode))
   }
 
   const results = []
-  const valueQuads = [...$context.$data.match($value, null, null)]
+  const valueQuads = [...context.$data.match(valueNode, null, null)]
   valueQuads
     .filter(({ predicate }) => !allowed.has(predicate))
     .forEach(({ predicate, object }) => {
@@ -60,31 +66,37 @@ function validateClosed ($context, $value, $closed, $ignoredProperties, $current
   return results
 }
 
-function validateDatatype ($context, $value, $datatype) {
-  if ($value.termType === 'Literal') {
-    return $datatype.equals($value.datatype) && isValidForDatatype($value.value, $datatype)
+function validateDatatype (context, focusNode, valueNode, constraint) {
+  const datatypeNode = constraint.getParameterValue('datatype')
+
+  if (valueNode.termType === 'Literal') {
+    return datatypeNode.equals(valueNode.datatype) && isValidForDatatype(valueNode.value, datatypeNode)
   } else {
     return false
   }
 }
 
-function validateDisjoint ($context, $this, $value, $disjoint) {
-  return !$context.$data.hasMatch($this, $disjoint, $value)
+function validateDisjoint (context, focusNode, valueNode, constraint) {
+  const disjointNode = constraint.getParameterValue('disjoint')
+  return !context.$data.hasMatch(focusNode, disjointNode, valueNode)
 }
 
-function validateEqualsProperty ($context, $this, $path, $equals) {
+function validateEqualsProperty (context, focusNode, valueNode, constraint) {
+  const pathNode = constraint.shape.path
+  const equalsNode = constraint.getParameterValue('equals')
+
   const results = []
-  const path = toRDFQueryPath($context.$shapes, $path)
-  $context.$data.getPathObjects($this, path).forEach(value => {
-    if (!$context.$data.hasMatch($this, $equals, value)) {
+  const path = toRDFQueryPath(context.$shapes, pathNode)
+  context.$data.getPathObjects(focusNode, path).forEach(value => {
+    if (!context.$data.hasMatch(focusNode, equalsNode, value)) {
       results.push({ value })
     }
   })
 
-  const equalsQuads = [...$context.$data.match($this, $equals, null)]
+  const equalsQuads = [...context.$data.match(focusNode, equalsNode, null)]
   equalsQuads.forEach(({ object }) => {
     const value = object
-    if (!$context.$data.getPathObjects($this, path).some(pathValue => pathValue.equals(value))) {
+    if (!context.$data.getPathObjects(focusNode, path).some(pathValue => pathValue.equals(value))) {
       results.push({ value })
     }
   })
@@ -92,60 +104,72 @@ function validateEqualsProperty ($context, $this, $path, $equals) {
   return results
 }
 
-function validateEqualsNode ($context, $this, $equals) {
+function validateEqualsNode (context, focusNode, valueNode, constraint) {
+  const equalsNode = constraint.getParameterValue('equals')
   const results = []
 
   let solutions = 0
-  $context.$data.getPathObjects($this, $equals).forEach(value => {
+  context.$data.getPathObjects(focusNode, equalsNode).forEach(value => {
     solutions++
-    if (compareNodes($this, value) !== 0) {
+    if (compareNodes(focusNode, value) !== 0) {
       results.push({ value })
     }
   })
 
   if (results.length === 0 && solutions === 0) {
-    results.push({ value: $this })
+    results.push({ value: focusNode })
   }
 
   return results
 }
 
-function validateHasValueNode ($context, $this, $hasValue) {
-  return $this.equals($hasValue)
+function validateHasValueNode (context, focusNode, valueNode, constraint) {
+  const hasValueNode = constraint.getParameterValue('hasValue')
+  return focusNode.equals(hasValueNode)
 }
 
-function validateHasValueProperty ($context, $this, $path, $hasValue) {
-  const path = toRDFQueryPath($context.$shapes, $path)
-  return $context.$data
-    .getPathObjects($this, path)
-    .some(value => value.equals($hasValue))
+function validateHasValueProperty (context, focusNode, valueNode, constraint) {
+  const pathNode = constraint.shape.path
+  const path = toRDFQueryPath(context.$shapes, pathNode)
+  const hasValueNode = constraint.getParameterValue('hasValue')
+
+  return context.$data
+    .getPathObjects(focusNode, path)
+    .some(value => value.equals(hasValueNode))
 }
 
-function validateIn ($context, $value, $in) {
-  return new NodeSet($context.$shapes.rdfListToArray($in)).has($value)
+function validateIn (context, focusNode, valueNode, constraint) {
+  const inNode = constraint.getParameterValue('in')
+  return new NodeSet(context.$shapes.rdfListToArray(inNode)).has(valueNode)
 }
 
-function validateLanguageIn ($context, $value, $languageIn) {
-  if ($value.termType !== 'Literal') {
+function validateLanguageIn (context, focusNode, valueNode, constraint) {
+  if (valueNode.termType !== 'Literal') {
     return false
   }
-  const lang = $value.language
+
+  const lang = valueNode.language
   if (!lang || lang === '') {
     return false
   }
-  const ls = $context.$shapes.rdfListToArray($languageIn)
+
+  const languageInNode = constraint.getParameterValue('languageIn')
+  const ls = context.$shapes.rdfListToArray(languageInNode)
   for (let i = 0; i < ls.length; i++) {
     if (lang.startsWith(ls[i].value)) {
       return true
     }
   }
+
   return false
 }
 
-function validateLessThanProperty ($context, $this, $path, $lessThan) {
-  const valuePath = toRDFQueryPath($context.$shapes, $path)
-  const values = $context.$data.getPathObjects($this, valuePath)
-  const referenceValues = $context.$data.cf.node($this).out($lessThan).terms
+function validateLessThanProperty (context, focusNode, valueNode, constraint) {
+  const pathNode = constraint.shape.path
+  const valuePath = toRDFQueryPath(context.$shapes, pathNode)
+  const values = context.$data.getPathObjects(focusNode, valuePath)
+  const lessThanNode = constraint.getParameterValue('lessThan')
+  const referenceValues = context.$data.cf.node(focusNode).out(lessThanNode).terms
 
   const invalidValues = []
   for (const value of values) {
@@ -159,10 +183,12 @@ function validateLessThanProperty ($context, $this, $path, $lessThan) {
   return invalidValues
 }
 
-function validateLessThanOrEqualsProperty ($context, $this, $path, $lessThanOrEquals) {
-  const valuePath = toRDFQueryPath($context.$shapes, $path)
-  const values = $context.$data.getPathObjects($this, valuePath)
-  const referenceValues = $context.$data.cf.node($this).out($lessThanOrEquals).terms
+function validateLessThanOrEqualsProperty (context, focusNode, valueNode, constraint) {
+  const pathNode = constraint.shape.path
+  const valuePath = toRDFQueryPath(context.$shapes, pathNode)
+  const values = context.$data.getPathObjects(focusNode, valuePath)
+  const lessThanOrEqualsNode = constraint.getParameterValue('lessThanOrEquals')
+  const referenceValues = context.$data.cf.node(focusNode).out(lessThanOrEqualsNode).terms
 
   const invalidValues = []
   for (const value of values) {
@@ -176,147 +202,179 @@ function validateLessThanOrEqualsProperty ($context, $this, $path, $lessThanOrEq
   return invalidValues
 }
 
-function validateMaxCountProperty ($context, $this, $path, $maxCount) {
-  const path = toRDFQueryPath($context.$shapes, $path)
-  const count = $context.$data.getPathObjects($this, path).length
+function validateMaxCountProperty (context, focusNode, valueNode, constraint) {
+  const pathNode = constraint.shape.path
+  const path = toRDFQueryPath(context.$shapes, pathNode)
+  const count = context.$data.getPathObjects(focusNode, path).length
+  const maxCountNode = constraint.getParameterValue('maxCount')
 
-  return count <= Number($maxCount.value)
+  return count <= Number(maxCountNode.value)
 }
 
-function validateMaxExclusive ($context, $value, $maxExclusive) {
-  return $value.termType === 'Literal' && Number($value.value) < Number($maxExclusive.value)
+function validateMaxExclusive (context, focusNode, valueNode, constraint) {
+  const maxExclusiveNode = constraint.getParameterValue('maxExclusive')
+  return valueNode.termType === 'Literal' && Number(valueNode.value) < Number(maxExclusiveNode.value)
 }
 
-function validateMaxInclusive ($context, $value, $maxInclusive) {
-  return $value.termType === 'Literal' && Number($value.value) <= Number($maxInclusive.value)
+function validateMaxInclusive (context, focusNode, valueNode, constraint) {
+  const maxInclusiveNode = constraint.getParameterValue('maxInclusive')
+  return valueNode.termType === 'Literal' && Number(valueNode.value) <= Number(maxInclusiveNode.value)
 }
 
-function validateMaxLength ($context, $value, $maxLength) {
-  if ($value.termType === 'BlankNode') {
+function validateMaxLength (context, focusNode, valueNode, constraint) {
+  if (valueNode.termType === 'BlankNode') {
     return false
   }
-  return $value.value.length <= Number($maxLength.value)
+
+  const maxLengthNode = constraint.getParameterValue('maxLength')
+  return valueNode.value.length <= Number(maxLengthNode.value)
 }
 
-function validateMinCountProperty ($context, $this, $path, $minCount) {
-  const path = toRDFQueryPath($context.$shapes, $path)
-  const count = $context.$data.getPathObjects($this, path).length
+function validateMinCountProperty (context, focusNode, valueNode, constraint) {
+  const pathNode = constraint.shape.path
+  const path = toRDFQueryPath(context.$shapes, pathNode)
+  const count = context.$data.getPathObjects(focusNode, path).length
+  const minCountNode = constraint.getParameterValue('minCount')
 
-  return count >= Number($minCount.value)
+  return count >= Number(minCountNode.value)
 }
 
-function validateMinExclusive ($context, $value, $minExclusive) {
-  return $value.termType === 'Literal' && Number($value.value) > Number($minExclusive.value)
+function validateMinExclusive (context, focusNode, valueNode, constraint) {
+  const minExclusiveNode = constraint.getParameterValue('minExclusive')
+  return valueNode.termType === 'Literal' && Number(valueNode.value) > Number(minExclusiveNode.value)
 }
 
-function validateMinInclusive ($context, $value, $minInclusive) {
-  return $value.termType === 'Literal' && Number($value.value) >= Number($minInclusive.value)
+function validateMinInclusive (context, focusNode, valueNode, constraint) {
+  const minInclusiveNode = constraint.getParameterValue('minInclusive')
+  return valueNode.termType === 'Literal' && Number(valueNode.value) >= Number(minInclusiveNode.value)
 }
 
-function validateMinLength ($context, $value, $minLength) {
-  if ($value.termType === 'BlankNode') {
+function validateMinLength (context, focusNode, valueNode, constraint) {
+  if (valueNode.termType === 'BlankNode') {
     return false
   }
-  return $value.value.length >= Number($minLength.value)
+
+  const minLengthNode = constraint.getParameterValue('minLength')
+  return valueNode.value.length >= Number(minLengthNode.value)
 }
 
-function validateNodeKind ($context, $value, $nodeKind) {
-  if ($value.termType === 'BlankNode') {
-    return sh.BlankNode.equals($nodeKind) ||
-      sh.BlankNodeOrIRI.equals($nodeKind) ||
-      sh.BlankNodeOrLiteral.equals($nodeKind)
-  } else if ($value.termType === 'NamedNode') {
-    return sh.IRI.equals($nodeKind) ||
-      sh.BlankNodeOrIRI.equals($nodeKind) ||
-      sh.IRIOrLiteral.equals($nodeKind)
-  } else if ($value.termType === 'Literal') {
-    return sh.Literal.equals($nodeKind) ||
-      sh.BlankNodeOrLiteral.equals($nodeKind) ||
-      sh.IRIOrLiteral.equals($nodeKind)
+function validateNodeKind (context, focusNode, valueNode, constraint) {
+  const nodeKindNode = constraint.getParameterValue('nodeKind')
+
+  if (valueNode.termType === 'BlankNode') {
+    return sh.BlankNode.equals(nodeKindNode) ||
+      sh.BlankNodeOrIRI.equals(nodeKindNode) ||
+      sh.BlankNodeOrLiteral.equals(nodeKindNode)
+  } else if (valueNode.termType === 'NamedNode') {
+    return sh.IRI.equals(nodeKindNode) ||
+      sh.BlankNodeOrIRI.equals(nodeKindNode) ||
+      sh.IRIOrLiteral.equals(nodeKindNode)
+  } else if (valueNode.termType === 'Literal') {
+    return sh.Literal.equals(nodeKindNode) ||
+      sh.BlankNodeOrLiteral.equals(nodeKindNode) ||
+      sh.IRIOrLiteral.equals(nodeKindNode)
   }
 }
 
-function validateNode ($context, $value, $node) {
-  return $context.nodeConformsToShape($value, $node)
+function validateNode (context, focusNode, valueNode, constraint) {
+  const nodeNode = constraint.getParameterValue('node')
+  return context.nodeConformsToShape(valueNode, nodeNode)
 }
 
-function validateNot ($context, $value, $not) {
-  return !$context.nodeConformsToShape($value, $not)
+function validateNot (context, focusNode, valueNode, constraint) {
+  const notNode = constraint.getParameterValue('not')
+  return !context.nodeConformsToShape(valueNode, notNode)
 }
 
-function validateOr ($context, $value, $or) {
-  const shapes = $context.$shapes.rdfListToArray($or)
+function validateOr (context, focusNode, valueNode, constraint) {
+  const orNode = constraint.getParameterValue('or')
+  const shapes = context.$shapes.rdfListToArray(orNode)
   for (let i = 0; i < shapes.length; i++) {
-    if ($context.nodeConformsToShape($value, shapes[i])) {
+    if (context.nodeConformsToShape(valueNode, shapes[i])) {
       return true
     }
   }
   return false
 }
 
-function validatePattern ($context, $value, $pattern, $flags) {
-  if ($value.termType === 'BlankNode') {
+function validatePattern (context, focusNode, valueNode, constraint) {
+  if (valueNode.termType === 'BlankNode') {
     return false
   }
-  const re = $flags ? new RegExp($pattern.value, $flags.value) : new RegExp($pattern.value)
-  return re.test($value.value)
+
+  const flagsNode = constraint.getParameterValue('flags')
+  const patternNode = constraint.getParameterValue('pattern')
+  const re = flagsNode ? new RegExp(patternNode.value, flagsNode.value) : new RegExp(patternNode.value)
+  return re.test(valueNode.value)
 }
 
-function validateQualifiedMaxCountProperty ($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $qualifiedMaxCount, $currentShape) {
-  const c = validateQualifiedHelper($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape)
-  return $qualifiedMaxCount.termType === 'Literal' && c <= Number($qualifiedMaxCount.value)
+function validateQualifiedMaxCountProperty (context, focusNode, valueNode, constraint) {
+  const count = validateQualifiedHelper(context, focusNode, constraint)
+  const qualifiedMaxCountNode = constraint.getParameterValue('qualifiedMaxCount')
+
+  return qualifiedMaxCountNode.termType === 'Literal' && count <= Number(qualifiedMaxCountNode.value)
 }
 
-function validateQualifiedMinCountProperty ($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $qualifiedMinCount, $currentShape) {
-  const c = validateQualifiedHelper($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape)
-  return $qualifiedMinCount.termType === 'Literal' && c >= Number($qualifiedMinCount.value)
+function validateQualifiedMinCountProperty (context, focusNode, valueNode, constraint) {
+  const count = validateQualifiedHelper(context, focusNode, constraint)
+  const qualifiedMinCountNode = constraint.getParameterValue('qualifiedMinCount')
+
+  return qualifiedMinCountNode.termType === 'Literal' && count >= Number(qualifiedMinCountNode.value)
 }
 
-function validateQualifiedHelper ($context, $this, $path, $qualifiedValueShape, $qualifiedValueShapesDisjoint, $currentShape) {
+function validateQualifiedHelper (context, focusNode, constraint) {
+  const currentShapeNode = constraint.shape.shapeNode
+  const qualifiedValueShapesDisjointNode = constraint.getParameterValue('qualifiedValueShapesDisjoint')
+  const qualifiedValueShapeNode = constraint.getParameterValue('qualifiedValueShape')
+
   const siblingShapes = new NodeSet()
 
-  if ($context.factory.true.equals($qualifiedValueShapesDisjoint)) {
-    const qualifiedSiblingShapes = $context.$shapes.cf
-      .node($currentShape)
+  if (context.factory.true.equals(qualifiedValueShapesDisjointNode)) {
+    const qualifiedSiblingShapes = context.$shapes.cf
+      .node(currentShapeNode)
       // Move up to parent
       .in(sh.property)
       // Move down to all siblings
       .out(sh.property)
       // Select sh:qualifiedValueShape of all siblings
       .out(sh.qualifiedValueShape)
-      .filter(({ term }) => !term.equals($qualifiedValueShape))
+      .filter(({ term }) => !term.equals(qualifiedValueShapeNode))
       .terms
 
     siblingShapes.addAll(qualifiedSiblingShapes)
   }
 
-  const path = toRDFQueryPath($context.$shapes, $path)
-  return $context.$data
-    .getPathObjects($this, path)
+  const pathNode = constraint.shape.path
+  const path = toRDFQueryPath(context.$shapes, pathNode)
+  return context.$data
+    .getPathObjects(focusNode, path)
     .filter(value =>
-      $context.nodeConformsToShape(value, $qualifiedValueShape) &&
-      !validateQualifiedConformsToASibling($context, value, [...siblingShapes])
+      context.nodeConformsToShape(value, qualifiedValueShapeNode) &&
+      !validateQualifiedConformsToASibling(context, value, [...siblingShapes])
     )
     .length
 }
 
-function validateQualifiedConformsToASibling ($context, value, siblingShapes) {
+function validateQualifiedConformsToASibling (context, value, siblingShapes) {
   for (let i = 0; i < siblingShapes.length; i++) {
-    if ($context.nodeConformsToShape(value, siblingShapes[i])) {
+    if (context.nodeConformsToShape(value, siblingShapes[i])) {
       return true
     }
   }
   return false
 }
 
-function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
-  if (!$context.factory.true.equals($uniqueLang)) {
+function validateUniqueLangProperty (context, focusNode, valueNode, constraint) {
+  const uniqueLangNode = constraint.getParameterValue('uniqueLang')
+
+  if (!context.factory.true.equals(uniqueLangNode)) {
     return
   }
 
-  const path = toRDFQueryPath($context.$shapes, $path)
+  const pathNode = constraint.shape.path
+  const path = toRDFQueryPath(context.$shapes, pathNode)
   const map = {}
-  $context.$data.getPathObjects($this, path).forEach(value => {
+  context.$data.getPathObjects(focusNode, path).forEach(value => {
     const lang = value.language
     if (lang && lang !== '') {
       const old = map[lang]
@@ -340,11 +398,12 @@ function validateUniqueLangProperty ($context, $this, $uniqueLang, $path) {
   return results
 }
 
-function validateXone ($context, $value, $xone) {
-  const shapes = $context.$shapes.rdfListToArray($xone)
+function validateXone (context, focusNode, valueNode, constraint) {
+  const xoneNode = constraint.getParameterValue('xone')
+  const shapes = context.$shapes.rdfListToArray(xoneNode)
   let count = 0
   for (let i = 0; i < shapes.length; i++) {
-    if ($context.nodeConformsToShape($value, shapes[i])) {
+    if (context.nodeConformsToShape(valueNode, shapes[i])) {
       count++
     }
   }
