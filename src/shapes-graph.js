@@ -174,7 +174,7 @@ class ConstraintComponent {
 
     if (!validator) return null
 
-    return new ValidationFunction(this.context, validator.func.name, this.parameters, validator.func)
+    return new ValidationFunction(this.context, validator.func.name, validator.func)
   }
 
   getMessages (shape) {
