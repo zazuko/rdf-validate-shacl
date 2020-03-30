@@ -62,7 +62,7 @@ describe('ValidationReport', () => {
       assert.deepStrictEqual(results, [])
     })
 
-    it('returns a dataset with a report that does not conform', async () => {
+    it('returns a dataset with a report that does not conform', () => {
       const resultID1 = rdf.blankNode()
       const resultID2 = rdf.blankNode()
       const report = new ValidationReport([
