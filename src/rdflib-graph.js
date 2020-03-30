@@ -94,18 +94,14 @@ class RDFLibGraph {
   }
 
   rdfListToArray ($rdfList) {
-    if ($rdfList.elements) {
-      return $rdfList.elements
-    } else {
-      const items = []
-      while (!$rdfList.equals(rdf.nil)) {
-        const first = this.cf.node($rdfList).out(rdf.first).term
-        items.push(first)
-        const rest = this.cf.node($rdfList).out(rdf.rest).term
-        $rdfList = rest
-      }
-      return items
+    const items = []
+    while (!$rdfList.equals(rdf.nil)) {
+      const first = this.cf.node($rdfList).out(rdf.first).term
+      items.push(first)
+      const rest = this.cf.node($rdfList).out(rdf.rest).term
+      $rdfList = rest
     }
+    return items
   }
 }
 
