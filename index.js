@@ -10,7 +10,6 @@ const shaclVocabularyFactory = require('./src/vocabularies/shacl')
  * @param {DatasetCore} shapes - Dataset containing the SHACL shapes for validation
  * @param {object} options - Validator options
  * @param {DataFactory} options.factory - Optional RDFJS data factory
- * @param {Boolean} options.conformanceOnly - Only check for conformance
  * @param {Number} options.maxErrors - Max number of errors before the engine
  *   stops. Defaults to finding all the errors.
  */

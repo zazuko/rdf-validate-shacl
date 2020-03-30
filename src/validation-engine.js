@@ -5,7 +5,6 @@ class ValidationEngine {
   constructor (context, options) {
     this.context = context
     this.factory = context.factory
-    this.conformanceOnly = options.conformanceOnly
     this.maxErrors = options.maxErrors
     this.results = []
     this.recordErrorsLevel = 0
@@ -49,16 +48,9 @@ class ValidationEngine {
 
     if (obj === false) {
       if (this.recordErrorsLevel > 0) {
-        if (this.conformanceOnly) {
-          return false
-        } else {
-          return true
-        }
+        return true
       }
 
-      if (this.conformanceOnly) {
-        return false
-      }
       const result = this.createResult(constraint, focusNode, valueNode)
       if (constraint.shape.isPropertyShape()) {
         this.addResultProperty(result, sh.resultPath, constraint.shape.path) // TODO: Make deep copy
@@ -67,14 +59,7 @@ class ValidationEngine {
       return true
     } else if (typeof obj === 'string') {
       if (this.recordErrorsLevel > 0) {
-        if (this.conformanceOnly) {
-          return false
-        } else {
-          return true
-        }
-      }
-      if (this.conformanceOnly) {
-        return false
+        return true
       }
       const result = this.createResult(constraint, focusNode, valueNode)
       if (constraint.shape.isPropertyShape()) {
@@ -85,14 +70,7 @@ class ValidationEngine {
       return true
     } else if (typeof obj === 'object') {
       if (this.recordErrorsLevel > 0) {
-        if (this.conformanceOnly) {
-          return false
-        } else {
-          return true
-        }
-      }
-      if (this.conformanceOnly) {
-        return false
+        return true
       }
       const result = this.createResult(constraint, focusNode)
       if (obj.path) {
