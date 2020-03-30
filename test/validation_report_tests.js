@@ -14,26 +14,26 @@ describe('ValidationReport', () => {
     assert.ok(report instanceof ValidationReport)
   })
 
-  describe('#conforms()', () => {
+  describe('#conforms', () => {
     it('conforms', () => {
       const report = new ValidationReport([])
 
-      assert.ok(report.conforms())
+      assert.ok(report.conforms)
     })
 
     it('does not conform', () => {
       const results = [rdf.quad(rdf.blankNode(), rdfNS.type, sh.ValidationResult)]
 
       const report = new ValidationReport(results)
-      assert.ok(!report.conforms())
+      assert.ok(!report.conforms)
     })
   })
 
-  describe('#results()', () => {
+  describe('#results', () => {
     it('returns empty list', () => {
       const report = new ValidationReport([])
 
-      assert.deepStrictEqual(report.results(), [])
+      assert.deepStrictEqual(report.results, [])
     })
 
     it('returns reports list', () => {
@@ -44,7 +44,7 @@ describe('ValidationReport', () => {
 
       const report = new ValidationReport(results)
 
-      assert.strictEqual(report.results().length, 2)
+      assert.strictEqual(report.results.length, 2)
     })
   })
 

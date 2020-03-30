@@ -13,12 +13,12 @@ describe('configuration', () => {
     const data = await rdf.dataset().import(rdfFS.fromFile(dataFile))
 
     const report1 = await validator.validate(data, data)
-    assert.strictEqual(report1.conforms(), false)
-    assert.strictEqual(report1.results().length, 2)
+    assert.strictEqual(report1.conforms, false)
+    assert.strictEqual(report1.results.length, 2)
 
     validator.getConfiguration().setValidationErrorBatch(1)
     const report2 = await validator.validate(data, data)
-    assert.strictEqual(report2.conforms(), false)
-    assert.strictEqual(report2.results().length, 1)
+    assert.strictEqual(report2.conforms, false)
+    assert.strictEqual(report2.results.length, 1)
   })
 })

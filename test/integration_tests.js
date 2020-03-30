@@ -14,14 +14,12 @@ class ExpectedValidationReport {
     this.reportNode = this.cf.namedNode(sh.ValidationReport).in(rdfNS.type)
   }
 
-  conforms () {
-    const conforms = this.reportNode.out(sh.conforms).value
-    return conforms === 'true'
+  get conforms () {
+    return this.reportNode.out(sh.conforms).value === 'true'
   }
 
-  results () {
+  get results () {
     return this.reportNode.out(sh.result).map((node) => new ExpectedValidationResult({
-      report: this.reportNode.term,
       focusNode: node.out(sh.focusNode).term,
       severity: node.out(sh.resultSeverity).term,
       constraint: node.out(sh.sourceConstraintComponent).term,
@@ -31,35 +29,11 @@ class ExpectedValidationReport {
 }
 
 class ExpectedValidationResult {
-  constructor ({ report, severity, focusNode, constraint, shape }) {
-    this._id = report.value
-
-    this._focusNode = focusNode.termType === 'BlankNode' ? `_:${focusNode.value}` : focusNode.value
-    this._severity = severity.value
-    this._constraint = constraint.value
-    this._shape = shape.termType === 'BlankNode' ? '_:' + shape.value : shape.value
-  }
-
-  id () {
-    return this._id
-  }
-
-  focusNode () {
-    return this._focusNode
-  }
-
-  severity () {
-    if (this._severity != null) {
-      return this._severity.split('#')[1]
-    }
-  }
-
-  sourceConstraintComponent () {
-    return this._constraint
-  }
-
-  sourceShape () {
-    return this._shape
+  constructor ({ severity, focusNode, constraint, shape }) {
+    this.focusNode = focusNode.termType === 'BlankNode' ? `_:${focusNode.value}` : focusNode.value
+    this.severity = severity ? severity.value.split('#')[1] : null
+    this.sourceConstraintComponent = constraint.value
+    this.sourceShape = shape.termType === 'BlankNode' ? '_:' + shape.value : shape.value
   }
 }
 
@@ -72,23 +46,20 @@ const validateReports = async function (input) {
 
   const expectedReport = new ExpectedValidationReport(data)
   const report = await new SHACLValidator().validate(data, data)
-  assert.strictEqual(report.conforms(), expectedReport.conforms())
-  assert.strictEqual(report.results().length, expectedReport.results().length)
-  const results = report.results() || []
-  const expectedResults = expectedReport.results()
-  for (let i = 0; i < results.length; i++) {
+  assert.strictEqual(report.conforms, expectedReport.conforms)
+  assert.strictEqual(report.results.length, expectedReport.results.length)
+
+  for (const result of report.results) {
     let found = false
-    for (let j = 0; j < expectedResults.length; j++) {
-      const result = results[i]
-      const expectedResult = expectedResults[j]
+    for (const expectedResult of expectedReport.results) {
       if (
-        result.focusNode() === expectedResult.focusNode() &&
-        result.severity() === expectedResult.severity() &&
+        result.focusNode === expectedResult.focusNode &&
+        result.severity === expectedResult.severity &&
         (
-          (isBlank(result.sourceShape()) && isBlank(expectedResult.sourceShape())) ||
-          result.sourceShape() === expectedResult.sourceShape()
+          (isBlank(result.sourceShape) && isBlank(expectedResult.sourceShape)) ||
+          result.sourceShape === expectedResult.sourceShape
         ) &&
-        result.sourceConstraintComponent() === expectedResult.sourceConstraintComponent()
+        result.sourceConstraintComponent === expectedResult.sourceConstraintComponent
       ) {
         found = true
       }

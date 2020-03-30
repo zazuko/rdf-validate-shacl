@@ -14,18 +14,18 @@ to inspect conformance and results.
 const validator = new SHACLValidator()
 const report = await validator.validate(dataDataset, shapesDataset)
 
-// Check conformance. Returns `true` or `false`.
-console.log(report.conforms())
+// Check conformance: `true` or `false`
+console.log(report.conforms)
 
-for (const result of report.results()) {
+for (const result of report.results) {
   // See https://www.w3.org/TR/shacl/#results-validation-result for details
   // about each method
-  console.log(result.message())
-  console.log(result.path())
-  console.log(result.focusNode())
-  console.log(result.severity())
-  console.log(result.sourceConstraintComponent())
-  console.log(result.sourceShape())
+  console.log(result.message)
+  console.log(result.path)
+  console.log(result.focusNode)
+  console.log(result.severity)
+  console.log(result.sourceConstraintComponent)
+  console.log(result.sourceShape)
 }
 ```
 
