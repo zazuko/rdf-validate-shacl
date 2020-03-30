@@ -1,16 +1,15 @@
-const ValidationEngineConfiguration = require('./validation-engine-configuration')
 const ValidationReport = require('./validation-report')
 const error = require('debug')('validation-enging::error')
 
 class ValidationEngine {
-  constructor (context, conformanceOnly) {
+  constructor (context, options) {
     this.context = context
     this.factory = context.factory
-    this.conformanceOnly = conformanceOnly
+    this.conformanceOnly = options.conformanceOnly
+    this.maxErrors = options.maxErrors
     this.results = []
     this.recordErrorsLevel = 0
     this.violationsCount = 0
-    this.setConfiguration(new ValidationEngineConfiguration())
     this.validationError = null
   }
 
@@ -284,10 +283,10 @@ class ValidationEngine {
   }
 
   maxErrorsReached () {
-    if (this.getConfiguration().getValidationErrorBatch() === -1) {
-      return false
+    if (this.maxErrors) {
+      return this.violationsCount >= this.maxErrors
     } else {
-      return this.violationsCount >= this.getConfiguration().getValidationErrorBatch()
+      return false
     }
   }
 
@@ -300,14 +299,6 @@ class ValidationEngine {
       str = str.replace('{?' + key + '}', label)
     }
     return this.factory.literal(str, msg.language | msg.datatype)
-  }
-
-  getConfiguration () {
-    return this.configuration
-  }
-
-  setConfiguration (configuration) {
-    this.configuration = configuration
   }
 
   getReport () {

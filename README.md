@@ -11,8 +11,8 @@ The validation function returns a `ValidationReport` object that can be used
 to inspect conformance and results.
 
 ```javascript
-const validator = new SHACLValidator()
-const report = await validator.validate(dataDataset, shapesDataset)
+const validator = new SHACLValidator(shapesDataset)
+const report = await validator.validate(dataDataset)
 
 // Check conformance: `true` or `false`
 console.log(report.conforms)

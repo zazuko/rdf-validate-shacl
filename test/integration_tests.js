@@ -43,9 +43,10 @@ const isBlank = function (s) {
 
 const validateReports = async function (input) {
   const data = await rdf.dataset().import(rdfFS.fromFile(input))
+  const shapes = data
 
   const expectedReport = new ExpectedValidationReport(data)
-  const report = await new SHACLValidator().validate(data, data)
+  const report = await new SHACLValidator(shapes).validate(data)
   assert.strictEqual(report.conforms, expectedReport.conforms)
   assert.strictEqual(report.results.length, expectedReport.results.length)
 
