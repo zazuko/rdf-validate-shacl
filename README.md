@@ -1,7 +1,7 @@
 
-# SHACL.js
+# rdf-validate-shacl
 
-[![Build Status](https://travis-ci.org/zazuko/shacl-js.svg?branch=master)](https://travis-ci.org/zazuko/shacl-js)
+[![Build Status](https://travis-ci.org/zazuko/rdf-validate-shacl.svg?branch=master)](https://travis-ci.org/zazuko/rdf-validate-shacl)
 
 ## Usage
 
