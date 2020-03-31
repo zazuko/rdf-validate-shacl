@@ -52,3 +52,12 @@ pre-parsed in `src/vocabularies/shacl.js`.
 
 After updating the `@zazuko/rdf-vocabularies` dependency, run
 `npm run generate-vocabularies` to regenerate the pre-parsed vocabulary.
+
+
+## About
+
+*rdf-validate-shacl* was originally a fork of
+[shacl-js](https://github.com/TopQuadrant/shacl-js) meant to make it compatible
+with [RDF/JS](https://rdf.js.org/) libraries.
+Since then, we dropped support for the SHACL-JS extension and adapted the API
+to suit our needs.
