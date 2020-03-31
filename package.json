@@ -20,7 +20,8 @@
     "@rdfjs/dataset": "~1.0.1",
     "@rdfjs/namespace": "~1.1.0",
     "@rdfjs/term-set": "~1.0.1",
-    "clownface": "^0.12.1"
+    "clownface": "^0.12.1",
+    "rdf-validate-datatype": "^0.1.1"
   },
   "devDependencies": {
     "@rdfjs/parser-n3": "^1.1.3",
