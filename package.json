@@ -10,7 +10,7 @@
     "generate-vocabularies": "node scripts/generate-vocabularies.js"
   },
   "author": "Zazuko (https://zazuko.com)",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "keywords": [
     "rdf",
     "shacl",
