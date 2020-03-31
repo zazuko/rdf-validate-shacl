@@ -1,10 +1,3 @@
-// Functions implementing the validators of SHACL-JS
-// Also include validators for the constraint components of the DASH namespace
-
-// Also included: implementations of the standard DASH functions
-
-// There is no validator for sh:property as this is expected to be
-// natively implemented by the surrounding engine.
 const NodeSet = require('./node-set')
 const { rdf, sh, xsd } = require('./namespaces')
 

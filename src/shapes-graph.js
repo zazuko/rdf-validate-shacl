@@ -1,5 +1,3 @@
-// A simple SHACL validator in JavaScript based on SHACL-JS.
-
 // Design:
 //
 // First, derive a ShapesGraph object from the definitions in $shapes.

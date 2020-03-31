@@ -1,6 +1,8 @@
 
 # rdf-validate-shacl
 
+RDF/JS SHACL validator
+
 [![Build Status](https://travis-ci.org/zazuko/rdf-validate-shacl.svg?branch=master)](https://travis-ci.org/zazuko/rdf-validate-shacl)
 
 ## Usage
