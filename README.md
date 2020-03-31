@@ -31,6 +31,14 @@ for (const result of report.results) {
 }
 ```
 
+### Validator options
+
+The `SHACLValidator` constructor accepts an optional options object as second
+parameter. The available options are:
+- `factory`: RDF/JS data factory (must have a `.dataset()` method)
+- `maxErrors`: max number of errors after which the validation process should
+  stop. By default, it only stops after all the errors are found.
+
 ## Running the tests
 
 ```
