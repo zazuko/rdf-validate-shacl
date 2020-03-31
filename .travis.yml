@@ -1,4 +1,9 @@
 language: node_js
 node_js:
-  - "node"
-script: npm test
+  - "10"
+  - "12"
+  - "13"
+script:
+  - npm run test-ci
+after_success:
+  - npx codecov
