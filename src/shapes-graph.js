@@ -34,11 +34,10 @@ class ShapesGraph {
 
     // Build map from parameters to constraint components
     this.parametersMap = {}
-    for (let i = 0; i < this.components.length; i++) {
-      const component = this.components[i]
+    for (const component of this.components) {
       const parameters = component.getParameters()
-      for (let j = 0; j < parameters.length; j++) {
-        this.parametersMap[parameters[j].value] = component
+      for (const parameter of parameters) {
+        this.parametersMap[parameter.value] = component
       }
     }
 
@@ -62,11 +61,11 @@ class ShapesGraph {
   getShapeNodesWithConstraints () {
     if (!this.shapeNodesWithConstraints) {
       const set = new NodeSet()
-      for (let i = 0; i < this.components.length; i++) {
-        const params = this.components[i].requiredParameters
-        for (let j = 0; j < params.length; j++) {
+      for (const component of this.components) {
+        const params = component.requiredParameters
+        for (const param of params) {
           const shapesWithParam = [...this.context.$shapes
-            .match(null, params[j], null)]
+            .match(null, param, null)]
             .map(({ subject }) => subject)
           set.addAll(shapesWithParam)
         }
@@ -81,9 +80,8 @@ class ShapesGraph {
 
     if (!this.targetShapes) {
       this.targetShapes = []
-      const cs = this.getShapeNodesWithConstraints()
-      for (let i = 0; i < cs.length; i++) {
-        const shapeNode = cs[i]
+      const shapeNodes = this.getShapeNodesWithConstraints()
+      for (const shapeNode of shapeNodes) {
         if (
           $shapes.isInstanceOf(shapeNode, rdfs.Class) ||
           $shapes.hasMatch(shapeNode, sh.targetClass, null) ||
@@ -193,19 +191,14 @@ class ConstraintComponent {
   }
 
   isComplete (shapeNode) {
-    for (let i = 0; i < this.parameters.length; i++) {
-      const parameter = this.parameters[i]
-      if (!this.isOptional(parameter.value)) {
-        if (!this.context.$shapes.hasMatch(shapeNode, parameter, null)) {
-          return false
-        }
-      }
-    }
-    return true
+    return !this.parameters.some((parameter) => (
+      this.isRequired(parameter.value) &&
+      !this.context.$shapes.hasMatch(shapeNode, parameter, null)
+    ))
   }
 
-  isOptional (parameterURI) {
-    return this.optionals[parameterURI]
+  isRequired (parameterURI) {
+    return !this.optionals[parameterURI]
   }
 }
 
@@ -236,10 +229,6 @@ class Shape {
         }
       }
     })
-  }
-
-  getConstraints () {
-    return this.constraints
   }
 
   getTargetNodes (rdfDataGraph) {

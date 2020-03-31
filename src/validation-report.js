@@ -17,29 +17,22 @@ class ValidationReport {
     // Prepare report dataset
     const cf = clownface({ dataset: this.dataset, factory: this.factory })
     const resultNodes = cf.node(sh.ValidationResult).in(rdf.type).terms
-    this._conforms = resultNodes.length === 0
+    const conforms = resultNodes.length === 0
     cf.node(this.term)
       .addOut(rdf.type, sh.ValidationReport)
-      .addOut(sh.conforms, this.factory.literal(this._conforms.toString(), xsd.boolean))
+      .addOut(sh.conforms, this.factory.literal(conforms.toString(), xsd.boolean))
       .addOut(sh.result, resultNodes)
 
-    this._results = resultNodes.map(resultNode => new ValidationResult(resultNode, this.dataset))
-  }
+    /**
+     * `true` if the data conforms to the defined shapes, `false` otherwise.
+     */
+    this.conforms = conforms
 
-  /**
-   * Returns `true` if the data conforms to the defined shapes, `false`
-   * otherwise.
-   */
-  conforms () {
-    return this._conforms
-  }
-
-  /**
-   * Returns a list of `ValidationResult` with details about nodes that don't
-   * conform to the given shapes.
-   */
-  results () {
-    return this._results
+    /**
+     * List of `ValidationResult` with details about nodes that don't conform to
+     * the given shapes.
+     */
+    this.results = resultNodes.map(resultNode => new ValidationResult(resultNode, this.dataset))
   }
 }
 
@@ -50,28 +43,28 @@ class ValidationResult {
     this.cf = clownface({ dataset: dataset }).node(term)
   }
 
-  message () {
+  get message () {
     return this._getValue(sh.resultMessage)
   }
 
-  path () {
+  get path () {
     return this._getValue(sh.resultPath)
   }
 
-  focusNode () {
+  get focusNode () {
     return this._getValue(sh.focusNode)
   }
 
-  severity () {
+  get severity () {
     const severity = this._getValue(sh.resultSeverity)
     return severity ? severity.split('#')[1] : null
   }
 
-  sourceConstraintComponent () {
+  get sourceConstraintComponent () {
     return this._getValue(sh.sourceConstraintComponent)
   }
 
-  sourceShape () {
+  get sourceShape () {
     return this._getValue(sh.sourceShape)
   }
 

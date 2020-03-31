@@ -1,59 +1,52 @@
-/**
- * Created by antoniogarrote on 08/05/2017.
- */
-
-const debug = require('debug')('index')
-
 const DataFactory = require('./src/data-factory')
 const ShapesGraph = require('./src/shapes-graph')
 const ValidationEngine = require('./src/validation-engine')
-const rdflibgraph = require('./src/rdflib-graph')
-const RDFLibGraph = rdflibgraph.RDFLibGraph
-const ValidationEngineConfiguration = require('./src/validation-engine-configuration')
-
-/********************************/
-/* Vocabularies                 */
-/********************************/
-const shapesGraphURI = 'urn:x-shacl:shapesGraph'
-const dataGraphURI = 'urn:x-shacl:dataGraph'
-/********************************/
-/********************************/
+const RDFLibGraph = require('./src/rdflib-graph')
+const shaclVocabularyFactory = require('./src/vocabularies/shacl')
 
 /**
  * Validates RDF data based on a set of RDF shapes.
+ *
+ * @param {DatasetCore} shapes - Dataset containing the SHACL shapes for validation
+ * @param {object} options - Validator options
+ * @param {DataFactory} options.factory - Optional RDFJS data factory
+ * @param {Number} options.maxErrors - Max number of errors before the engine
+ *   stops. Defaults to finding all the errors.
  */
 class SHACLValidator {
-  constructor (options) {
+  constructor (shapes, options) {
     options = options || {}
 
     this.factory = new DataFactory(options.factory || require('@rdfjs/dataset'))
-    this.$data = new RDFLibGraph({ factory: this.factory })
-    this.$shapes = new RDFLibGraph({ factory: this.factory })
+    this.loadShapes(shapes)
+    this.validationEngine = new ValidationEngine(this, options)
+
     this.depth = 0
-    this.results = null
-    this.validationEngine = null
-    this.sequence = null
-    this.shapesGraph = new ShapesGraph(this)
-    this.configuration = new ValidationEngineConfiguration()
   }
 
   /**
    * Validates the provided data graph against the provided shapes graph
    *
-   * @param {DatasetCore} dataGraph - Dataset containing the data to validate
-   * @param {DatasetCore} shapesGraph - Dataset containing the SHACL shapes for validation
+   * @param {DatasetCore} data - Dataset containing the data to validate
    * @return {ValidationReport} - Result of the validation
    */
-  async validate (dataDataset, shapesDataset) {
-    await this.updateDataGraph(dataDataset)
-    return this.updateShapesGraph(shapesDataset)
+  validate (data) {
+    this.$data = new RDFLibGraph(data, this.factory)
+    this.validationEngine.validateAll(this.$data)
+    return this.validationEngine.getReport()
   }
 
   /**
-   * Retrieve validator configuration
+   * Load SHACL shapes constraints from dataset.
+   *
+   * @param {DatasetCore} shapes - Dataset containing the shapes for validation
    */
-  getConfiguration () {
-    return this.configuration
+  loadShapes (shapes) {
+    const shaclQuads = shaclVocabularyFactory(this.factory)
+    const dataset = this.factory.dataset(shaclQuads.concat([...shapes]))
+    this.$shapes = new RDFLibGraph(dataset, this.factory)
+
+    this.shapesGraph = new ShapesGraph(this)
   }
 
   // Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
@@ -66,102 +59,6 @@ class SHACLValidator {
     } finally {
       this.depth--
     }
-  }
-
-  /**
-   * Reloads the shapes graph.
-   * It will load SHACL shapes constraints.
-   */
-  loadDataGraph (graph) {
-    this.$data.clear()
-    this.$data.loadGraph(dataGraphURI, graph)
-  }
-
-  /**
-   * Validates the data graph against the shapes graph using the validation engine
-   */
-  updateValidationEngine () {
-    this.validationEngine = new ValidationEngine(this)
-    this.validationEngine.setConfiguration(this.configuration)
-    this.validationEngine.validateAll(this.$data)
-  }
-
-  /**
-   * Checks for a validation error or results in the validation
-   * engine to build the RDF graph with the validation report.
-   * It returns a ValidationReport object wrapping the RDF graph
-   *
-   * @return {ValidationReport} - Result of the validation
-   */
-  async showValidationResults () {
-    return this.validationEngine.getReport()
-  }
-
-  /**
-   * Exception that occurred during the validation process, if any. `null` otherwise.
-   */
-  get validationError () {
-    return this.validationEngine.validationError
-  }
-
-  /**
-   * Reloads the shapes graph.
-   * It will load SHACL shapes constraints.
-   *
-   * @param {DatasetCore} dataset - Dataset containing the shapes for validation
-   */
-  async loadShapesGraph (dataset) {
-    this.$shapes.clear()
-
-    this.$shapes.loadGraph(shapesGraphURI, dataset)
-
-    this.$shapes.loadGraph('http://shacl.org', this._loadVocabulary('shacl'))
-  }
-
-  /**
-   * Updates the data graph and validate it against the current data shapes
-   *
-   * @param {DatasetCore} dataset - Dataset containing the data to validate
-   */
-  async updateDataGraph (dataset) {
-    const startTime = new Date().getTime()
-    await this.loadDataGraph(dataset)
-
-    const midTime = new Date().getTime()
-    this.updateValidationEngine()
-
-    const endTime = new Date().getTime()
-    debug('Parsing took ' + (midTime - startTime) + ' ms. Validating the data took ' + (endTime - midTime) + ' ms.')
-
-    return this.showValidationResults()
-  }
-
-  /**
-   *  Updates the shapes graph from a memory model, and validates it against the current data graph
-   *
-   * @param {DatasetCore} dataset - Dataset containing the shapes for validation
-   */
-  async updateShapesGraph (dataset) {
-    const startTime = new Date().getTime()
-    await this.loadShapesGraph(dataset)
-
-    const midTime = new Date().getTime()
-    this.shapesGraph = new ShapesGraph(this)
-    const midTime2 = new Date().getTime()
-
-    this.updateValidationEngine()
-
-    const endTime = new Date().getTime()
-    debug('Parsing took ' + (midTime - startTime) + ' ms. Preparing the shapes took ' + (midTime2 - midTime) +
-          ' ms. Validation the data took ' + (endTime - midTime2) + ' ms.')
-
-    return this.showValidationResults()
-  }
-
-  _loadVocabulary (vocab) {
-    const vocabFactory = require(`./src/vocabularies/${vocab}`)
-    const quads = vocabFactory(this.factory)
-    return this.factory.dataset(quads)
   }
 }
 
