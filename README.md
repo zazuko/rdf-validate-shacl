@@ -54,6 +54,11 @@ After updating the `@zazuko/rdf-vocabularies` dependency, run
 `npm run generate-vocabularies` to regenerate the pre-parsed vocabulary.
 
 
+## Limitations
+
+*rdf-validate-shacl* does not support [SPARQL-SPARQL constraints](https://www.w3.org/TR/shacl/#sparql-constraints)
+
+
 ## About
 
 *rdf-validate-shacl* was originally a fork of
