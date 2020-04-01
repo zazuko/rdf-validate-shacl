@@ -1,15 +1,6 @@
+const { validateTerm } = require('rdf-validate-datatype')
 const NodeSet = require('./node-set')
-const { rdf, sh, xsd } = require('./namespaces')
-
-const XSDIntegerTypes = new NodeSet([
-  xsd.integer
-])
-
-const XSDDecimalTypes = new NodeSet([
-  ...XSDIntegerTypes,
-  xsd.decimal,
-  xsd.float
-])
+const { rdf, sh } = require('./namespaces')
 
 function validateAnd (context, focusNode, valueNode, constraint) {
   const andNode = constraint.getParameterValue(sh.and)
@@ -58,7 +49,7 @@ function validateDatatype (context, focusNode, valueNode, constraint) {
   const datatypeNode = constraint.getParameterValue(sh.datatype)
 
   if (valueNode.termType === 'Literal') {
-    return datatypeNode.equals(valueNode.datatype) && isValidForDatatype(valueNode.value, datatypeNode)
+    return datatypeNode.equals(valueNode.datatype) && validateTerm(valueNode)
   } else {
     return false
   }
@@ -436,21 +427,6 @@ function toRDFQueryPath ($shapes, shPath) {
 }
 
 // Private helper functions
-
-// TODO: Support more datatypes
-function isValidForDatatype (lex, datatype) {
-  if (XSDIntegerTypes.has(datatype)) {
-    const r = parseInt(lex)
-    return !isNaN(r)
-  } else if (XSDDecimalTypes.has(datatype)) {
-    const r = parseFloat(lex)
-    return !isNaN(r)
-  } else if (datatype.value === 'http://www.w3.org/2001/XMLSchema#boolean') {
-    return lex === 'true' || lex === 'false'
-  } else {
-    return true
-  }
-}
 
 function compareNodes (node1, node2) {
   // TODO: Does not handle the case where nodes cannot be compared
