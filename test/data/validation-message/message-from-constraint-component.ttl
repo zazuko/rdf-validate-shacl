@@ -1,0 +1,14 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<Alice> a <Person> ;
+  <friend> <Bob> .
+
+<ShapeWithMessage> a sh:NodeShape ;
+  sh:targetClass <Person> ;
+  sh:property [
+    sh:path <friend> ;
+    sh:class <Person> ;
+  ] .
+
+sh:ClassConstraintComponent sh:message "Message on constraint component" .

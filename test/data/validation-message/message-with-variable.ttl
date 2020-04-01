@@ -1,0 +1,14 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<Alice> a <Person> .
+
+<ShapeWithMessage> a sh:NodeShape ;
+  sh:targetClass <Person> ;
+  sh:property [
+    sh:path <name> ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 2 ;
+    sh:message "Min count = {$minCount}" ;
+  ] .

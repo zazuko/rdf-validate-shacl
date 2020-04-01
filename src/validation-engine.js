@@ -97,23 +97,26 @@ class ValidationEngine {
    * Creates a result message from the result and the message pattern in the constraint
    */
   createResultMessages (result, constraint) {
+    const $shapes = this.context.$shapes
     const { sh } = this.factory.ns
 
     // 1. Try to get message from the shape itself
-    let messages = [...this.context.$shapes
-      .match(constraint.shape.shapeNode, sh.message, null)]
-      .map(({ object }) => object)
+    let messages = $shapes.cf
+      .node(constraint.shape.shapeNode)
+      .out(sh.message)
+      .terms
 
     // 2. Try to get message from the constraint component validator
     if (messages.length === 0) {
       messages = constraint.componentMessages.map((m) => this.factory.literal(m))
     }
 
-    // 3. Try to get message from the constraint focus node
+    // 3. Try to get message from the constraint component node
     if (messages.length === 0) {
-      messages = [...this.context.$shapes
-        .match(constraint.component.node, sh.message, null)]
-        .map(({ object }) => object)
+      messages = $shapes.cf
+        .node(constraint.component.node)
+        .out(sh.message)
+        .terms
     }
 
     for (const message of messages) {
@@ -263,15 +266,16 @@ class ValidationEngine {
     }
   }
 
-  withSubstitutions (msg, constraint) {
-    let str = msg.value
-    const values = constraint.parameterValues
-    for (const key in values) {
-      const label = nodeLabel(values[key])
-      str = str.replace('{$' + key + '}', label)
-      str = str.replace('{?' + key + '}', label)
-    }
-    return this.factory.literal(str, msg.language | msg.datatype)
+  withSubstitutions (messageNode, constraint) {
+    const message = constraint.component.parameters.reduce((message, param) => {
+      const paramName = localName(param.value)
+      const paramValue = nodeLabel(constraint.getParameterValue(param))
+      return message
+        .replace(`{$${paramName}}`, paramValue)
+        .replace(`{?${paramName}}`, paramValue)
+    }, messageNode.value)
+
+    return this.factory.literal(message, messageNode.language | messageNode.datatype)
   }
 
   getReport () {
@@ -284,15 +288,36 @@ class ValidationEngine {
   }
 }
 
+// TODO: This is not the 100% correct local name algorithm
+function localName (uri) {
+  let index = uri.lastIndexOf('#')
+
+  if (index < 0) {
+    index = uri.lastIndexOf('/')
+  }
+
+  if (index < 0) {
+    throw new Error(`Cannot get local name of ${uri}`)
+  }
+
+  return uri.substring(index + 1)
+}
+
 function nodeLabel (node) {
+  if (!node) {
+    return 'NULL'
+  }
+
   if (node.termType === 'NamedNode') {
     // TODO: shrink URI if possible
     return '<' + node.value + '>'
-  } else if (node.termType === 'BlankNode') {
-    return 'Blank node ' + node.value
-  } else {
-    return '' + node.value
   }
+
+  if (node.termType === 'BlankNode') {
+    return 'Blank node ' + node.value
+  }
+
+  return node.value
 }
 
 module.exports = ValidationEngine

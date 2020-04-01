@@ -33,8 +33,7 @@ class ShapesGraph {
     // Build map from parameters to constraint components
     this.parametersMap = {}
     for (const component of this.components) {
-      const parameters = component.getParameters()
-      for (const parameter of parameters) {
+      for (const parameter of component.parameters) {
         this.parametersMap[parameter.value] = component
       }
     }
@@ -184,10 +183,6 @@ class ConstraintComponent {
     return validator || null
   }
 
-  getParameters () {
-    return this.parameters
-  }
-
   isComplete (shapeNode) {
     return !this.parameters.some((parameter) => (
       this.isRequired(parameter.value) &&
@@ -218,7 +213,7 @@ class Shape {
     shapeProperties.forEach((sol) => {
       const component = this.context.shapesGraph.getComponentWithParameter(sol.predicate)
       if (component && !handled.has(component.node)) {
-        const params = component.getParameters()
+        const params = component.parameters
         if (params.length === 1) {
           this.constraints.push(new Constraint(this, component, sol.object, context.$shapes))
         } else if (component.isComplete(shapeNode)) {
