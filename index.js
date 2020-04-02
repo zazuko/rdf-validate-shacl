@@ -43,7 +43,11 @@ class SHACLValidator {
    */
   loadShapes (shapes) {
     const shaclQuads = shaclVocabularyFactory(this.factory)
-    const dataset = this.factory.dataset(shaclQuads.concat([...shapes]))
+    const dataset = this.factory.dataset(shaclQuads)
+    for (const quad of shapes) {
+      dataset.add(quad)
+    }
+
     this.$shapes = new RDFLibGraph(dataset, this.factory)
 
     this.shapesGraph = new ShapesGraph(this)
