@@ -3,10 +3,9 @@ const assert = require('assert')
 const path = require('path')
 const SHACLValidator = require('../index')
 const fs = require('fs')
-const rdf = require('rdf-ext')
-const rdfFS = require('rdf-utils-fs')
 const clownface = require('clownface')
 const { sh, rdf: rdfNS } = require('../src/namespaces')
+const { loadDataset } = require('./utils')
 
 class ExpectedValidationReport {
   constructor (dataset) {
@@ -42,7 +41,7 @@ const isBlank = function (s) {
 }
 
 const validateReports = async function (input) {
-  const data = await rdf.dataset().import(rdfFS.fromFile(input))
+  const data = await loadDataset(input)
   const shapes = data
 
   const expectedReport = new ExpectedValidationReport(data)
