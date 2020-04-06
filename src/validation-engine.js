@@ -275,7 +275,7 @@ class ValidationEngine {
         .replace(`{?${paramName}}`, paramValue)
     }, messageNode.value)
 
-    return this.factory.literal(message, messageNode.language | messageNode.datatype)
+    return this.factory.literal(message, messageNode.language || messageNode.datatype)
   }
 
   getReport () {
