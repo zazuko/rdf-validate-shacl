@@ -1,6 +1,67 @@
-
 const NodeSet = require('./node-set')
+const { rdf, sh } = require('./namespaces')
 
+/**
+ * Extracts all the nodes of a property path from a graph and returns a
+ * property path object.
+ *
+ * @param {RDFLibGraph} graph
+ * @param {Term} pathNode - Start node of the path
+ * @return Property path object
+ */
+function extractPropertyPath (graph, pathNode) {
+  if (pathNode.termType === 'NamedNode') {
+    return pathNode
+  }
+
+  if (pathNode.termType === 'BlankNode') {
+    const pathCf = graph.cf.node(pathNode)
+
+    const first = pathCf.out(rdf.first).term
+    if (first) {
+      const paths = graph.rdfListToArray(pathNode)
+      return paths.map(path => extractPropertyPath(graph, path))
+    }
+
+    const alternativePath = pathCf.out(sh.alternativePath).term
+    if (alternativePath) {
+      const paths = graph.rdfListToArray(alternativePath)
+      return { or: paths.map(path => extractPropertyPath(graph, path)) }
+    }
+
+    const zeroOrMorePath = pathCf.out(sh.zeroOrMorePath).term
+    if (zeroOrMorePath) {
+      return { zeroOrMore: extractPropertyPath(graph, zeroOrMorePath) }
+    }
+
+    const oneOrMorePath = pathCf.out(sh.oneOrMorePath).term
+    if (oneOrMorePath) {
+      return { oneOrMore: extractPropertyPath(graph, oneOrMorePath) }
+    }
+
+    const zeroOrOnePath = pathCf.out(sh.zeroOrOnePath).term
+    if (zeroOrOnePath) {
+      return { zeroOrOne: extractPropertyPath(graph, zeroOrOnePath) }
+    }
+
+    const inversePath = pathCf.out(sh.inversePath).term
+    if (inversePath) {
+      return { inverse: extractPropertyPath(graph, inversePath) }
+    }
+  }
+
+  throw new Error(`Unsupported SHACL path: ${pathNode.value}`)
+}
+
+/**
+ * Follows a property path in a graph, starting from a given node, and returns
+ * all the nodes it points to.
+ *
+ * @param {RDFLibGraph} graph
+ * @param {Term} subject - Start node
+ * @param {object} path - Property path object
+ * @return {NodeSet} - Nodes that are reachable through the property path
+ */
 function getPathObjects (graph, subject, path) {
   if (path.termType === 'NamedNode') {
     return getNamedNodePathObjects(graph, subject, path)
@@ -87,5 +148,6 @@ function flatMap (arr, func) {
 }
 
 module.exports = {
+  extractPropertyPath,
   getPathObjects
 }

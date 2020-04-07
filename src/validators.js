@@ -1,6 +1,7 @@
 const { validateTerm } = require('rdf-validate-datatype')
 const NodeSet = require('./node-set')
 const { rdf, sh } = require('./namespaces')
+const { extractPropertyPath } = require('./property-path')
 
 function validateAnd (context, focusNode, valueNode, constraint) {
   const andNode = constraint.getParameterValue(sh.and)
@@ -65,7 +66,7 @@ function validateEqualsProperty (context, focusNode, valueNode, constraint) {
   const equalsNode = constraint.getParameterValue(sh.equals)
 
   const results = []
-  const path = toRDFQueryPath(context.$shapes, pathNode)
+  const path = extractPropertyPath(context.$shapes, pathNode)
   context.$data.getPathObjects(focusNode, path).forEach(value => {
     if (!context.$data.hasMatch(focusNode, equalsNode, value)) {
       results.push({ value })
@@ -109,7 +110,7 @@ function validateHasValueNode (context, focusNode, valueNode, constraint) {
 
 function validateHasValueProperty (context, focusNode, valueNode, constraint) {
   const pathNode = constraint.shape.path
-  const path = toRDFQueryPath(context.$shapes, pathNode)
+  const path = extractPropertyPath(context.$shapes, pathNode)
   const hasValueNode = constraint.getParameterValue(sh.hasValue)
 
   return context.$data
@@ -140,7 +141,7 @@ function validateLanguageIn (context, focusNode, valueNode, constraint) {
 
 function validateLessThanProperty (context, focusNode, valueNode, constraint) {
   const pathNode = constraint.shape.path
-  const valuePath = toRDFQueryPath(context.$shapes, pathNode)
+  const valuePath = extractPropertyPath(context.$shapes, pathNode)
   const values = context.$data.getPathObjects(focusNode, valuePath)
   const lessThanNode = constraint.getParameterValue(sh.lessThan)
   const referenceValues = context.$data.cf.node(focusNode).out(lessThanNode).terms
@@ -159,7 +160,7 @@ function validateLessThanProperty (context, focusNode, valueNode, constraint) {
 
 function validateLessThanOrEqualsProperty (context, focusNode, valueNode, constraint) {
   const pathNode = constraint.shape.path
-  const valuePath = toRDFQueryPath(context.$shapes, pathNode)
+  const valuePath = extractPropertyPath(context.$shapes, pathNode)
   const values = context.$data.getPathObjects(focusNode, valuePath)
   const lessThanOrEqualsNode = constraint.getParameterValue(sh.lessThanOrEquals)
   const referenceValues = context.$data.cf.node(focusNode).out(lessThanOrEqualsNode).terms
@@ -178,7 +179,7 @@ function validateLessThanOrEqualsProperty (context, focusNode, valueNode, constr
 
 function validateMaxCountProperty (context, focusNode, valueNode, constraint) {
   const pathNode = constraint.shape.path
-  const path = toRDFQueryPath(context.$shapes, pathNode)
+  const path = extractPropertyPath(context.$shapes, pathNode)
   const count = context.$data.getPathObjects(focusNode, path).length
   const maxCountNode = constraint.getParameterValue(sh.maxCount)
 
@@ -206,7 +207,7 @@ function validateMaxLength (context, focusNode, valueNode, constraint) {
 
 function validateMinCountProperty (context, focusNode, valueNode, constraint) {
   const pathNode = constraint.shape.path
-  const path = toRDFQueryPath(context.$shapes, pathNode)
+  const path = extractPropertyPath(context.$shapes, pathNode)
   const count = context.$data.getPathObjects(focusNode, path).length
   const minCountNode = constraint.getParameterValue(sh.minCount)
 
@@ -314,7 +315,7 @@ function validateQualifiedHelper (context, focusNode, constraint) {
   }
 
   const pathNode = constraint.shape.path
-  const path = toRDFQueryPath(context.$shapes, pathNode)
+  const path = extractPropertyPath(context.$shapes, pathNode)
   return context.$data
     .getPathObjects(focusNode, path)
     .filter(value =>
@@ -341,7 +342,7 @@ function validateUniqueLangProperty (context, focusNode, valueNode, constraint) 
   }
 
   const pathNode = constraint.shape.path
-  const path = toRDFQueryPath(context.$shapes, pathNode)
+  const path = extractPropertyPath(context.$shapes, pathNode)
   const map = {}
   context.$data.getPathObjects(focusNode, path).forEach(value => {
     const lang = value.language
@@ -376,54 +377,6 @@ function validateXone (context, focusNode, valueNode, constraint) {
     .length
 
   return conformsCount === 1
-}
-
-// Utilities ------------------------------------------------------------------
-
-function toRDFQueryPath ($shapes, shPath) {
-  if (shPath.termType === 'NamedNode') {
-    return shPath
-  }
-
-  if (shPath.termType === 'BlankNode') {
-    const shPathCf = $shapes.cf.node(shPath)
-
-    const first = shPathCf.out(rdf.first).term
-    if (first) {
-      const paths = $shapes.rdfListToArray(shPath)
-      return paths.map(path => toRDFQueryPath($shapes, path))
-    }
-
-    const alternativePath = shPathCf.out(sh.alternativePath).term
-    if (alternativePath) {
-      const paths = $shapes.rdfListToArray(alternativePath)
-      return { or: paths.map(path => toRDFQueryPath($shapes, path)) }
-    }
-
-    const zeroOrMorePath = shPathCf.out(sh.zeroOrMorePath).term
-    if (zeroOrMorePath) {
-      return { zeroOrMore: toRDFQueryPath($shapes, zeroOrMorePath) }
-    }
-
-    const oneOrMorePath = shPathCf.out(sh.oneOrMorePath).term
-    if (oneOrMorePath) {
-      return { oneOrMore: toRDFQueryPath($shapes, oneOrMorePath) }
-    }
-
-    const zeroOrOnePath = shPathCf.out(sh.zeroOrOnePath).term
-    if (zeroOrOnePath) {
-      return { zeroOrOne: toRDFQueryPath($shapes, zeroOrOnePath) }
-    }
-
-    const inversePath = shPathCf.out(sh.inversePath).term
-    if (inversePath) {
-      return { inverse: toRDFQueryPath($shapes, inversePath) }
-    }
-  }
-
-  throw new Error('Unsupported SHACL path ' + shPath)
-  // TODO: implement conforming to AbstractQuery.path syntax
-  // return shPath
 }
 
 // Private helper functions
@@ -473,7 +426,6 @@ function compareTerms (t1, t2) {
 }
 
 module.exports = {
-  toRDFQueryPath,
   validateAnd,
   validateClass,
   validateClosed,
