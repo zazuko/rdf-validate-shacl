@@ -1,7 +1,7 @@
 const { validateTerm } = require('rdf-validate-datatype')
 const NodeSet = require('./node-set')
 const { rdf, sh } = require('./namespaces')
-const { extractPropertyPath, getPathObjects } = require('./property-path')
+const { getPathObjects } = require('./property-path')
 
 function validateAnd (context, focusNode, valueNode, constraint) {
   const andNode = constraint.getParameterValue(sh.and)
@@ -62,11 +62,10 @@ function validateDisjoint (context, focusNode, valueNode, constraint) {
 }
 
 function validateEqualsProperty (context, focusNode, valueNode, constraint) {
-  const pathNode = constraint.shape.path
+  const path = constraint.shape.pathObject
   const equalsNode = constraint.getParameterValue(sh.equals)
 
   const results = []
-  const path = extractPropertyPath(context.$shapes, pathNode)
   getPathObjects(context.$data, focusNode, path).forEach(value => {
     if (!context.$data.hasMatch(focusNode, equalsNode, value)) {
       results.push({ value })
@@ -109,8 +108,7 @@ function validateHasValueNode (context, focusNode, valueNode, constraint) {
 }
 
 function validateHasValueProperty (context, focusNode, valueNode, constraint) {
-  const pathNode = constraint.shape.path
-  const path = extractPropertyPath(context.$shapes, pathNode)
+  const path = constraint.shape.pathObject
   const hasValueNode = constraint.getParameterValue(sh.hasValue)
 
   return getPathObjects(context.$data, focusNode, path)
@@ -139,8 +137,7 @@ function validateLanguageIn (context, focusNode, valueNode, constraint) {
 }
 
 function validateLessThanProperty (context, focusNode, valueNode, constraint) {
-  const pathNode = constraint.shape.path
-  const valuePath = extractPropertyPath(context.$shapes, pathNode)
+  const valuePath = constraint.shape.pathObject
   const values = getPathObjects(context.$data, focusNode, valuePath)
   const lessThanNode = constraint.getParameterValue(sh.lessThan)
   const referenceValues = context.$data.cf.node(focusNode).out(lessThanNode).terms
@@ -158,8 +155,7 @@ function validateLessThanProperty (context, focusNode, valueNode, constraint) {
 }
 
 function validateLessThanOrEqualsProperty (context, focusNode, valueNode, constraint) {
-  const pathNode = constraint.shape.path
-  const valuePath = extractPropertyPath(context.$shapes, pathNode)
+  const valuePath = constraint.shape.pathObject
   const values = getPathObjects(context.$data, focusNode, valuePath)
   const lessThanOrEqualsNode = constraint.getParameterValue(sh.lessThanOrEquals)
   const referenceValues = context.$data.cf.node(focusNode).out(lessThanOrEqualsNode).terms
@@ -177,8 +173,7 @@ function validateLessThanOrEqualsProperty (context, focusNode, valueNode, constr
 }
 
 function validateMaxCountProperty (context, focusNode, valueNode, constraint) {
-  const pathNode = constraint.shape.path
-  const path = extractPropertyPath(context.$shapes, pathNode)
+  const path = constraint.shape.pathObject
   const count = getPathObjects(context.$data, focusNode, path).length
   const maxCountNode = constraint.getParameterValue(sh.maxCount)
 
@@ -205,8 +200,7 @@ function validateMaxLength (context, focusNode, valueNode, constraint) {
 }
 
 function validateMinCountProperty (context, focusNode, valueNode, constraint) {
-  const pathNode = constraint.shape.path
-  const path = extractPropertyPath(context.$shapes, pathNode)
+  const path = constraint.shape.pathObject
   const count = getPathObjects(context.$data, focusNode, path).length
   const minCountNode = constraint.getParameterValue(sh.minCount)
 
@@ -313,8 +307,7 @@ function validateQualifiedHelper (context, focusNode, constraint) {
     siblingShapes.addAll(qualifiedSiblingShapes)
   }
 
-  const pathNode = constraint.shape.path
-  const path = extractPropertyPath(context.$shapes, pathNode)
+  const path = constraint.shape.pathObject
   return getPathObjects(context.$data, focusNode, path)
     .filter(value =>
       context.nodeConformsToShape(value, qualifiedValueShapeNode) &&
@@ -339,8 +332,7 @@ function validateUniqueLangProperty (context, focusNode, valueNode, constraint) 
     return
   }
 
-  const pathNode = constraint.shape.path
-  const path = extractPropertyPath(context.$shapes, pathNode)
+  const path = constraint.shape.pathObject
   const map = {}
   getPathObjects(context.$data, focusNode, path).forEach(value => {
     const lang = value.language

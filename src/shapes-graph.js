@@ -205,6 +205,7 @@ class Shape {
 
     this.deactivated = context.$shapes.cf.node(shapeNode).out(sh.deactivated).value === 'true'
     this.path = context.$shapes.cf.node(shapeNode).out(sh.path).term
+    this._pathObject = undefined
     this.shapeNode = shapeNode
     this.constraints = []
 
@@ -222,6 +223,17 @@ class Shape {
         }
       }
     })
+  }
+
+  /**
+   * Property path object
+   */
+  get pathObject () {
+    if (this._pathObject === undefined) {
+      this._pathObject = this.path ? extractPropertyPath(this.context.$shapes, this.path) : null
+    }
+
+    return this._pathObject
   }
 
   getTargetNodes (rdfDataGraph) {
@@ -261,8 +273,7 @@ class Shape {
 
   getValueNodes (focusNode, dataGraph) {
     if (this.path) {
-      const path = extractPropertyPath(this.context.$shapes, this.path)
-      return getPathObjects(dataGraph, focusNode, path)
+      return getPathObjects(dataGraph, focusNode, this.pathObject)
     } else {
       return [focusNode]
     }
