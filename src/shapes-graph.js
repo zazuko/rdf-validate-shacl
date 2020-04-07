@@ -81,11 +81,13 @@ class ShapesGraph {
       for (const shapeNode of shapeNodes) {
         if (
           $shapes.isInstanceOf(shapeNode, rdfs.Class) ||
-          $shapes.hasMatch(shapeNode, sh.targetClass, null) ||
-          $shapes.hasMatch(shapeNode, sh.targetNode, null) ||
-          $shapes.hasMatch(shapeNode, sh.targetSubjectsOf, null) ||
-          $shapes.hasMatch(shapeNode, sh.targetObjectsOf, null) ||
-          $shapes.hasMatch(shapeNode, sh.target, null)
+          $shapes.cf.node(shapeNode).out([
+            sh.targetClass,
+            sh.targetNode,
+            sh.targetSubjectsOf,
+            sh.targetObjectsOf,
+            sh.target
+          ]).terms.length > 0
         ) {
           this.targetShapes.push(this.getShape(shapeNode))
         }
