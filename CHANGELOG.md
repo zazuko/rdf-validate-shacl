@@ -4,6 +4,11 @@
 
 ## Next version (TBA)
 
+*
+
+
+## 0.1.1 (2020-04-07)
+
 * Fix custom validation message language not copied in validation report
 
 
