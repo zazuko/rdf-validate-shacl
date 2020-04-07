@@ -1,6 +1,5 @@
 const clownface = require('clownface')
 const isMatch = require('@rdfjs/dataset/isMatch')
-const { getPathObjects } = require('./property-path')
 const NodeSet = require('./node-set')
 const { rdf, rdfs } = require('./namespaces')
 
@@ -22,10 +21,6 @@ class RDFLibGraph {
     }
 
     return false
-  }
-
-  getPathObjects (subject, path) {
-    return [...getPathObjects(this, subject, path)]
   }
 
   get cf () {

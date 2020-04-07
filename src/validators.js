@@ -1,7 +1,7 @@
 const { validateTerm } = require('rdf-validate-datatype')
 const NodeSet = require('./node-set')
 const { rdf, sh } = require('./namespaces')
-const { extractPropertyPath } = require('./property-path')
+const { extractPropertyPath, getPathObjects } = require('./property-path')
 
 function validateAnd (context, focusNode, valueNode, constraint) {
   const andNode = constraint.getParameterValue(sh.and)
@@ -67,7 +67,7 @@ function validateEqualsProperty (context, focusNode, valueNode, constraint) {
 
   const results = []
   const path = extractPropertyPath(context.$shapes, pathNode)
-  context.$data.getPathObjects(focusNode, path).forEach(value => {
+  getPathObjects(context.$data, focusNode, path).forEach(value => {
     if (!context.$data.hasMatch(focusNode, equalsNode, value)) {
       results.push({ value })
     }
@@ -76,7 +76,7 @@ function validateEqualsProperty (context, focusNode, valueNode, constraint) {
   const equalsQuads = [...context.$data.match(focusNode, equalsNode, null)]
   equalsQuads.forEach(({ object }) => {
     const value = object
-    if (!context.$data.getPathObjects(focusNode, path).some(pathValue => pathValue.equals(value))) {
+    if (!getPathObjects(context.$data, focusNode, path).some(pathValue => pathValue.equals(value))) {
       results.push({ value })
     }
   })
@@ -89,7 +89,7 @@ function validateEqualsNode (context, focusNode, valueNode, constraint) {
   const results = []
 
   let solutions = 0
-  context.$data.getPathObjects(focusNode, equalsNode).forEach(value => {
+  getPathObjects(context.$data, focusNode, equalsNode).forEach(value => {
     solutions++
     if (compareNodes(focusNode, value) !== 0) {
       results.push({ value })
@@ -113,8 +113,7 @@ function validateHasValueProperty (context, focusNode, valueNode, constraint) {
   const path = extractPropertyPath(context.$shapes, pathNode)
   const hasValueNode = constraint.getParameterValue(sh.hasValue)
 
-  return context.$data
-    .getPathObjects(focusNode, path)
+  return getPathObjects(context.$data, focusNode, path)
     .some(value => value.equals(hasValueNode))
 }
 
@@ -142,7 +141,7 @@ function validateLanguageIn (context, focusNode, valueNode, constraint) {
 function validateLessThanProperty (context, focusNode, valueNode, constraint) {
   const pathNode = constraint.shape.path
   const valuePath = extractPropertyPath(context.$shapes, pathNode)
-  const values = context.$data.getPathObjects(focusNode, valuePath)
+  const values = getPathObjects(context.$data, focusNode, valuePath)
   const lessThanNode = constraint.getParameterValue(sh.lessThan)
   const referenceValues = context.$data.cf.node(focusNode).out(lessThanNode).terms
 
@@ -161,7 +160,7 @@ function validateLessThanProperty (context, focusNode, valueNode, constraint) {
 function validateLessThanOrEqualsProperty (context, focusNode, valueNode, constraint) {
   const pathNode = constraint.shape.path
   const valuePath = extractPropertyPath(context.$shapes, pathNode)
-  const values = context.$data.getPathObjects(focusNode, valuePath)
+  const values = getPathObjects(context.$data, focusNode, valuePath)
   const lessThanOrEqualsNode = constraint.getParameterValue(sh.lessThanOrEquals)
   const referenceValues = context.$data.cf.node(focusNode).out(lessThanOrEqualsNode).terms
 
@@ -180,7 +179,7 @@ function validateLessThanOrEqualsProperty (context, focusNode, valueNode, constr
 function validateMaxCountProperty (context, focusNode, valueNode, constraint) {
   const pathNode = constraint.shape.path
   const path = extractPropertyPath(context.$shapes, pathNode)
-  const count = context.$data.getPathObjects(focusNode, path).length
+  const count = getPathObjects(context.$data, focusNode, path).length
   const maxCountNode = constraint.getParameterValue(sh.maxCount)
 
   return count <= Number(maxCountNode.value)
@@ -208,7 +207,7 @@ function validateMaxLength (context, focusNode, valueNode, constraint) {
 function validateMinCountProperty (context, focusNode, valueNode, constraint) {
   const pathNode = constraint.shape.path
   const path = extractPropertyPath(context.$shapes, pathNode)
-  const count = context.$data.getPathObjects(focusNode, path).length
+  const count = getPathObjects(context.$data, focusNode, path).length
   const minCountNode = constraint.getParameterValue(sh.minCount)
 
   return count >= Number(minCountNode.value)
@@ -316,8 +315,7 @@ function validateQualifiedHelper (context, focusNode, constraint) {
 
   const pathNode = constraint.shape.path
   const path = extractPropertyPath(context.$shapes, pathNode)
-  return context.$data
-    .getPathObjects(focusNode, path)
+  return getPathObjects(context.$data, focusNode, path)
     .filter(value =>
       context.nodeConformsToShape(value, qualifiedValueShapeNode) &&
       !validateQualifiedConformsToASibling(context, value, [...siblingShapes])
@@ -344,7 +342,7 @@ function validateUniqueLangProperty (context, focusNode, valueNode, constraint) 
   const pathNode = constraint.shape.path
   const path = extractPropertyPath(context.$shapes, pathNode)
   const map = {}
-  context.$data.getPathObjects(focusNode, path).forEach(value => {
+  getPathObjects(context.$data, focusNode, path).forEach(value => {
     const lang = value.language
     if (lang && lang !== '') {
       const old = map[lang]

@@ -60,9 +60,13 @@ function extractPropertyPath (graph, pathNode) {
  * @param {RDFLibGraph} graph
  * @param {Term} subject - Start node
  * @param {object} path - Property path object
- * @return {NodeSet} - Nodes that are reachable through the property path
+ * @return {Term[]} - Nodes that are reachable through the property path
  */
 function getPathObjects (graph, subject, path) {
+  return [...getPathObjectsSet(graph, subject, path)]
+}
+
+function getPathObjectsSet (graph, subject, path) {
   if (path.termType === 'NamedNode') {
     return getNamedNodePathObjects(graph, subject, path)
   } else if (Array.isArray(path)) {
@@ -91,13 +95,13 @@ function getSequencePathObjects (graph, subject, path) {
   let subjects = new NodeSet([subject])
   for (const pathItem of path) {
     subjects = new NodeSet(flatMap(subjects, subjectItem =>
-      [...getPathObjects(graph, subjectItem, pathItem)]))
+      getPathObjects(graph, subjectItem, pathItem)))
   }
   return subjects
 }
 
 function getOrPathObjects (graph, subject, path) {
-  return new NodeSet(flatMap(path.or, pathItem => [...getPathObjects(graph, subject, pathItem)]))
+  return new NodeSet(flatMap(path.or, pathItem => getPathObjects(graph, subject, pathItem)))
 }
 
 function getInversePathObjects (graph, subject, path) {
@@ -109,7 +113,7 @@ function getInversePathObjects (graph, subject, path) {
 }
 
 function getZeroOrOnePathObjects (graph, subject, path) {
-  const pathObjects = getPathObjects(graph, subject, path.zeroOrOne)
+  const pathObjects = getPathObjectsSet(graph, subject, path.zeroOrOne)
   pathObjects.add(subject)
   return pathObjects
 }
@@ -129,7 +133,7 @@ function walkPath (graph, subject, path, visited) {
 
   visited.add(subject)
 
-  const pathValues = getPathObjects(graph, subject, path)
+  const pathValues = getPathObjectsSet(graph, subject, path)
 
   const deeperValues = flatMap(pathValues, pathValue => {
     if (!visited.has(pathValue)) {

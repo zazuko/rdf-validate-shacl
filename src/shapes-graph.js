@@ -19,7 +19,7 @@
 const NodeSet = require('./node-set')
 const ValidationFunction = require('./validation-function')
 const validatorsRegistry = require('./validators-registry')
-const { extractPropertyPath } = require('./property-path')
+const { extractPropertyPath, getPathObjects } = require('./property-path')
 const { rdfs, sh } = require('./namespaces')
 
 class ShapesGraph {
@@ -259,10 +259,10 @@ class Shape {
     return [...results]
   }
 
-  getValueNodes (focusNode, rdfDataGraph) {
+  getValueNodes (focusNode, dataGraph) {
     if (this.path) {
       const path = extractPropertyPath(this.context.$shapes, this.path)
-      return rdfDataGraph.getPathObjects(focusNode, path)
+      return getPathObjects(dataGraph, focusNode, path)
     } else {
       return [focusNode]
     }
