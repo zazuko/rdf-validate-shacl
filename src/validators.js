@@ -58,7 +58,7 @@ function validateDatatype (context, focusNode, valueNode, constraint) {
 
 function validateDisjoint (context, focusNode, valueNode, constraint) {
   const disjointNode = constraint.getParameterValue(sh.disjoint)
-  return !context.$data.hasMatch(focusNode, disjointNode, valueNode)
+  return context.$data.match(focusNode, disjointNode, valueNode).size === 0
 }
 
 function validateEqualsProperty (context, focusNode, valueNode, constraint) {
@@ -67,7 +67,7 @@ function validateEqualsProperty (context, focusNode, valueNode, constraint) {
 
   const results = []
   getPathObjects(context.$data, focusNode, path).forEach(value => {
-    if (!context.$data.hasMatch(focusNode, equalsNode, value)) {
+    if (context.$data.match(focusNode, equalsNode, value).size === 0) {
       results.push({ value })
     }
   })

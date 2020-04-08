@@ -134,7 +134,7 @@ class ConstraintComponent {
         parameterCf.out(sh.path).forEach(({ term: path }) => {
           this.parameters.push(path)
           this.parameterNodes.push(parameter)
-          if (this.context.$shapes.hasMatch(parameter, sh.optional, this.factory.true)) {
+          if (this.context.$shapes.match(parameter, sh.optional, this.factory.true).size > 0) {
             this.optionals[path.value] = true
           } else {
             this.requiredParameters.push(path)
@@ -188,7 +188,7 @@ class ConstraintComponent {
   isComplete (shapeNode) {
     return !this.parameters.some((parameter) => (
       this.isRequired(parameter.value) &&
-      !this.context.$shapes.hasMatch(shapeNode, parameter, null)
+      this.context.$shapes.match(shapeNode, parameter, null).size === 0
     ))
   }
 
