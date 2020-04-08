@@ -64,15 +64,9 @@ class RDFLibGraph {
     return types.some((type) => classes.has(type))
   }
 
-  rdfListToArray ($rdfList) {
-    const items = []
-    while (!$rdfList.equals(rdf.nil)) {
-      const first = this.cf.node($rdfList).out(rdf.first).term
-      items.push(first)
-      const rest = this.cf.node($rdfList).out(rdf.rest).term
-      $rdfList = rest
-    }
-    return items
+  rdfListToArray (listNode) {
+    const iterator = this.cf.node(listNode).list()
+    return [...iterator].map(({ term }) => term)
   }
 }
 
