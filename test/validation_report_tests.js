@@ -1,7 +1,6 @@
 /* eslint-env mocha */
 const assert = require('assert')
 const rdf = require('rdf-ext')
-const DataSetExt = require('rdf-ext/lib/Dataset')
 const clownface = require('clownface')
 
 const { rdf: rdfNS, sh } = require('../src/namespaces')
@@ -97,8 +96,29 @@ describe('ValidationReport', () => {
   })
 
   it('uses injected factory', () => {
-    const report = new ValidationReport([], { factory: rdf })
+    const wrap = (f) => {
+      return (...args) => {
+        const original = rdf[f](...args)
+        original._test = 'test'
+        return original
+      }
+    }
+    const factory = {
+      dataset: wrap('dataset'),
+      quad: wrap('quad'),
+      blankNode: wrap('blankNode'),
+      namedNode: wrap('namedNode'),
+      literal: wrap('literal')
+    }
+    const report = new ValidationReport([], { factory })
 
-    assert.ok(report.dataset instanceof DataSetExt)
+    assert.ok(report.dataset._test === 'test')
+    report.dataset.forEach((quad) => {
+      // TODO: This fails because clownface doesn't support a custom factory yet
+      // assert.ok(quad._test === 'test')
+      assert.ok(quad.subject._test === 'test')
+      assert.ok(quad.predicate._test === 'test')
+      assert.ok(quad.object._test === 'test')
+    })
   })
 })
