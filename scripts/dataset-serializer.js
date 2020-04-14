@@ -1,3 +1,4 @@
+const { nanoid } = require('nanoid')
 
 function serializerTerm (term) {
   if (term.termType === 'BlankNode') {
@@ -42,12 +43,16 @@ function serializeQuads (quads) {
     if (quad.object.termType === 'BlankNode') blankNodes.add(quad.object.value)
   }
 
+  // Transform blank nodes to ad-hoc named nodes to avoid conflicts
+  const blankPrefix = 'urn:rdf-validate-shacl:blank-'
+  const blankURI = () => `${blankPrefix}${nanoid()}`
+
   return [
     '/* This file was automatically generated. Do not edit by hand. */',
     '',
     'module.exports = (factory) => {',
     '  const blankNodes = {',
-    [...blankNodes].map(id => `    '${id}': factory.blankNode()`).join(',\n'),
+    [...blankNodes].map(id => `    '${id}': factory.namedNode('${blankURI()}')`).join(',\n'),
     '  };',
     '',
     '  return [',

@@ -4,7 +4,10 @@
 
 ## Next version (TBA)
 
-*
+
+## 0.1.3 (2020-04-23)
+
+* Mitigate conflicting blank node issue when using default data factory (#25)
 
 
 ## 0.1.2 (2020-04-21)

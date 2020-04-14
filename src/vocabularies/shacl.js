@@ -2,13 +2,13 @@
 
 module.exports = (factory) => {
   const blankNodes = {
-    'b1_c14n3': factory.blankNode(),
-    'b1_c14n6': factory.blankNode(),
-    'b1_c14n0': factory.blankNode(),
-    'b1_c14n1': factory.blankNode(),
-    'b1_c14n5': factory.blankNode(),
-    'b1_c14n2': factory.blankNode(),
-    'b1_c14n4': factory.blankNode()
+    'b0_c14n3': factory.namedNode('urn:rdf-validate-shacl:blank-ICrbDblpRlstcUSwjBAYZ'),
+    'b0_c14n6': factory.namedNode('urn:rdf-validate-shacl:blank-pFK9KYtN26DN0NMXyH8Ar'),
+    'b0_c14n0': factory.namedNode('urn:rdf-validate-shacl:blank-78BxHlZRiJnXywWTF5cqq'),
+    'b0_c14n1': factory.namedNode('urn:rdf-validate-shacl:blank-x54-DFCLtSR8nEZND8Bk3'),
+    'b0_c14n5': factory.namedNode('urn:rdf-validate-shacl:blank-31XwBcULxRTIx9l5dbYMx'),
+    'b0_c14n2': factory.namedNode('urn:rdf-validate-shacl:blank-JIQGzDSBoYQOBoFXDRJb9'),
+    'b0_c14n4': factory.namedNode('urn:rdf-validate-shacl:blank-DzoWy3baN0DSUzrH2JFJ8')
   };
 
   return [
@@ -33,7 +33,7 @@ module.exports = (factory) => {
     factory.quad(
       factory.namedNode('http://www.w3.org/ns/shacl#'),
       factory.namedNode('http://www.w3.org/ns/shacl#declare'),
-      blankNodes['b1_c14n3'],
+      blankNodes['b0_c14n3'],
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
@@ -1857,7 +1857,7 @@ module.exports = (factory) => {
     factory.quad(
       factory.namedNode('http://www.w3.org/ns/shacl#NodeKindConstraintComponent-nodeKind'),
       factory.namedNode('http://www.w3.org/ns/shacl#in'),
-      blankNodes['b1_c14n6'],
+      blankNodes['b0_c14n6'],
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
@@ -6697,87 +6697,87 @@ module.exports = (factory) => {
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n0'],
+      blankNodes['b0_c14n0'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#first'),
       factory.namedNode('http://www.w3.org/ns/shacl#BlankNodeOrIRI'),
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n0'],
+      blankNodes['b0_c14n0'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest'),
-      blankNodes['b1_c14n1'],
+      blankNodes['b0_c14n1'],
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n1'],
+      blankNodes['b0_c14n1'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#first'),
       factory.namedNode('http://www.w3.org/ns/shacl#BlankNodeOrLiteral'),
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n1'],
+      blankNodes['b0_c14n1'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest'),
-      blankNodes['b1_c14n5'],
+      blankNodes['b0_c14n5'],
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n2'],
+      blankNodes['b0_c14n2'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#first'),
       factory.namedNode('http://www.w3.org/ns/shacl#Literal'),
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n2'],
+      blankNodes['b0_c14n2'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest'),
-      blankNodes['b1_c14n0'],
+      blankNodes['b0_c14n0'],
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n3'],
+      blankNodes['b0_c14n3'],
       factory.namedNode('http://www.w3.org/ns/shacl#namespace'),
       factory.literal(`http://www.w3.org/ns/shacl#`, factory.namedNode('http://www.w3.org/2001/XMLSchema#string')),
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n3'],
+      blankNodes['b0_c14n3'],
       factory.namedNode('http://www.w3.org/ns/shacl#prefix'),
       factory.literal(`sh`, factory.namedNode('http://www.w3.org/2001/XMLSchema#string')),
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n4'],
+      blankNodes['b0_c14n4'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#first'),
       factory.namedNode('http://www.w3.org/ns/shacl#IRI'),
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n4'],
+      blankNodes['b0_c14n4'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest'),
-      blankNodes['b1_c14n2'],
+      blankNodes['b0_c14n2'],
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n5'],
+      blankNodes['b0_c14n5'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#first'),
       factory.namedNode('http://www.w3.org/ns/shacl#IRIOrLiteral'),
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n5'],
+      blankNodes['b0_c14n5'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest'),
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil'),
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n6'],
+      blankNodes['b0_c14n6'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#first'),
       factory.namedNode('http://www.w3.org/ns/shacl#BlankNode'),
       factory.namedNode('http://www.w3.org/ns/shacl#')
     ),
     factory.quad(
-      blankNodes['b1_c14n6'],
+      blankNodes['b0_c14n6'],
       factory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest'),
-      blankNodes['b1_c14n4'],
+      blankNodes['b0_c14n4'],
       factory.namedNode('http://www.w3.org/ns/shacl#')
     )
   ]
