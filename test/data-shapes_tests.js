@@ -1,4 +1,6 @@
 /* eslint-env mocha */
+// This module implements the official SHACL test suite
+// https://w3c.github.io/data-shapes/data-shapes-test-suite
 const assert = require('assert')
 const path = require('path')
 const $rdf = require('rdf-ext')
