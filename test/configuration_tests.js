@@ -6,7 +6,7 @@ const { loadDataset } = require('./utils')
 
 describe('configuration', () => {
   it('stops after `maxErrors` is reached', async () => {
-    const dataFile = path.join(__dirname, '/data/core/property/class-001.test.ttl')
+    const dataFile = path.join(__dirname, '/data/data-shapes/core/property/class-001.ttl')
     const data = await loadDataset(dataFile)
     const shapes = data
 
