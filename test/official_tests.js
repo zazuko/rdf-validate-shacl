@@ -21,13 +21,7 @@ const SKIPPED = [
 
   // TODO: Support non-numeric types in comparison constraints
   'minInclusive-002',
-  'minInclusive-003',
-
-  // TODO: This failure is not technically a bug. It is due to the fact that
-  // the test suite expects `sh:resultPath`'s blank node structure to never
-  // reuse blank nodes. We need to improve the report normlization before
-  // comparison with the expected report.
-  'path-complex-002'
+  'minInclusive-003'
 ]
 
 before(async () => {
@@ -136,5 +130,54 @@ function normalizeReport (report, expectedReport) {
   // Delete messages if expected report doesn't have any
   if (expectedReport.out(sh.result).out(sh.resultMessage).values.length === 0) {
     report.out(sh.result).deleteOut(sh.resultMessage)
+  }
+
+  // Split shared blank nodes into distinct blank node structures
+  splitSharedBlankNodes(report.dataset)
+}
+
+function splitSharedBlankNodes (dataset) {
+  const cf = clownface({ dataset })
+
+  const predicates = [
+    sh.resultPath,
+    rdf.first,
+    rdf.rest,
+    sh.alternativePath,
+    sh.zeroOrMorePath,
+    sh.oneOrMorePath,
+    sh.zeroOrOnePath,
+    sh.inversePath
+  ]
+
+  let moreSharedBlanks = true
+  while (moreSharedBlanks) {
+    const sharedBlanks = cf
+      .out(predicates)
+      .filter((obj) => obj.term.termType === 'BlankNode' && obj.in().terms.length > 1)
+      .terms
+
+    if (sharedBlanks.length === 0) {
+      moreSharedBlanks = false
+      continue
+    }
+
+    sharedBlanks.forEach((sharedBlank) => {
+      // Keep the first link to the shared node intact and split the next ones
+      const quadsToSplit = [...dataset.match(null, null, sharedBlank)].slice(1)
+      quadsToSplit.forEach((quad) => {
+        const newBlank = $rdf.blankNode()
+
+        // Replace quad pointing to shared node to new node
+        dataset.remove(quad)
+        dataset.add($rdf.quad(quad.subject, quad.predicate, newBlank, quad.graph))
+
+        // Copy shared node structure to new node
+        // Nested shared blank nodes will be split in the next iteration
+        dataset.match(sharedBlank, null, null).forEach((quad) => {
+          dataset.add($rdf.quad(newBlank, quad.predicate, quad.object, quad.graph))
+        })
+      })
+    })
   }
 }
