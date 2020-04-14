@@ -4,7 +4,7 @@
 
 <>
 	a mf:Manifest ;
-	mf:include <core/manifest.ttl> ;
-	# mf:include <sparql/manifest.ttl> ;
-	mf:include <custom/manifest.ttl> ;
+	rdfs:label "Custom tests to complete the official test suite" ;
+	mf:include <closed-false.ttl> ;
+	mf:include <uniqueLang-false.ttl> ;
 	.
