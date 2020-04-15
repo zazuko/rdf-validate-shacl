@@ -4,6 +4,8 @@
 
 ## Next version (TBA)
 
+* Fix provided factory not being used to create all quads in the validation
+  report
 * Performance improvements
 
 

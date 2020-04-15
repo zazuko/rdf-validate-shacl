@@ -13,7 +13,7 @@ class RDFLibGraph {
   }
 
   get cf () {
-    return clownface({ dataset: this.dataset })
+    return clownface({ dataset: this.dataset, factory: this.factory })
   }
 
   getInstancesOf ($class) {

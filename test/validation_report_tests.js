@@ -114,8 +114,7 @@ describe('ValidationReport', () => {
 
     assert.ok(report.dataset._test === 'test')
     report.dataset.forEach((quad) => {
-      // TODO: This fails because clownface doesn't support a custom factory yet
-      // assert.ok(quad._test === 'test')
+      assert.ok(quad._test === 'test')
       assert.ok(quad.subject._test === 'test')
       assert.ok(quad.predicate._test === 'test')
       assert.ok(quad.object._test === 'test')
