@@ -1,14 +1,13 @@
 /* eslint-env mocha */
 const assert = require('assert')
 const path = require('path')
-const rdf = require('rdf-ext')
-const rdfFS = require('rdf-utils-fs')
 const SHACLValidator = require('../index')
+const { loadDataset } = require('./utils')
 
 describe('configuration', () => {
   it('stops after `maxErrors` is reached', async () => {
-    const dataFile = path.join(__dirname, '/data/core/property/class-001.test.ttl')
-    const data = await rdf.dataset().import(rdfFS.fromFile(dataFile))
+    const dataFile = path.join(__dirname, '/data/data-shapes/core/property/class-001.ttl')
+    const data = await loadDataset(dataFile)
     const shapes = data
 
     const validator1 = new SHACLValidator(shapes)

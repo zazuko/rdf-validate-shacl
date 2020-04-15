@@ -1,4 +1,5 @@
 const ValidationReport = require('./validation-report')
+const { extractStructure } = require('./dataset-utils')
 const error = require('debug')('validation-enging::error')
 
 class ValidationEngine {
@@ -29,12 +30,21 @@ class ValidationEngine {
     this.addResultProperty(result, rdf.type, sh.ValidationResult)
     this.addResultProperty(result, sh.resultSeverity, severity)
     this.addResultProperty(result, sh.sourceConstraintComponent, sourceConstraintComponent)
-    this.addResultProperty(result, sh.sourceShape, sourceShape)
-    this.addResultProperty(result, sh.focusNode, focusNode)
+    this.addResultPropertyDeep(result, sh.sourceShape, sourceShape)
+    this.addResultPropertyDeep(result, sh.focusNode, focusNode)
     if (valueNode) {
-      this.addResultProperty(result, sh.value, valueNode)
+      this.addResultPropertyDeep(result, sh.value, valueNode)
     }
     return result
+  }
+
+  addResultPropertyDeep (result, predicate, node) {
+    this.addResultProperty(result, predicate, node)
+
+    const structureQuads = extractStructure(this.context.$shapes.dataset, node)
+    for (const quad of structureQuads) {
+      this.results.push(quad)
+    }
   }
 
   /**
@@ -53,7 +63,7 @@ class ValidationEngine {
 
       const result = this.createResult(constraint, focusNode, valueNode)
       if (constraint.shape.isPropertyShape()) {
-        this.addResultProperty(result, sh.resultPath, constraint.shape.path) // TODO: Make deep copy
+        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
       }
       this.createResultMessages(result, constraint)
       return true
@@ -63,7 +73,7 @@ class ValidationEngine {
       }
       const result = this.createResult(constraint, focusNode, valueNode)
       if (constraint.shape.isPropertyShape()) {
-        this.addResultProperty(result, sh.resultPath, constraint.shape.path) // TODO: Make deep copy
+        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
       }
       this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj, xsd.string))
       this.createResultMessages(result, constraint)
@@ -74,14 +84,14 @@ class ValidationEngine {
       }
       const result = this.createResult(constraint, focusNode)
       if (obj.path) {
-        this.addResultProperty(result, sh.resultPath, obj.path) // TODO: Make deep copy
+        this.addResultPropertyDeep(result, sh.resultPath, obj.path, true)
       } else if (constraint.shape.isPropertyShape()) {
-        this.addResultProperty(result, sh.resultPath, constraint.shape.path) // TODO: Make deep copy
+        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
       }
       if (obj.value) {
-        this.addResultProperty(result, sh.value, obj.value)
+        this.addResultPropertyDeep(result, sh.value, obj.value)
       } else if (valueNode) {
-        this.addResultProperty(result, sh.value, valueNode)
+        this.addResultPropertyDeep(result, sh.value, valueNode)
       }
       if (obj.message) {
         this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj.message, xsd.string))
