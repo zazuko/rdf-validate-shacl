@@ -1,21 +1,39 @@
 
 # rdf-validate-shacl
 
-RDF/JS SHACL validator
+JavaScript SHACL validation ([RDF/JS](https://rdf.js.org/) compatible)
 
 [![Build Status](https://travis-ci.org/zazuko/rdf-validate-shacl.svg?branch=master)](https://travis-ci.org/zazuko/rdf-validate-shacl)
 [![npm version](https://badge.fury.io/js/rdf-validate-shacl.svg)](https://badge.fury.io/js/rdf-validate-shacl)
 
 ## Usage
 
-Create a new SHACL validator and load data and shapes to trigger the validation.
+The library only handles SHACL validation and not data loading/parsing.
+The following example uses [rdf-utils-fs](https://github.com/rdf-ext/rdf-utils-fs)
+for this purpose. For more information about handling RDF data in JavaScript,
+check out [Get started with RDF in JavaScript](https://zazuko.com/get-started/developers/).
 
 The validation function returns a `ValidationReport` object that can be used
-to inspect conformance and results.
+to inspect conformance and results. The `ValidationReport` also has a
+`.dataset` property, which provides the report as RDF data.
 
 ```javascript
-const validator = new SHACLValidator(shapesDataset)
-const report = await validator.validate(dataDataset)
+const fs = require('fs')
+const factory = require('rdf-ext')
+const ParserN3 = require('@rdfjs/parser-n3')
+const SHACLValidator = require('rdf-validate-shacl')
+
+async function loadDataset (filePath) {
+  const stream = fs.createReadStream(filePath)
+  const parser = new ParserN3({ factory })
+  return factory.dataset().import(parser.import(stream))
+}
+
+const shapes = await loadDataset('my-shapes.ttl')
+const data = await loadDataset('my-data.ttl')
+
+const validator = new SHACLValidator(shapes, { factory })
+const report = await validator.validate(data)
 
 // Check conformance: `true` or `false`
 console.log(report.conforms)
@@ -30,6 +48,9 @@ for (const result of report.results) {
   console.log(result.sourceConstraintComponent)
   console.log(result.sourceShape)
 }
+
+// Validation report as RDF dataset
+console.log(report.dataset)
 ```
 
 ### Validator options
