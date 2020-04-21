@@ -4,6 +4,11 @@
 
 ## Next version (TBA)
 
+*
+
+
+## 0.1.2 (2020-04-21)
+
 * Include deep blank node structures in validation report
 * Add official SHACL test suite
 * Fix provided factory not being used to create all quads in the validation
