@@ -40,7 +40,7 @@ console.log(report.conforms)
 
 for (const result of report.results) {
   // See https://www.w3.org/TR/shacl/#results-validation-result for details
-  // about each method
+  // about each property
   console.log(result.message)
   console.log(result.path)
   console.log(result.focusNode)
