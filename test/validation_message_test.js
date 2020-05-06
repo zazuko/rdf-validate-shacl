@@ -70,4 +70,21 @@ describe('validation messages', () => {
     assert.strictEqual(report.results[0].message.length, 1)
     assert.strictEqual(report.results[0].message[0].value, 'Min count = 1')
   })
+
+  it('Returns all messages if multiple are provided', async () => {
+    const dataPath = path.join(rootPath, 'message-from-shape-property-multiple.ttl')
+    const data = await loadDataset(dataPath)
+    const shapes = data
+
+    const validator = new SHACLValidator(shapes)
+    const report = validator.validate(data)
+
+    assert.strictEqual(report.results.length, 1)
+    assert.strictEqual(report.results[0].message.length, 2)
+    const messages = new Set(report.results[0].message.map(({ value, language }) => ({ value, language })))
+    assert.deepStrictEqual(messages, new Set([
+      { value: 'My custom validation message', language: 'en' },
+      { value: 'Mon message de validation', language: 'fr' }
+    ]))
+  })
 })
