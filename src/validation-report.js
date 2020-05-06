@@ -44,42 +44,28 @@ class ValidationResult {
   }
 
   get message () {
-    return this._getValue(sh.resultMessage)
+    return this.cf.out(sh.resultMessage).terms || []
   }
 
   get path () {
-    return this._getValue(sh.resultPath)
+    return this.cf.out(sh.resultPath).term || null
   }
 
   get focusNode () {
-    return this._getValue(sh.focusNode)
+    return this.cf.out(sh.focusNode).term || null
   }
 
   get severity () {
-    const severity = this._getValue(sh.resultSeverity)
-    return severity ? severity.split('#')[1] : null
+    return this.cf.out(sh.severity).term || null
   }
 
   get sourceConstraintComponent () {
-    return this._getValue(sh.sourceConstraintComponent)
+    return this.cf.out(sh.sourceConstraintComponent).term || null
   }
 
   get sourceShape () {
-    return this._getValue(sh.sourceShape)
+    return this.cf.out(sh.sourceShape).term || null
   }
-
-  _getValue (predicate) {
-    const term = this.cf.out(predicate).term
-    return term ? serializeTermValue(term) : null
-  }
-}
-
-function serializeTermValue (term) {
-  if (term.termType === 'BlankNode') {
-    return `_:${term.value}`
-  }
-
-  return term.value
 }
 
 module.exports = ValidationReport
