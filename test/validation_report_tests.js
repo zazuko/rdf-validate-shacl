@@ -17,14 +17,14 @@ describe('ValidationReport', () => {
     it('conforms', () => {
       const report = new ValidationReport([])
 
-      assert.ok(report.conforms)
+      assert.strictEqual(report.conforms, true)
     })
 
     it('does not conform', () => {
       const results = [RDF.quad(RDF.blankNode(), rdf.type, sh.ValidationResult)]
 
       const report = new ValidationReport(results)
-      assert.ok(!report.conforms)
+      assert.strictEqual(report.conforms, false)
     })
   })
 
