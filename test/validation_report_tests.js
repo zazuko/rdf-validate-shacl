@@ -1,9 +1,9 @@
 /* eslint-env mocha */
 const assert = require('assert')
-const rdf = require('rdf-ext')
+const RDF = require('rdf-ext')
 const clownface = require('clownface')
 
-const { rdf: rdfNS, sh } = require('../src/namespaces')
+const { rdf, sh } = require('../src/namespaces')
 const ValidationReport = require('../src/validation-report')
 
 describe('ValidationReport', () => {
@@ -21,7 +21,7 @@ describe('ValidationReport', () => {
     })
 
     it('does not conform', () => {
-      const results = [rdf.quad(rdf.blankNode(), rdfNS.type, sh.ValidationResult)]
+      const results = [RDF.quad(RDF.blankNode(), rdf.type, sh.ValidationResult)]
 
       const report = new ValidationReport(results)
       assert.ok(!report.conforms)
@@ -37,8 +37,8 @@ describe('ValidationReport', () => {
 
     it('returns reports list', () => {
       const results = [
-        rdf.quad(rdf.blankNode(), rdfNS.type, sh.ValidationResult),
-        rdf.quad(rdf.blankNode(), rdfNS.type, sh.ValidationResult)
+        RDF.quad(RDF.blankNode(), rdf.type, sh.ValidationResult),
+        RDF.quad(RDF.blankNode(), rdf.type, sh.ValidationResult)
       ]
 
       const report = new ValidationReport(results)
@@ -54,7 +54,7 @@ describe('ValidationReport', () => {
       const dataset = report.dataset
 
       const cf = clownface({ dataset })
-      const cfReport = cf.namedNode(sh.ValidationReport).in(rdfNS.type)
+      const cfReport = cf.namedNode(sh.ValidationReport).in(rdf.type)
       const conforms = cfReport.out(sh.conforms).values
       assert.deepStrictEqual(conforms, ['true'])
       const results = cfReport.out(sh.result).values
@@ -62,21 +62,21 @@ describe('ValidationReport', () => {
     })
 
     it('returns a dataset with a report that does not conform', () => {
-      const resultID1 = rdf.blankNode()
-      const resultID2 = rdf.blankNode()
+      const resultID1 = RDF.blankNode()
+      const resultID2 = RDF.blankNode()
       const report = new ValidationReport([
-        rdf.quad(resultID1, rdfNS.type, sh.ValidationResult),
-        rdf.quad(resultID1, sh.resultMessage, 'Something is invalid'),
-        rdf.quad(resultID2, rdfNS.type, sh.ValidationResult),
-        rdf.quad(resultID2, sh.resultMessage, 'Some other thing is invalid'),
-        rdf.quad(resultID1, sh.resultPath, rdf.namedNode('ex:aProperty')),
-        rdf.quad(resultID2, sh.resultPath, rdf.namedNode('ex:aProperty'))
+        RDF.quad(resultID1, rdf.type, sh.ValidationResult),
+        RDF.quad(resultID1, sh.resultMessage, 'Something is invalid'),
+        RDF.quad(resultID2, rdf.type, sh.ValidationResult),
+        RDF.quad(resultID2, sh.resultMessage, 'Some other thing is invalid'),
+        RDF.quad(resultID1, sh.resultPath, RDF.namedNode('ex:aProperty')),
+        RDF.quad(resultID2, sh.resultPath, RDF.namedNode('ex:aProperty'))
       ])
 
       const dataset = report.dataset
 
       const cf = clownface({ dataset })
-      const cfReport = cf.namedNode(sh.ValidationReport).in(rdfNS.type)
+      const cfReport = cf.namedNode(sh.ValidationReport).in(rdf.type)
       const conforms = cfReport.out(sh.conforms).values
       assert.deepStrictEqual(conforms, ['false'])
       const results = cfReport.out(sh.result).map((cfResult) => cfResult.out().values)
@@ -98,7 +98,7 @@ describe('ValidationReport', () => {
   it('uses injected factory', () => {
     const wrap = (f) => {
       return (...args) => {
-        const original = rdf[f](...args)
+        const original = RDF[f](...args)
         original._test = 'test'
         return original
       }
