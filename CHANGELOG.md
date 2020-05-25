@@ -10,12 +10,14 @@
 ## 0.2.0 (2020-05-25)
 
 * [BREAKING] Change `ValidationReport` and `ValidationResult` shorthand
-  properties to return RDF terms instead of strings (#30).
+  properties to return RDF terms instead of strings
+  [[#30](https://github.com/zazuko/rdf-validate-shacl/issues/30)]
 
 
 ## 0.1.3 (2020-04-23)
 
-* Mitigate conflicting blank node issue when using default data factory (#25)
+* Mitigate conflicting blank node issue when using default data factory
+  [[#25](https://github.com/zazuko/rdf-validate-shacl/issues/25)]
 
 
 ## 0.1.2 (2020-04-21)
