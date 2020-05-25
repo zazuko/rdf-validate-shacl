@@ -16,7 +16,8 @@ describe('validation messages', () => {
     const report = validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
-    assert.strictEqual(report.results[0].message, 'My custom validation message')
+    assert.strictEqual(report.results[0].message.length, 1)
+    assert.strictEqual(report.results[0].message[0].value, 'My custom validation message')
   })
 
   it('Returns message from validator if provided (and no message on shape)', async () => {
@@ -28,7 +29,8 @@ describe('validation messages', () => {
     const report = validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
-    assert.strictEqual(report.results[0].message, 'Predicate is not allowed (closed shape)')
+    assert.strictEqual(report.results[0].message.length, 1)
+    assert.strictEqual(report.results[0].message[0].value, 'Predicate is not allowed (closed shape)')
   })
 
   it('Returns message from constraint component if provided (and no message on shape or validator)', async () => {
@@ -40,7 +42,8 @@ describe('validation messages', () => {
     const report = validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
-    assert.strictEqual(report.results[0].message, 'Message on constraint component')
+    assert.strictEqual(report.results[0].message.length, 1)
+    assert.strictEqual(report.results[0].message[0].value, 'Message on constraint component')
   })
 
   it('Returns null if no message is defined anywhere', async () => {
@@ -52,7 +55,7 @@ describe('validation messages', () => {
     const report = validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
-    assert.strictEqual(report.results[0].message, null)
+    assert.deepStrictEqual(report.results[0].message, [])
   })
 
   it('Substitutes variables in message', async () => {
@@ -64,6 +67,24 @@ describe('validation messages', () => {
     const report = validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
-    assert.strictEqual(report.results[0].message, 'Min count = 1')
+    assert.strictEqual(report.results[0].message.length, 1)
+    assert.strictEqual(report.results[0].message[0].value, 'Min count = 1')
+  })
+
+  it('Returns all messages if multiple are provided', async () => {
+    const dataPath = path.join(rootPath, 'message-from-shape-property-multiple.ttl')
+    const data = await loadDataset(dataPath)
+    const shapes = data
+
+    const validator = new SHACLValidator(shapes)
+    const report = validator.validate(data)
+
+    assert.strictEqual(report.results.length, 1)
+    assert.strictEqual(report.results[0].message.length, 2)
+    const messages = new Set(report.results[0].message.map(({ value, language }) => ({ value, language })))
+    assert.deepStrictEqual(messages, new Set([
+      { value: 'My custom validation message', language: 'en' },
+      { value: 'Mon message de validation', language: 'fr' }
+    ]))
   })
 })
