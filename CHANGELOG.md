@@ -4,6 +4,11 @@
 
 ## Next version (TBA)
 
+*
+
+
+## 0.2.0 (2020-05-25)
+
 * [BREAKING] Change `ValidationReport` and `ValidationResult` shorthand
   properties to return RDF terms instead of strings (#30).
 
