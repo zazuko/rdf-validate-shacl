@@ -20,6 +20,28 @@ describe('validation messages', () => {
     assert.strictEqual(report.results[0].message[0].value, 'My custom validation message')
   })
 
+  it('Returns sh:Violation as default severity if not specified', async () => {
+    const dataPath = path.join(rootPath, 'message-from-shape-property.ttl')
+    const data = await loadDataset(dataPath)
+    const shapes = data
+
+    const validator = new SHACLValidator(shapes)
+    const report = validator.validate(data)
+
+    assert.strictEqual(report.results[0].severity.value, 'http://www.w3.org/ns/shacl#Violation')
+  })
+
+  it('Returns shape-specified severity when specified', async () => {
+    const dataPath = path.join(rootPath, 'message-from-shape-property-severity.ttl')
+    const data = await loadDataset(dataPath)
+    const shapes = data
+
+    const validator = new SHACLValidator(shapes)
+    const report = validator.validate(data)
+
+    assert.strictEqual(report.results[0].severity.value, 'http://www.w3.org/ns/shacl#Warning')
+  })
+
   it('Returns message from validator if provided (and no message on shape)', async () => {
     const dataPath = path.join(rootPath, 'message-from-validator.ttl')
     const data = await loadDataset(dataPath)
