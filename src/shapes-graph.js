@@ -201,6 +201,7 @@ class Shape {
   constructor (context, shapeNode) {
     this.context = context
     this.severity = context.$shapes.cf.node(shapeNode).out(sh.severity).term
+
     if (!this.severity) {
       this.severity = context.factory.ns.sh.Violation
     }

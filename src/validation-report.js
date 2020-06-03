@@ -56,7 +56,7 @@ class ValidationResult {
   }
 
   get severity () {
-    return this.cf.out(sh.severity).term || null
+    return this.cf.out(sh.resultSeverity).term || null
   }
 
   get sourceConstraintComponent () {

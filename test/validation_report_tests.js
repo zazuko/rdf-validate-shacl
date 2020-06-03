@@ -144,7 +144,7 @@ describe('ValidationResult', () => {
       RDF.quad(resultNode, sh.resultMessage, RDF.literal('result message')),
       RDF.quad(resultNode, sh.resultPath, RDF.namedNode('result path')),
       RDF.quad(resultNode, sh.focusNode, RDF.namedNode('focus node')),
-      RDF.quad(resultNode, sh.severity, sh.Violation),
+      RDF.quad(resultNode, sh.resultSeverity, sh.Violation),
       RDF.quad(resultNode, sh.sourceShape, RDF.namedNode('source shape')),
       RDF.quad(resultNode, sh.sourceConstraintComponent, RDF.namedNode('source constraint component'))
     ]
