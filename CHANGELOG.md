@@ -7,6 +7,11 @@
 *
 
 
+## 0.2.1 (2020-05-25)
+
+* Fix `ValidationResult.severity` not returning anything
+
+
 ## 0.2.0 (2020-05-25)
 
 * [BREAKING] Change `ValidationReport` and `ValidationResult` shorthand
