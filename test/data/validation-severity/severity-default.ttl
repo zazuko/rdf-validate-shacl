@@ -3,14 +3,10 @@
 
 <Alice> a <Person> .
 
-<ShapeWithMessage> a sh:NodeShape ;
+<ShapeWithoutSeverity> a sh:NodeShape ;
   sh:targetClass <Person> ;
   sh:property [
     sh:path <name> ;
     sh:datatype xsd:string ;
     sh:minCount 1 ;
-    sh:message "My custom validation message" ;
-    sh:severity sh:Warning ;
   ] .
-
-sh:MinCountConstraintComponent sh:message "Message on constraint component" .
