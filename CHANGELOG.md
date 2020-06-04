@@ -7,6 +7,11 @@
 *
 
 
+## 0.2.2 (2020-06-04)
+
+* Fix missing `debug` dependency
+
+
 ## 0.2.1 (2020-05-25)
 
 * Fix `ValidationResult.severity` not returning anything
