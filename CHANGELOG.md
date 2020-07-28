@@ -7,6 +7,11 @@
 *
 
 
+## 0.2.3 (2020-07-28)
+
+* Upgrade clownface dependency to 1.X
+
+
 ## 0.2.2 (2020-06-04)
 
 * Fix missing `debug` dependency
