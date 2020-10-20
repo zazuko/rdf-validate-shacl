@@ -7,6 +7,11 @@
 *
 
 
+## 0.2.4 (2020-10-20)
+
+* Loosen dependencies
+
+
 ## 0.2.3 (2020-07-28)
 
 * Upgrade clownface dependency to 1.X
