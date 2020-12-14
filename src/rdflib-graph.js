@@ -38,7 +38,15 @@ class RDFLibGraph {
       .in(rdfs.subClassOf)
       .terms
 
-    return new NodeSet(subclasses)
+    const transubclasses = subclasses.reduce((acc, cls) => {
+      const scs = this.getSubClassesOf(cls)
+
+      acc.addAll(scs)
+
+      return acc
+    }, new NodeSet())
+
+    return new NodeSet([...subclasses, ...transubclasses])
   }
 
   isInstanceOf ($instance, $class) {
