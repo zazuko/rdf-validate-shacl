@@ -14,9 +14,10 @@
       <multiInheritance>
     ) ;
 .
+
 <multiInheritance>
   rdf:type sht:Validate ;
-  rdfs:label "Test of multi level subclasses in shapes" ;
+  rdfs:label "Test of multi level subclasses in shapes with implicit targetClass" ;
   mf:action [
       sht:dataGraph <> ;
       sht:shapesGraph <> ;
@@ -29,45 +30,31 @@
         sh:resultSeverity sh:Violation ;
         sh:sourceConstraintComponent sh:MinCountConstraintComponent ;
         sh:sourceShape ex:prop ;
-        sh:focusNode ex:InvalidMidInstance ;
+        sh:focusNode ex:invalidBottomInstance ;
         sh:resultPath ex:name ;
-      ],[
-        a sh:ValidationResult ;
-        sh:resultSeverity sh:Violation ;
-        sh:sourceConstraintComponent sh:MinCountConstraintComponent ;
-        sh:sourceShape ex:prop ;
-        sh:focusNode ex:InvalidBottomInstance ;
-        sh:resultPath ex:name ;
-      ];
+      ] ;
   ] ;
 .
 
-ex:InvalidMidInstance
-  a ex:MidShape;
-.
-
-ex:InvalidBottomInstance
-  a ex:BottomShape;
-.
-
-ex:prop sh:path ex:name ;
-  sh:minCount 1;
-.
-
 ex:TopShape
-    a sh:NodeShape, rdfs:Class;
-    sh:targetClass ex:TopShape ;
-    sh:property ex:prop;
+    a sh:NodeShape, rdfs:Class ;
+    sh:property ex:prop ;
 .
 
 ex:MidShape
-    a sh:NodeShape, rdfs:Class;
+    a rdfs:Class ;
     rdfs:subClassOf ex:TopShape ;
-    sh:targetClass ex:MidShape ;
 .
 
 ex:BottomShape
-    a sh:NodeShape, rdfs:Class;
+    a rdfs:Class ;
     rdfs:subClassOf ex:MidShape ;
-    sh:targetClass ex:BottomShape;
+.
+
+ex:prop sh:path ex:name ;
+  sh:minCount 1 ;
+.
+
+ex:invalidBottomInstance
+  a ex:BottomShape ;
 .
