@@ -7,4 +7,5 @@
 	rdfs:label "Custom tests to complete the official test suite" ;
 	mf:include <closed-false.ttl> ;
 	mf:include <uniqueLang-false.ttl> ;
+	mf:include <multiInheritance.ttl> ;
 	.
