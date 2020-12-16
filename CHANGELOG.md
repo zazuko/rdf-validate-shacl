@@ -4,7 +4,9 @@
 
 ## Next version (TBA)
 
-*
+* Fix issue with multi-level inheritance
+  [[#41](https://github.com/zazuko/rdf-validate-shacl/issues/41)]
+  [[#42](https://github.com/zazuko/rdf-validate-shacl/pull/42)]
 
 
 ## 0.2.4 (2020-10-20)
