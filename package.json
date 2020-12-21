@@ -10,6 +10,10 @@
     "generate-vocabularies": "node scripts/generate-vocabularies.js"
   },
   "author": "Zazuko (https://zazuko.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zazuko/rdf-validate-shacl.git"
+  },
   "license": "MIT",
   "keywords": [
     "rdf",
