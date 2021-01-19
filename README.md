@@ -3,7 +3,6 @@
 
 JavaScript SHACL validation ([RDF/JS](https://rdf.js.org/) compatible)
 
-[![Build Status](https://travis-ci.org/zazuko/rdf-validate-shacl.svg?branch=master)](https://travis-ci.org/zazuko/rdf-validate-shacl)
 [![npm version](https://badge.fury.io/js/rdf-validate-shacl.svg)](https://badge.fury.io/js/rdf-validate-shacl)
 
 ## Usage
