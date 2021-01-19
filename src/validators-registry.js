@@ -67,13 +67,13 @@ module.exports = {
   [sh.LessThanConstraintComponent.value]: {
     propertyValidator: {
       func: validators.validateLessThanProperty,
-      message: 'Value is not < value of {$lessThan}'
+      message: 'Value is not less than value of {$lessThan}'
     }
   },
   [sh.LessThanOrEqualsConstraintComponent.value]: {
     propertyValidator: {
       func: validators.validateLessThanOrEqualsProperty,
-      message: 'Value is not <= value of {$lessThanOrEquals}'
+      message: 'Value is not less than or equal to value of {$lessThanOrEquals}'
     }
   },
   [sh.MaxCountConstraintComponent.value]: {
@@ -85,13 +85,13 @@ module.exports = {
   [sh.MaxExclusiveConstraintComponent.value]: {
     validator: {
       func: validators.validateMaxExclusive,
-      message: 'Value is not < {$maxExclusive}'
+      message: 'Value is not less than {$maxExclusive}'
     }
   },
   [sh.MaxInclusiveConstraintComponent.value]: {
     validator: {
       func: validators.validateMaxInclusive,
-      message: 'Value is not <= {$maxInclusive}'
+      message: 'Value is not less than or equal to {$maxInclusive}'
     }
   },
   [sh.MaxLengthConstraintComponent.value]: {
@@ -109,13 +109,13 @@ module.exports = {
   [sh.MinExclusiveConstraintComponent.value]: {
     validator: {
       func: validators.validateMinExclusive,
-      message: 'Value is not > {$minExclusive}'
+      message: 'Value is not greater than {$minExclusive}'
     }
   },
   [sh.MinInclusiveConstraintComponent.value]: {
     validator: {
       func: validators.validateMinInclusive,
-      message: 'Value is not >= {$minInclusive}'
+      message: 'Value is not greater than or equal to {$minInclusive}'
     }
   },
   [sh.MinLengthConstraintComponent.value]: {
