@@ -32,7 +32,7 @@
     "@rdfjs/parser-n3": "^1.1.4",
     "@zazuko/rdf-vocabularies": "^2020.11.3",
     "get-stream": "^6.0.0",
-    "mocha": "^8.2.1",
+    "mocha": "^8.3.0",
     "nanoid": "^3.1.20",
     "nyc": "^15.0.1",
     "rdf-ext": "^1.3.0",
