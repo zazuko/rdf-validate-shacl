@@ -2,6 +2,13 @@
 # Changelog
 
 
+## 0.2.6 (2021-02-22)
+
+* Replace "<" or ">" in validation messages by "less than" or "more than"
+  [[#45](https://github.com/zazuko/rdf-validate-shacl/issues/45)]
+  [[#49](https://github.com/zazuko/rdf-validate-shacl/pull/49)]
+
+
 ## 0.2.5 (2020-12-21)
 
 * Fix issue with multi-level inheritance

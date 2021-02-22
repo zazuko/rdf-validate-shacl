@@ -1,6 +1,6 @@
 {
   "name": "rdf-validate-shacl",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "RDF SHACL validator",
   "main": "index.js",
   "scripts": {
