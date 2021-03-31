@@ -2,6 +2,12 @@
 # Changelog
 
 
+## Next version (TBD)
+
+* BREAKING: the `$shape` and `$data` properties of the `context` passed to
+  validators are now a `clownface` object instead of an `RdfLibGraph`.
+
+
 ## 0.2.6 (2021-02-22)
 
 * Replace "<" or ">" in validation messages by "less than" or "more than"

@@ -2,16 +2,17 @@ const { validateTerm } = require('rdf-validate-datatype')
 const NodeSet = require('./node-set')
 const { rdf, sh } = require('./namespaces')
 const { getPathObjects } = require('./property-path')
+const { isInstanceOf, rdfListToArray } = require('./dataset-utils')
 
 function validateAnd (context, focusNode, valueNode, constraint) {
   const andNode = constraint.getParameterValue(sh.and)
-  const shapes = context.$shapes.rdfListToArray(andNode)
+  const shapes = rdfListToArray(context.$shapes, andNode)
   return shapes.every((shape) => context.nodeConformsToShape(valueNode, shape))
 }
 
 function validateClass (context, focusNode, valueNode, constraint) {
   const classNode = constraint.getParameterValue(sh.class)
-  return context.$data.isInstanceOf(valueNode, classNode)
+  return isInstanceOf(context.$data, valueNode, classNode)
 }
 
 function validateClosed (context, focusNode, valueNode, constraint) {
@@ -24,7 +25,7 @@ function validateClosed (context, focusNode, valueNode, constraint) {
   }
 
   const allowed = new NodeSet(
-    context.$shapes.cf
+    context.$shapes
       .node(currentShape)
       .out(sh.property)
       .out(sh.path)
@@ -33,11 +34,11 @@ function validateClosed (context, focusNode, valueNode, constraint) {
   )
 
   if (ignoredPropertiesNode) {
-    allowed.addAll(context.$shapes.rdfListToArray(ignoredPropertiesNode))
+    allowed.addAll(rdfListToArray(context.$shapes, ignoredPropertiesNode))
   }
 
   const results = []
-  const valueQuads = [...context.$data.match(valueNode, null, null)]
+  const valueQuads = [...context.$data.dataset.match(valueNode, null, null)]
   valueQuads
     .filter(({ predicate }) => !allowed.has(predicate))
     .forEach(({ predicate, object }) => {
@@ -58,7 +59,7 @@ function validateDatatype (context, focusNode, valueNode, constraint) {
 
 function validateDisjoint (context, focusNode, valueNode, constraint) {
   const disjointNode = constraint.getParameterValue(sh.disjoint)
-  return context.$data.match(focusNode, disjointNode, valueNode).size === 0
+  return context.$data.dataset.match(focusNode, disjointNode, valueNode).size === 0
 }
 
 function validateEqualsProperty (context, focusNode, valueNode, constraint) {
@@ -67,12 +68,12 @@ function validateEqualsProperty (context, focusNode, valueNode, constraint) {
 
   const results = []
   getPathObjects(context.$data, focusNode, path).forEach(value => {
-    if (context.$data.match(focusNode, equalsNode, value).size === 0) {
+    if (context.$data.dataset.match(focusNode, equalsNode, value).size === 0) {
       results.push({ value })
     }
   })
 
-  const equalsQuads = [...context.$data.match(focusNode, equalsNode, null)]
+  const equalsQuads = [...context.$data.dataset.match(focusNode, equalsNode, null)]
   equalsQuads.forEach(({ object }) => {
     const value = object
     if (!getPathObjects(context.$data, focusNode, path).some(pathValue => pathValue.equals(value))) {
@@ -117,7 +118,7 @@ function validateHasValueProperty (context, focusNode, valueNode, constraint) {
 
 function validateIn (context, focusNode, valueNode, constraint) {
   const inNode = constraint.getParameterValue(sh.in)
-  return new NodeSet(context.$shapes.rdfListToArray(inNode)).has(valueNode)
+  return new NodeSet(rdfListToArray(context.$shapes, inNode)).has(valueNode)
 }
 
 function validateLanguageIn (context, focusNode, valueNode, constraint) {
@@ -131,7 +132,7 @@ function validateLanguageIn (context, focusNode, valueNode, constraint) {
   }
 
   const languageInNode = constraint.getParameterValue(sh.languageIn)
-  const allowedLanguages = context.$shapes.rdfListToArray(languageInNode)
+  const allowedLanguages = rdfListToArray(context.$shapes, languageInNode)
 
   return allowedLanguages.some(allowedLanguage => valueLanguage.startsWith(allowedLanguage.value))
 }
@@ -140,7 +141,7 @@ function validateLessThanProperty (context, focusNode, valueNode, constraint) {
   const valuePath = constraint.shape.pathObject
   const values = getPathObjects(context.$data, focusNode, valuePath)
   const lessThanNode = constraint.getParameterValue(sh.lessThan)
-  const referenceValues = context.$data.cf.node(focusNode).out(lessThanNode).terms
+  const referenceValues = context.$data.node(focusNode).out(lessThanNode).terms
 
   const invalidValues = []
   for (const value of values) {
@@ -158,7 +159,7 @@ function validateLessThanOrEqualsProperty (context, focusNode, valueNode, constr
   const valuePath = constraint.shape.pathObject
   const values = getPathObjects(context.$data, focusNode, valuePath)
   const lessThanOrEqualsNode = constraint.getParameterValue(sh.lessThanOrEquals)
-  const referenceValues = context.$data.cf.node(focusNode).out(lessThanOrEqualsNode).terms
+  const referenceValues = context.$data.node(focusNode).out(lessThanOrEqualsNode).terms
 
   const invalidValues = []
   for (const value of values) {
@@ -256,7 +257,7 @@ function validateNot (context, focusNode, valueNode, constraint) {
 
 function validateOr (context, focusNode, valueNode, constraint) {
   const orNode = constraint.getParameterValue(sh.or)
-  const shapes = context.$shapes.rdfListToArray(orNode)
+  const shapes = rdfListToArray(context.$shapes, orNode)
   return shapes.some(shape => context.nodeConformsToShape(valueNode, shape))
 }
 
@@ -293,7 +294,7 @@ function validateQualifiedHelper (context, focusNode, constraint) {
   const siblingShapes = new NodeSet()
 
   if (context.factory.true.equals(qualifiedValueShapesDisjointNode)) {
-    const qualifiedSiblingShapes = context.$shapes.cf
+    const qualifiedSiblingShapes = context.$shapes
       .node(currentShapeNode)
       // Move up to parent
       .in(sh.property)
@@ -360,7 +361,7 @@ function validateUniqueLangProperty (context, focusNode, valueNode, constraint) 
 
 function validateXone (context, focusNode, valueNode, constraint) {
   const xoneNode = constraint.getParameterValue(sh.xone)
-  const shapes = context.$shapes.rdfListToArray(xoneNode)
+  const shapes = rdfListToArray(context.$shapes, xoneNode)
   const conformsCount = shapes
     .map(shape => context.nodeConformsToShape(valueNode, shape))
     .filter(Boolean)

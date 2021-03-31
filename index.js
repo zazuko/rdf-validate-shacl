@@ -1,7 +1,7 @@
+const clownface = require('clownface')
 const DataFactory = require('./src/data-factory')
 const ShapesGraph = require('./src/shapes-graph')
 const ValidationEngine = require('./src/validation-engine')
-const RDFLibGraph = require('./src/rdflib-graph')
 const shaclVocabularyFactory = require('./src/vocabularies/shacl')
 
 /**
@@ -31,7 +31,7 @@ class SHACLValidator {
    * @return {ValidationReport} - Result of the validation
    */
   validate (data) {
-    this.$data = new RDFLibGraph(data, this.factory)
+    this.$data = clownface({ dataset: data, factory: this.factory })
     this.validationEngine.validateAll(this.$data)
     return this.validationEngine.getReport()
   }
@@ -44,7 +44,7 @@ class SHACLValidator {
   loadShapes (shapes) {
     const shaclQuads = shaclVocabularyFactory(this.factory)
     const dataset = this.factory.dataset(shaclQuads.concat([...shapes]))
-    this.$shapes = new RDFLibGraph(dataset, this.factory)
+    this.$shapes = clownface({ dataset, factory: this.factory })
 
     this.shapesGraph = new ShapesGraph(this)
   }

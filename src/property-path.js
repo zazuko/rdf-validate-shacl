@@ -1,11 +1,12 @@
 const NodeSet = require('./node-set')
 const { rdf, sh } = require('./namespaces')
+const { rdfListToArray } = require('./dataset-utils')
 
 /**
  * Extracts all the nodes of a property path from a graph and returns a
  * property path object.
  *
- * @param {RDFLibGraph} graph
+ * @param {Clownface} graph
  * @param {Term} pathNode - Start node of the path
  * @return Property path object
  */
@@ -15,17 +16,17 @@ function extractPropertyPath (graph, pathNode) {
   }
 
   if (pathNode.termType === 'BlankNode') {
-    const pathCf = graph.cf.node(pathNode)
+    const pathCf = graph.node(pathNode)
 
     const first = pathCf.out(rdf.first).term
     if (first) {
-      const paths = graph.rdfListToArray(pathNode)
+      const paths = rdfListToArray(graph, pathNode)
       return paths.map(path => extractPropertyPath(graph, path))
     }
 
     const alternativePath = pathCf.out(sh.alternativePath).term
     if (alternativePath) {
-      const paths = graph.rdfListToArray(alternativePath)
+      const paths = rdfListToArray(graph, alternativePath)
       return { or: paths.map(path => extractPropertyPath(graph, path)) }
     }
 
@@ -57,7 +58,7 @@ function extractPropertyPath (graph, pathNode) {
  * Follows a property path in a graph, starting from a given node, and returns
  * all the nodes it points to.
  *
- * @param {RDFLibGraph} graph
+ * @param {Clownface} graph
  * @param {Term} subject - Start node
  * @param {object} path - Property path object
  * @return {Term[]} - Nodes that are reachable through the property path
@@ -87,7 +88,7 @@ function getPathObjectsSet (graph, subject, path) {
 }
 
 function getNamedNodePathObjects (graph, subject, path) {
-  return new NodeSet(graph.cf.node(subject).out(path).terms)
+  return new NodeSet(graph.node(subject).out(path).terms)
 }
 
 function getSequencePathObjects (graph, subject, path) {
@@ -109,7 +110,7 @@ function getInversePathObjects (graph, subject, path) {
     throw new Error('Unsupported: Inverse paths only work for named nodes')
   }
 
-  return new NodeSet(graph.cf.node(subject).in(path.inverse).terms)
+  return new NodeSet(graph.node(subject).in(path.inverse).terms)
 }
 
 function getZeroOrOnePathObjects (graph, subject, path) {
