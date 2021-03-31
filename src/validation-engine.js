@@ -30,18 +30,18 @@ class ValidationEngine {
     this.addResultProperty(result, rdf.type, sh.ValidationResult)
     this.addResultProperty(result, sh.resultSeverity, severity)
     this.addResultProperty(result, sh.sourceConstraintComponent, sourceConstraintComponent)
-    this.addResultPropertyDeep(result, sh.sourceShape, sourceShape)
-    this.addResultPropertyDeep(result, sh.focusNode, focusNode)
+    this.addResultPropertyDeep(result, sh.sourceShape, sourceShape, this.context.$shapes)
+    this.addResultPropertyDeep(result, sh.focusNode, focusNode, this.context.$data)
     if (valueNode) {
-      this.addResultPropertyDeep(result, sh.value, valueNode)
+      this.addResultPropertyDeep(result, sh.value, valueNode, this.context.$data)
     }
     return result
   }
 
-  addResultPropertyDeep (result, predicate, node) {
+  addResultPropertyDeep (result, predicate, node, graph) {
     this.addResultProperty(result, predicate, node)
 
-    const structureQuads = extractStructure(this.context.$shapes.dataset, node)
+    const structureQuads = extractStructure(graph.dataset, node)
     for (const quad of structureQuads) {
       this.results.push(quad)
     }
@@ -73,7 +73,7 @@ class ValidationEngine {
       }
       const result = this.createResult(constraint, focusNode, valueNode)
       if (constraint.shape.isPropertyShape()) {
-        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
+        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, this.context.$shapes)
       }
       this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj, xsd.string))
       this.createResultMessages(result, constraint)
@@ -84,14 +84,14 @@ class ValidationEngine {
       }
       const result = this.createResult(constraint, focusNode)
       if (obj.path) {
-        this.addResultPropertyDeep(result, sh.resultPath, obj.path, true)
+        this.addResultPropertyDeep(result, sh.resultPath, obj.path, this.context.$shapes)
       } else if (constraint.shape.isPropertyShape()) {
-        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
+        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, this.context.$shapes)
       }
       if (obj.value) {
-        this.addResultPropertyDeep(result, sh.value, obj.value)
+        this.addResultPropertyDeep(result, sh.value, obj.value, this.context.$data)
       } else if (valueNode) {
-        this.addResultPropertyDeep(result, sh.value, valueNode)
+        this.addResultPropertyDeep(result, sh.value, valueNode, this.context.$data)
       }
       if (obj.message) {
         this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj.message, xsd.string))
