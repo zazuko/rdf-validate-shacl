@@ -21,13 +21,14 @@ const ValidationFunction = require('./validation-function')
 const validatorsRegistry = require('./validators-registry')
 const { extractPropertyPath, getPathObjects } = require('./property-path')
 const { rdfs, sh } = require('./namespaces')
+const { getInstancesOf, isInstanceOf } = require('./dataset-utils')
 
 class ShapesGraph {
   constructor (context) {
     this.context = context
 
     // Collect all defined constraint components
-    const componentNodes = context.$shapes.getInstancesOf(sh.ConstraintComponent)
+    const componentNodes = getInstancesOf(context.$shapes, sh.ConstraintComponent)
     this.components = [...componentNodes].map((node) => new ConstraintComponent(node, context))
 
     // Build map from parameters to constraint components
@@ -61,7 +62,7 @@ class ShapesGraph {
       for (const component of this.components) {
         const params = component.requiredParameters
         for (const param of params) {
-          const shapesWithParam = [...this.context.$shapes
+          const shapesWithParam = [...this.context.$shapes.dataset
             .match(null, param, null)]
             .map(({ subject }) => subject)
           set.addAll(shapesWithParam)
@@ -80,8 +81,8 @@ class ShapesGraph {
       const shapeNodes = this.getShapeNodesWithConstraints()
       for (const shapeNode of shapeNodes) {
         if (
-          $shapes.isInstanceOf(shapeNode, rdfs.Class) ||
-          $shapes.cf.node(shapeNode).out([
+          isInstanceOf($shapes, shapeNode, rdfs.Class) ||
+          $shapes.node(shapeNode).out([
             sh.targetClass,
             sh.targetNode,
             sh.targetSubjectsOf,
@@ -99,15 +100,15 @@ class ShapesGraph {
 }
 
 class Constraint {
-  constructor (shape, component, paramValue, rdfShapesGraph) {
+  constructor (shape, component, paramValue, shapesGraph) {
     this.shape = shape
     this.component = component
     this.paramValue = paramValue
-    this.shapeNodeCf = rdfShapesGraph.cf.node(shape.shapeNode)
+    this.shapeNodePointer = shapesGraph.node(shape.shapeNode)
   }
 
   getParameterValue (param) {
-    return this.paramValue || this.shapeNodeCf.out(param).term
+    return this.paramValue || this.shapeNodePointer.out(param).term
   }
 
   get componentMessages () {
@@ -125,7 +126,7 @@ class ConstraintComponent {
     this.parameterNodes = []
     this.requiredParameters = []
     this.optionals = {}
-    this.context.$shapes.cf
+    this.context.$shapes
       .node(node)
       .out(sh.parameter)
       .forEach(parameterCf => {
@@ -134,7 +135,7 @@ class ConstraintComponent {
         parameterCf.out(sh.path).forEach(({ term: path }) => {
           this.parameters.push(path)
           this.parameterNodes.push(parameter)
-          if (this.context.$shapes.match(parameter, sh.optional, this.factory.true).size > 0) {
+          if (this.context.$shapes.dataset.match(parameter, sh.optional, this.factory.true).size > 0) {
             this.optionals[path.value] = true
           } else {
             this.requiredParameters.push(path)
@@ -188,7 +189,7 @@ class ConstraintComponent {
   isComplete (shapeNode) {
     return !this.parameters.some((parameter) => (
       this.isRequired(parameter.value) &&
-      this.context.$shapes.match(shapeNode, parameter, null).size === 0
+      this.context.$shapes.dataset.match(shapeNode, parameter, null).size === 0
     ))
   }
 
@@ -200,20 +201,20 @@ class ConstraintComponent {
 class Shape {
   constructor (context, shapeNode) {
     this.context = context
-    this.severity = context.$shapes.cf.node(shapeNode).out(sh.severity).term
+    this.severity = context.$shapes.node(shapeNode).out(sh.severity).term
 
     if (!this.severity) {
       this.severity = context.factory.ns.sh.Violation
     }
 
-    this.deactivated = context.$shapes.cf.node(shapeNode).out(sh.deactivated).value === 'true'
-    this.path = context.$shapes.cf.node(shapeNode).out(sh.path).term
+    this.deactivated = context.$shapes.node(shapeNode).out(sh.deactivated).value === 'true'
+    this.path = context.$shapes.node(shapeNode).out(sh.path).term
     this._pathObject = undefined
     this.shapeNode = shapeNode
     this.constraints = []
 
     const handled = new NodeSet()
-    const shapeProperties = [...context.$shapes.match(shapeNode, null, null)]
+    const shapeProperties = [...context.$shapes.dataset.match(shapeNode, null, null)]
     shapeProperties.forEach((sol) => {
       const component = this.context.shapesGraph.getComponentWithParameter(sol.predicate)
       if (component && !handled.has(component.node)) {
@@ -239,35 +240,38 @@ class Shape {
     return this._pathObject
   }
 
-  getTargetNodes (rdfDataGraph) {
+  /**
+   * @param {Clownface} dataGraph
+   */
+  getTargetNodes (dataGraph) {
     const results = new NodeSet()
 
-    if (this.context.$shapes.isInstanceOf(this.shapeNode, rdfs.Class)) {
-      results.addAll(rdfDataGraph.getInstancesOf(this.shapeNode))
+    if (isInstanceOf(this.context.$shapes, this.shapeNode, rdfs.Class)) {
+      results.addAll(getInstancesOf(dataGraph, this.shapeNode))
     }
 
-    const targetClasses = [...this.context.$shapes.match(this.shapeNode, sh.targetClass, null)]
+    const targetClasses = [...this.context.$shapes.dataset.match(this.shapeNode, sh.targetClass, null)]
     targetClasses.forEach(({ object: targetClass }) => {
-      results.addAll(rdfDataGraph.getInstancesOf(targetClass))
+      results.addAll(getInstancesOf(dataGraph, targetClass))
     })
 
-    results.addAll(this.context.$shapes.cf.node(this.shapeNode).out(sh.targetNode).terms)
+    results.addAll(this.context.$shapes.node(this.shapeNode).out(sh.targetNode).terms)
 
-    this.context.$shapes.cf
+    this.context.$shapes
       .node(this.shapeNode)
       .out(sh.targetSubjectsOf)
       .terms
       .forEach((predicate) => {
-        const subjects = [...rdfDataGraph.match(null, predicate, null)].map(({ subject }) => subject)
+        const subjects = [...dataGraph.dataset.match(null, predicate, null)].map(({ subject }) => subject)
         results.addAll(subjects)
       })
 
-    this.context.$shapes.cf
+    this.context.$shapes
       .node(this.shapeNode)
       .out(sh.targetObjectsOf)
       .terms
       .forEach((predicate) => {
-        const objects = [...rdfDataGraph.match(null, predicate, null)].map(({ object }) => object)
+        const objects = [...dataGraph.dataset.match(null, predicate, null)].map(({ object }) => object)
         results.addAll(objects)
       })
 

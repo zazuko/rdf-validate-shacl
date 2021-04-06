@@ -111,7 +111,7 @@ class ValidationEngine {
     const { sh } = this.factory.ns
 
     // 1. Try to get message from the shape itself
-    let messages = $shapes.cf
+    let messages = $shapes
       .node(constraint.shape.shapeNode)
       .out(sh.message)
       .terms
@@ -123,7 +123,7 @@ class ValidationEngine {
 
     // 3. Try to get message from the constraint component node
     if (messages.length === 0) {
-      messages = $shapes.cf
+      messages = $shapes
         .node(constraint.component.node)
         .out(sh.message)
         .terms
@@ -137,8 +137,10 @@ class ValidationEngine {
 
   /**
    * Validates the data graph against the shapes graph
+   *
+   * @param {Clownface} dataGraph
    */
-  validateAll (rdfDataGraph) {
+  validateAll (dataGraph) {
     if (this.maxErrorsReached()) {
       return true
     }
@@ -149,9 +151,9 @@ class ValidationEngine {
       let foundError = false
       const shapes = this.context.shapesGraph.getShapesWithTarget()
       for (const shape of shapes) {
-        const focusNodes = shape.getTargetNodes(rdfDataGraph)
+        const focusNodes = shape.getTargetNodes(dataGraph)
         for (const focusNode of focusNodes) {
-          if (this.validateNodeAgainstShape(focusNode, shape, rdfDataGraph)) {
+          if (this.validateNodeAgainstShape(focusNode, shape, dataGraph)) {
             foundError = true
           }
         }
@@ -166,7 +168,7 @@ class ValidationEngine {
   /**
    * Returns true if any violation has been found
    */
-  validateNodeAgainstShape (focusNode, shape, rdfDataGraph) {
+  validateNodeAgainstShape (focusNode, shape, dataGraph) {
     if (this.maxErrorsReached()) {
       return true
     }
@@ -175,17 +177,17 @@ class ValidationEngine {
       return false
     }
 
-    const valueNodes = shape.getValueNodes(focusNode, rdfDataGraph)
+    const valueNodes = shape.getValueNodes(focusNode, dataGraph)
     let errorFound = false
     for (const constraint of shape.constraints) {
-      if (this.validateNodeAgainstConstraint(focusNode, valueNodes, constraint, rdfDataGraph)) {
+      if (this.validateNodeAgainstConstraint(focusNode, valueNodes, constraint, dataGraph)) {
         errorFound = true
       }
     }
     return errorFound
   }
 
-  validateNodeAgainstConstraint (focusNode, valueNodes, constraint, rdfDataGraph) {
+  validateNodeAgainstConstraint (focusNode, valueNodes, constraint, dataGraph) {
     const { sh } = this.factory.ns
 
     if (this.maxErrorsReached()) {
@@ -195,7 +197,7 @@ class ValidationEngine {
     if (sh.PropertyConstraintComponent.equals(constraint.component.node)) {
       let errorFound = false
       for (const valueNode of valueNodes) {
-        if (this.validateNodeAgainstShape(valueNode, this.context.shapesGraph.getShape(constraint.paramValue), rdfDataGraph)) {
+        if (this.validateNodeAgainstShape(valueNode, this.context.shapesGraph.getShape(constraint.paramValue), dataGraph)) {
           errorFound = true
         }
       }
