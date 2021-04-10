@@ -77,7 +77,7 @@ After updating the `@zazuko/rdf-vocabularies` dependency, run
 
 ## Limitations
 
-*rdf-validate-shacl* does not support [SPARQL-SPARQL constraints](https://www.w3.org/TR/shacl/#sparql-constraints)
+*rdf-validate-shacl* does not support [SHACL-SPARQL constraints](https://www.w3.org/TR/shacl/#sparql-constraints)
 
 
 ## About
