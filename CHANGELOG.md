@@ -6,6 +6,10 @@
 
 * BREAKING: the `$shape` and `$data` properties of the `context` passed to
   validators are now a `clownface` object instead of an `RdfLibGraph`.
+* Fix comparison of non-numeric literals with `minExclusive`, `maxExclusive`,
+  `minInclusive` and `maxInclusive` constraints.
+  [[#23][https://github.com/zazuko/rdf-validate-shacl/issues/23]]
+  [[#55][https://github.com/zazuko/rdf-validate-shacl/pull/55]]
 
 
 ## 0.2.6 (2021-02-22)

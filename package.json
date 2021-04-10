@@ -26,6 +26,7 @@
     "@rdfjs/term-set": "^1.0.0",
     "clownface": "^1.0.0",
     "debug": "^4.0.0",
+    "rdf-literal": "^1.2.0",
     "rdf-validate-datatype": "^0.1.1"
   },
   "devDependencies": {

@@ -19,11 +19,7 @@ const sht = namespace('http://www.w3.org/ns/shacl-test#')
 const SKIPPED = [
   // https://github.com/w3c/data-shapes/issues/124
   'path-strange-001',
-  'path-strange-002',
-
-  // TODO: Support non-numeric types in comparison constraints
-  'minInclusive-002',
-  'minInclusive-003'
+  'path-strange-002'
 ]
 
 before(async () => {

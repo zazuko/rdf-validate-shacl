@@ -1,6 +1,7 @@
 const { validateTerm } = require('rdf-validate-datatype')
+const { fromRdf } = require('rdf-literal')
 const NodeSet = require('./node-set')
-const { rdf, sh } = require('./namespaces')
+const { rdf, sh, xsd } = require('./namespaces')
 const { getPathObjects } = require('./property-path')
 const { isInstanceOf, rdfListToArray } = require('./dataset-utils')
 
@@ -183,12 +184,22 @@ function validateMaxCountProperty (context, focusNode, valueNode, constraint) {
 
 function validateMaxExclusive (context, focusNode, valueNode, constraint) {
   const maxExclusiveNode = constraint.getParameterValue(sh.maxExclusive)
-  return valueNode.termType === 'Literal' && Number(valueNode.value) < Number(maxExclusiveNode.value)
+
+  return (
+    valueNode.termType === 'Literal' &&
+    checkTimezone(valueNode, maxExclusiveNode) &&
+    fromRdf(valueNode) < fromRdf(maxExclusiveNode)
+  )
 }
 
 function validateMaxInclusive (context, focusNode, valueNode, constraint) {
   const maxInclusiveNode = constraint.getParameterValue(sh.maxInclusive)
-  return valueNode.termType === 'Literal' && Number(valueNode.value) <= Number(maxInclusiveNode.value)
+
+  return (
+    valueNode.termType === 'Literal' &&
+    checkTimezone(valueNode, maxInclusiveNode) &&
+    fromRdf(valueNode) <= fromRdf(maxInclusiveNode)
+  )
 }
 
 function validateMaxLength (context, focusNode, valueNode, constraint) {
@@ -210,12 +221,34 @@ function validateMinCountProperty (context, focusNode, valueNode, constraint) {
 
 function validateMinExclusive (context, focusNode, valueNode, constraint) {
   const minExclusiveNode = constraint.getParameterValue(sh.minExclusive)
-  return valueNode.termType === 'Literal' && Number(valueNode.value) > Number(minExclusiveNode.value)
+
+  return (
+    valueNode.termType === 'Literal' &&
+    checkTimezone(valueNode, minExclusiveNode) &&
+    fromRdf(valueNode) > fromRdf(minExclusiveNode)
+  )
 }
 
 function validateMinInclusive (context, focusNode, valueNode, constraint) {
   const minInclusiveNode = constraint.getParameterValue(sh.minInclusive)
-  return valueNode.termType === 'Literal' && Number(valueNode.value) >= Number(minInclusiveNode.value)
+
+  return (
+    valueNode.termType === 'Literal' &&
+    checkTimezone(valueNode, minInclusiveNode) &&
+    fromRdf(valueNode) >= fromRdf(minInclusiveNode)
+  )
+}
+
+// Checks that, if one of the compared nodes is a datetime with a timezone,
+// the other one is too. A datetime with a specified timezone is not comparable
+// with a datetime without a timezone.
+function checkTimezone (valueNode, constraintNode) {
+  return hasTimezone(valueNode) === hasTimezone(constraintNode)
+}
+
+function hasTimezone (node) {
+  const pattern = /^.*(((\+|-)\d{2}:\d{2})|Z)$/
+  return xsd.dateTime.equals(node.datatype) && pattern.test(node.value)
 }
 
 function validateMinLength (context, focusNode, valueNode, constraint) {
