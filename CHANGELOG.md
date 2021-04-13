@@ -2,7 +2,7 @@
 # Changelog
 
 
-## Next version (TBD)
+## 0.3.0 (2021-04-13)
 
 * BREAKING: the `$shape` and `$data` properties of the `context` passed to
   validators are now a `clownface` object instead of an `RdfLibGraph`.
