@@ -63,20 +63,10 @@ async function walkManifests (manifestPath) {
       })
   )
 
-  const testCases = rdfListToArray(manifest.out(mf.entries))
+  const testCases = [...manifest.out(mf.entries).list()]
     .map((testCaseNode) => new TestCase(testCaseNode, dir))
 
   return testCases.concat(...childrenTestCases)
-}
-
-function rdfListToArray (node) {
-  if (!node.term || node.term.equals(rdf.nil)) {
-    return []
-  }
-
-  const first = node.out(rdf.first)
-  const rest = node.out(rdf.rest)
-  return [first].concat(rdfListToArray(rest))
 }
 
 class TestCase {
