@@ -149,7 +149,7 @@ class ValidationEngine {
     try {
       this.results = []
       let foundError = false
-      const shapes = this.context.shapesGraph.getShapesWithTarget()
+      const shapes = this.context.shapesGraph.shapesWithTarget
       for (const shape of shapes) {
         const focusNodes = shape.getTargetNodes(dataGraph)
         for (const focusNode of focusNodes) {

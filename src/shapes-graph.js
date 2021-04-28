@@ -29,13 +29,13 @@ class ShapesGraph {
 
     // Collect all defined constraint components
     const componentNodes = getInstancesOf(context.$shapes, sh.ConstraintComponent)
-    this.components = [...componentNodes].map((node) => new ConstraintComponent(node, context))
+    this._components = [...componentNodes].map((node) => new ConstraintComponent(node, context))
 
     // Build map from parameters to constraint components
-    this.parametersMap = {}
-    for (const component of this.components) {
+    this._parametersMap = new Map()
+    for (const component of this._components) {
       for (const parameter of component.parameters) {
-        this.parametersMap[parameter.value] = component
+        this._parametersMap.set(parameter.value, component)
       }
     }
 
@@ -44,7 +44,7 @@ class ShapesGraph {
   }
 
   getComponentWithParameter (parameter) {
-    return this.parametersMap[parameter.value]
+    return this._parametersMap.get(parameter.value)
   }
 
   getShape (shapeNode) {
@@ -56,10 +56,10 @@ class ShapesGraph {
     return this._shapes.get(shapeNode.value)
   }
 
-  getShapeNodesWithConstraints () {
-    if (!this.shapeNodesWithConstraints) {
+  get shapeNodesWithConstraints () {
+    if (!this._shapeNodesWithConstraints) {
       const set = new NodeSet()
-      for (const component of this.components) {
+      for (const component of this._components) {
         const params = component.requiredParameters
         for (const param of params) {
           const shapesWithParam = [...this.context.$shapes.dataset
@@ -68,19 +68,18 @@ class ShapesGraph {
           set.addAll(shapesWithParam)
         }
       }
-      this.shapeNodesWithConstraints = [...set]
+      this._shapeNodesWithConstraints = [...set]
     }
-    return this.shapeNodesWithConstraints
+
+    return this._shapeNodesWithConstraints
   }
 
-  getShapesWithTarget () {
+  get shapesWithTarget () {
     const $shapes = this.context.$shapes
 
-    if (!this.targetShapes) {
-      this.targetShapes = []
-      const shapeNodes = this.getShapeNodesWithConstraints()
-      for (const shapeNode of shapeNodes) {
-        if (
+    if (!this._shapesWithTarget) {
+      this._shapesWithTarget = this.shapeNodesWithConstraints
+        .filter((shapeNode) => (
           isInstanceOf($shapes, shapeNode, rdfs.Class) ||
           $shapes.node(shapeNode).out([
             sh.targetClass,
@@ -89,13 +88,11 @@ class ShapesGraph {
             sh.targetObjectsOf,
             sh.target
           ]).terms.length > 0
-        ) {
-          this.targetShapes.push(this.getShape(shapeNode))
-        }
-      }
+        ))
+        .map((shapeNode) => this.getShape(shapeNode))
     }
 
-    return this.targetShapes
+    return this._shapesWithTarget
   }
 }
 
