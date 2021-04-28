@@ -39,8 +39,8 @@ class ShapesGraph {
       }
     }
 
-    // Collection of shapes is populated on demand - here we remember the instances
-    this.shapes = {} // Keys are the URIs/bnode ids of the shape nodes
+    // Cache of shapes populated on demand
+    this._shapes = new Map()
   }
 
   getComponentWithParameter (parameter) {
@@ -48,12 +48,12 @@ class ShapesGraph {
   }
 
   getShape (shapeNode) {
-    let shape = this.shapes[shapeNode.value]
-    if (!shape) {
-      shape = new Shape(this.context, shapeNode)
-      this.shapes[shapeNode.value] = shape
+    if (!this._shapes.has(shapeNode.value)) {
+      const shape = new Shape(this.context, shapeNode)
+      this._shapes.set(shapeNode.value, shape)
     }
-    return shape
+
+    return this._shapes.get(shapeNode.value)
   }
 
   getShapeNodesWithConstraints () {
