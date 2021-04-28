@@ -28,7 +28,7 @@ class ShapesGraph {
     this.context = context
 
     // Collect all defined constraint components
-    const componentNodes = getInstancesOf(context.$shapes, sh.ConstraintComponent)
+    const componentNodes = getInstancesOf(context.$shapes.node(sh.ConstraintComponent))
     this._components = [...componentNodes].map((node) => new ConstraintComponent(node, context))
 
     // Build map from parameters to constraint components
@@ -80,7 +80,7 @@ class ShapesGraph {
     if (!this._shapesWithTarget) {
       this._shapesWithTarget = this.shapeNodesWithConstraints
         .filter((shapeNode) => (
-          isInstanceOf($shapes, shapeNode, rdfs.Class) ||
+          isInstanceOf($shapes.node(shapeNode), $shapes.node(rdfs.Class)) ||
           $shapes.node(shapeNode).out([
             sh.targetClass,
             sh.targetNode,
@@ -232,7 +232,7 @@ class Shape {
    */
   get pathObject () {
     if (this._pathObject === undefined) {
-      this._pathObject = this.path ? extractPropertyPath(this.context.$shapes, this.path) : null
+      this._pathObject = this.path ? extractPropertyPath(this.context.$shapes.node(this.path)) : null
     }
 
     return this._pathObject
@@ -242,15 +242,16 @@ class Shape {
    * @param {Clownface} dataGraph
    */
   getTargetNodes (dataGraph) {
+    const $shapes = this.context.$shapes
     const results = new NodeSet()
 
-    if (isInstanceOf(this.context.$shapes, this.shapeNode, rdfs.Class)) {
-      results.addAll(getInstancesOf(dataGraph, this.shapeNode))
+    if (isInstanceOf($shapes.node(this.shapeNode), $shapes.node(rdfs.Class))) {
+      results.addAll(getInstancesOf(dataGraph.node(this.shapeNode)))
     }
 
     const targetClasses = [...this.context.$shapes.dataset.match(this.shapeNode, sh.targetClass, null)]
     targetClasses.forEach(({ object: targetClass }) => {
-      results.addAll(getInstancesOf(dataGraph, targetClass))
+      results.addAll(getInstancesOf(dataGraph.node(targetClass)))
     })
 
     results.addAll(this.shapeNodePointer.out(sh.targetNode).terms)
