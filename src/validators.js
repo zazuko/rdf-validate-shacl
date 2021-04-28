@@ -7,13 +7,13 @@ const { isInstanceOf, rdfListToArray } = require('./dataset-utils')
 
 function validateAnd (context, focusNode, valueNode, constraint) {
   const andNode = constraint.getParameterValue(sh.and)
-  const shapes = rdfListToArray(context.$shapes, andNode)
+  const shapes = rdfListToArray(context.$shapes.node(andNode))
   return shapes.every((shape) => context.nodeConformsToShape(valueNode, shape))
 }
 
 function validateClass (context, focusNode, valueNode, constraint) {
   const classNode = constraint.getParameterValue(sh.class)
-  return isInstanceOf(context.$data, valueNode, classNode)
+  return isInstanceOf(context.$data.node(valueNode), context.$data.node(classNode))
 }
 
 function validateClosed (context, focusNode, valueNode, constraint) {
@@ -35,7 +35,7 @@ function validateClosed (context, focusNode, valueNode, constraint) {
   )
 
   if (ignoredPropertiesNode) {
-    allowed.addAll(rdfListToArray(context.$shapes, ignoredPropertiesNode))
+    allowed.addAll(rdfListToArray(context.$shapes.node(ignoredPropertiesNode)))
   }
 
   const results = []
@@ -119,7 +119,7 @@ function validateHasValueProperty (context, focusNode, valueNode, constraint) {
 
 function validateIn (context, focusNode, valueNode, constraint) {
   const inNode = constraint.getParameterValue(sh.in)
-  return new NodeSet(rdfListToArray(context.$shapes, inNode)).has(valueNode)
+  return new NodeSet(rdfListToArray(context.$shapes.node(inNode))).has(valueNode)
 }
 
 function validateLanguageIn (context, focusNode, valueNode, constraint) {
@@ -133,7 +133,7 @@ function validateLanguageIn (context, focusNode, valueNode, constraint) {
   }
 
   const languageInNode = constraint.getParameterValue(sh.languageIn)
-  const allowedLanguages = rdfListToArray(context.$shapes, languageInNode)
+  const allowedLanguages = rdfListToArray(context.$shapes.node(languageInNode))
 
   return allowedLanguages.some(allowedLanguage => valueLanguage.startsWith(allowedLanguage.value))
 }
@@ -290,7 +290,7 @@ function validateNot (context, focusNode, valueNode, constraint) {
 
 function validateOr (context, focusNode, valueNode, constraint) {
   const orNode = constraint.getParameterValue(sh.or)
-  const shapes = rdfListToArray(context.$shapes, orNode)
+  const shapes = rdfListToArray(context.$shapes.node(orNode))
   return shapes.some(shape => context.nodeConformsToShape(valueNode, shape))
 }
 
@@ -394,7 +394,7 @@ function validateUniqueLangProperty (context, focusNode, valueNode, constraint) 
 
 function validateXone (context, focusNode, valueNode, constraint) {
   const xoneNode = constraint.getParameterValue(sh.xone)
-  const shapes = rdfListToArray(context.$shapes, xoneNode)
+  const shapes = rdfListToArray(context.$shapes.node(xoneNode))
   const conformsCount = shapes
     .map(shape => context.nodeConformsToShape(valueNode, shape))
     .filter(Boolean)

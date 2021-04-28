@@ -1,57 +1,53 @@
 const NodeSet = require('./node-set')
 const { rdf, sh } = require('./namespaces')
-const { rdfListToArray } = require('./dataset-utils')
 
 /**
  * Extracts all the nodes of a property path from a graph and returns a
  * property path object.
  *
- * @param {Clownface} graph
- * @param {Term} pathNode - Start node of the path
+ * @param {Clownface} pathNode - Pointer to the start node of the path
  * @return Property path object
  */
-function extractPropertyPath (graph, pathNode) {
-  if (pathNode.termType === 'NamedNode') {
-    return pathNode
+function extractPropertyPath (pathNode) {
+  if (pathNode.term.termType === 'NamedNode') {
+    return pathNode.term
   }
 
-  if (pathNode.termType === 'BlankNode') {
-    const pathCf = graph.node(pathNode)
-
-    const first = pathCf.out(rdf.first).term
+  if (pathNode.term.termType === 'BlankNode') {
+    const first = pathNode.out(rdf.first).term
     if (first) {
-      const paths = rdfListToArray(graph, pathNode)
-      return paths.map(path => extractPropertyPath(graph, path))
+      const paths = [...pathNode.list()]
+      return paths.map(path => extractPropertyPath(path))
     }
 
-    const alternativePath = pathCf.out(sh.alternativePath).term
-    if (alternativePath) {
-      const paths = rdfListToArray(graph, alternativePath)
-      return { or: paths.map(path => extractPropertyPath(graph, path)) }
+    const alternativePath = pathNode.out(sh.alternativePath)
+    if (alternativePath.term) {
+      const paths = [...alternativePath.list()]
+      return { or: paths.map(path => extractPropertyPath(path)) }
     }
 
-    const zeroOrMorePath = pathCf.out(sh.zeroOrMorePath).term
-    if (zeroOrMorePath) {
-      return { zeroOrMore: extractPropertyPath(graph, zeroOrMorePath) }
+    const zeroOrMorePath = pathNode.out(sh.zeroOrMorePath)
+    if (zeroOrMorePath.term) {
+      return { zeroOrMore: extractPropertyPath(zeroOrMorePath) }
     }
 
-    const oneOrMorePath = pathCf.out(sh.oneOrMorePath).term
-    if (oneOrMorePath) {
-      return { oneOrMore: extractPropertyPath(graph, oneOrMorePath) }
+    const oneOrMorePath = pathNode.out(sh.oneOrMorePath)
+    if (oneOrMorePath.term) {
+      return { oneOrMore: extractPropertyPath(oneOrMorePath) }
     }
 
-    const zeroOrOnePath = pathCf.out(sh.zeroOrOnePath).term
-    if (zeroOrOnePath) {
-      return { zeroOrOne: extractPropertyPath(graph, zeroOrOnePath) }
+    const zeroOrOnePath = pathNode.out(sh.zeroOrOnePath)
+    if (zeroOrOnePath.term) {
+      return { zeroOrOne: extractPropertyPath(zeroOrOnePath) }
     }
 
-    const inversePath = pathCf.out(sh.inversePath).term
-    if (inversePath) {
-      return { inverse: extractPropertyPath(graph, inversePath) }
+    const inversePath = pathNode.out(sh.inversePath)
+    if (inversePath.term) {
+      return { inverse: extractPropertyPath(inversePath) }
     }
   }
 
-  throw new Error(`Unsupported SHACL path: ${pathNode.value}`)
+  throw new Error(`Unsupported SHACL path: ${pathNode.term.value}`)
 }
 
 /**

@@ -25,16 +25,15 @@ function extractStructure (dataset, startNode) {
 /**
  * Get instances of a class.
  *
- * @param {Clownface} pointer
- * @param {NamedNode} $class
+ * @param {Clownface} cls - pointer to a class
  */
-function getInstancesOf (pointer, $class) {
-  const classes = getSubClassesOf(pointer, $class)
-  classes.add($class)
+function getInstancesOf (cls) {
+  const classes = getSubClassesOf(cls)
+  classes.add(cls.term)
 
-  return [...classes].reduce((acc, cls) => {
-    const classInstances = pointer
-      .node(cls)
+  return [...classes].reduce((acc, classTerm) => {
+    const classInstances = cls
+      .node(classTerm)
       .in(rdf.type)
       .terms
 
@@ -47,42 +46,34 @@ function getInstancesOf (pointer, $class) {
 /**
  * Get subclasses of a class.
  *
- * @param {Clownface} pointer
- * @param {NamedNode} $class
+ * @param {Clownface} cls - pointer to a class
  */
-function getSubClassesOf (pointer, $class) {
-  const subclasses = pointer
-    .node($class)
-    .in(rdfs.subClassOf)
-    .terms
+function getSubClassesOf (cls) {
+  const subclasses = cls.in(rdfs.subClassOf)
 
-  const transubclasses = subclasses.reduce((acc, cls) => {
-    const scs = getSubClassesOf(pointer, cls)
+  const transubclasses = subclasses.toArray().reduce((acc, subclass) => {
+    const scs = getSubClassesOf(subclass)
 
     acc.addAll(scs)
 
     return acc
   }, new NodeSet())
 
-  return new NodeSet([...subclasses, ...transubclasses])
+  return new NodeSet([...subclasses.terms, ...transubclasses])
 }
 
 /**
  * Check if a node is an instance of a class.
  *
- * @param {Clownface} pointer
- * @param {Term} $instance
- * @param {NamedNode} $class
+ * @param {Clownface} instance - pointer to a term
+ * @param {Clownface} cls - pointer to a class
  * @returns boolean
  */
-function isInstanceOf (pointer, $instance, $class) {
-  const classes = getSubClassesOf(pointer, $class)
-  classes.add($class)
+function isInstanceOf (instance, cls) {
+  const classes = getSubClassesOf(cls)
+  classes.add(cls.term)
 
-  const types = pointer
-    .node($instance)
-    .out(rdf.type)
-    .terms
+  const types = instance.out(rdf.type).terms
 
   return types.some((type) => classes.has(type))
 }
@@ -90,13 +81,11 @@ function isInstanceOf (pointer, $instance, $class) {
 /**
  * Extract all the terms of an RDF-list and return then as an array.
  *
- * @param {Clownface} pointer
- * @param {Term} listNode - Start of the list
+ * @param {Clownface} listNode - pointer to start of the list
  * @returns Array
  */
-function rdfListToArray (pointer, listNode) {
-  const iterator = pointer.node(listNode).list()
-  return [...iterator].map(({ term }) => term)
+function rdfListToArray (listNode) {
+  return [...listNode.list()].map(({ term }) => term)
 }
 
 module.exports = {
