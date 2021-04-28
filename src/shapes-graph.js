@@ -118,13 +118,13 @@ class ConstraintComponent {
     this.context = context
     this.factory = context.factory
     this.node = node
+    this.nodePointer = this.context.$shapes.node(node)
 
     this.parameters = []
     this.parameterNodes = []
     this.requiredParameters = []
     this.optionals = {}
-    this.context.$shapes
-      .node(node)
+    this.nodePointer
       .out(sh.parameter)
       .forEach(parameterCf => {
         const parameter = parameterCf.term
@@ -198,14 +198,15 @@ class ConstraintComponent {
 class Shape {
   constructor (context, shapeNode) {
     this.context = context
-    this.severity = context.$shapes.node(shapeNode).out(sh.severity).term
+    this.shapeNodePointer = this.context.$shapes.node(shapeNode)
+    this.severity = this.shapeNodePointer.out(sh.severity).term
 
     if (!this.severity) {
       this.severity = context.factory.ns.sh.Violation
     }
 
-    this.deactivated = context.$shapes.node(shapeNode).out(sh.deactivated).value === 'true'
-    this.path = context.$shapes.node(shapeNode).out(sh.path).term
+    this.deactivated = this.shapeNodePointer.out(sh.deactivated).value === 'true'
+    this.path = this.shapeNodePointer.out(sh.path).term
     this._pathObject = undefined
     this.shapeNode = shapeNode
     this.constraints = []
@@ -252,10 +253,9 @@ class Shape {
       results.addAll(getInstancesOf(dataGraph, targetClass))
     })
 
-    results.addAll(this.context.$shapes.node(this.shapeNode).out(sh.targetNode).terms)
+    results.addAll(this.shapeNodePointer.out(sh.targetNode).terms)
 
-    this.context.$shapes
-      .node(this.shapeNode)
+    this.shapeNodePointer
       .out(sh.targetSubjectsOf)
       .terms
       .forEach((predicate) => {
@@ -263,8 +263,7 @@ class Shape {
         results.addAll(subjects)
       })
 
-    this.context.$shapes
-      .node(this.shapeNode)
+    this.shapeNodePointer
       .out(sh.targetObjectsOf)
       .terms
       .forEach((predicate) => {
