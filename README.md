@@ -5,6 +5,8 @@ JavaScript SHACL validation ([RDF/JS](https://rdf.js.org/) compatible)
 
 [![npm version](https://badge.fury.io/js/rdf-validate-shacl.svg)](https://badge.fury.io/js/rdf-validate-shacl)
 
+We provide a [SHACL playground](https://zazuko.github.io/shacl-playground/) based on this library.
+
 ## Usage
 
 The library only handles SHACL validation and not data loading/parsing.
