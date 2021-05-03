@@ -1,5 +1,4 @@
 const NodeSet = require('./node-set')
-const { rdf, rdfs } = require('./namespaces')
 
 /**
  * Extracts all the quads forming the structure under a blank node. Stops at
@@ -7,6 +6,7 @@ const { rdf, rdfs } = require('./namespaces')
  *
  * @param {DatasetCore} dataset
  * @param {Term} startNode
+ * @returns Array of quads
  */
 function extractStructure (dataset, startNode) {
   if (startNode.termType !== 'BlankNode') {
@@ -26,15 +26,17 @@ function extractStructure (dataset, startNode) {
  * Get instances of a class.
  *
  * @param {Clownface} cls - pointer to a class
+ * @param {Object} ns - namespace
+ * @returns NodeSet
  */
-function getInstancesOf (cls) {
-  const classes = getSubClassesOf(cls)
+function getInstancesOf (cls, ns) {
+  const classes = getSubClassesOf(cls, ns)
   classes.add(cls.term)
 
   return [...classes].reduce((acc, classTerm) => {
     const classInstances = cls
       .node(classTerm)
-      .in(rdf.type)
+      .in(ns.rdf.type)
       .terms
 
     acc.addAll(classInstances)
@@ -48,11 +50,11 @@ function getInstancesOf (cls) {
  *
  * @param {Clownface} cls - pointer to a class
  */
-function getSubClassesOf (cls) {
-  const subclasses = cls.in(rdfs.subClassOf)
+function getSubClassesOf (cls, ns) {
+  const subclasses = cls.in(ns.rdfs.subClassOf)
 
   const transubclasses = subclasses.toArray().reduce((acc, subclass) => {
-    const scs = getSubClassesOf(subclass)
+    const scs = getSubClassesOf(subclass, ns)
 
     acc.addAll(scs)
 
@@ -67,13 +69,14 @@ function getSubClassesOf (cls) {
  *
  * @param {Clownface} instance - pointer to a term
  * @param {Clownface} cls - pointer to a class
+ * @param {Object} ns - namespace
  * @returns boolean
  */
-function isInstanceOf (instance, cls) {
-  const classes = getSubClassesOf(cls)
+function isInstanceOf (instance, cls, ns) {
+  const classes = getSubClassesOf(cls, ns)
   classes.add(cls.term)
 
-  const types = instance.out(rdf.type).terms
+  const types = instance.out(ns.rdf.type).terms
 
   return types.some((type) => classes.has(type))
 }

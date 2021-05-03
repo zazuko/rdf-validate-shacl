@@ -107,8 +107,8 @@ class ValidationEngine {
    * Creates a result message from the result and the message pattern in the constraint
    */
   createResultMessages (result, constraint) {
-    const $shapes = this.context.$shapes
-    const { sh } = this.context.ns
+    const { $shapes, ns } = this.context
+    const { sh } = ns
 
     // 1. Try to get message from the shape itself
     let messages = $shapes
