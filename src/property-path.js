@@ -1,5 +1,4 @@
 const NodeSet = require('./node-set')
-const { rdf, sh } = require('./namespaces')
 
 /**
  * Extracts all the nodes of a property path from a graph and returns a
@@ -8,42 +7,42 @@ const { rdf, sh } = require('./namespaces')
  * @param {Clownface} pathNode - Pointer to the start node of the path
  * @return Property path object
  */
-function extractPropertyPath (pathNode) {
+function extractPropertyPath (pathNode, ns) {
   if (pathNode.term.termType === 'NamedNode') {
     return pathNode.term
   }
 
   if (pathNode.term.termType === 'BlankNode') {
-    const first = pathNode.out(rdf.first).term
+    const first = pathNode.out(ns.rdf.first).term
     if (first) {
       const paths = [...pathNode.list()]
-      return paths.map(path => extractPropertyPath(path))
+      return paths.map(path => extractPropertyPath(path, ns))
     }
 
-    const alternativePath = pathNode.out(sh.alternativePath)
+    const alternativePath = pathNode.out(ns.sh.alternativePath)
     if (alternativePath.term) {
       const paths = [...alternativePath.list()]
-      return { or: paths.map(path => extractPropertyPath(path)) }
+      return { or: paths.map(path => extractPropertyPath(path, ns)) }
     }
 
-    const zeroOrMorePath = pathNode.out(sh.zeroOrMorePath)
+    const zeroOrMorePath = pathNode.out(ns.sh.zeroOrMorePath)
     if (zeroOrMorePath.term) {
-      return { zeroOrMore: extractPropertyPath(zeroOrMorePath) }
+      return { zeroOrMore: extractPropertyPath(zeroOrMorePath, ns) }
     }
 
-    const oneOrMorePath = pathNode.out(sh.oneOrMorePath)
+    const oneOrMorePath = pathNode.out(ns.sh.oneOrMorePath)
     if (oneOrMorePath.term) {
-      return { oneOrMore: extractPropertyPath(oneOrMorePath) }
+      return { oneOrMore: extractPropertyPath(oneOrMorePath, ns) }
     }
 
-    const zeroOrOnePath = pathNode.out(sh.zeroOrOnePath)
+    const zeroOrOnePath = pathNode.out(ns.sh.zeroOrOnePath)
     if (zeroOrOnePath.term) {
-      return { zeroOrOne: extractPropertyPath(zeroOrOnePath) }
+      return { zeroOrOne: extractPropertyPath(zeroOrOnePath, ns) }
     }
 
-    const inversePath = pathNode.out(sh.inversePath)
+    const inversePath = pathNode.out(ns.sh.inversePath)
     if (inversePath.term) {
-      return { inverse: extractPropertyPath(inversePath) }
+      return { inverse: extractPropertyPath(inversePath, ns) }
     }
   }
 

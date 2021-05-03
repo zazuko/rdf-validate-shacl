@@ -1,5 +1,5 @@
 const clownface = require('clownface')
-const { sh, prepareNamespaces } = require('./namespaces')
+const { prepareNamespaces } = require('./namespaces')
 
 /**
  * Result of a SHACL validation.
@@ -33,39 +33,40 @@ class ValidationReport {
      * List of `ValidationResult` with details about nodes that don't conform to
      * the given shapes.
      */
-    this.results = resultNodes.map(resultNode => new ValidationResult(resultNode, this.dataset))
+    this.results = resultNodes.map(resultNode => new ValidationResult(resultNode, this.dataset, this.ns))
   }
 }
 
 class ValidationResult {
-  constructor (term, dataset) {
+  constructor (term, dataset, ns) {
     this.term = term
     this.dataset = dataset
+    this.ns = ns
     this.cf = clownface({ dataset: dataset }).node(term)
   }
 
   get message () {
-    return this.cf.out(sh.resultMessage).terms || []
+    return this.cf.out(this.ns.sh.resultMessage).terms || []
   }
 
   get path () {
-    return this.cf.out(sh.resultPath).term || null
+    return this.cf.out(this.ns.sh.resultPath).term || null
   }
 
   get focusNode () {
-    return this.cf.out(sh.focusNode).term || null
+    return this.cf.out(this.ns.sh.focusNode).term || null
   }
 
   get severity () {
-    return this.cf.out(sh.resultSeverity).term || null
+    return this.cf.out(this.ns.sh.resultSeverity).term || null
   }
 
   get sourceConstraintComponent () {
-    return this.cf.out(sh.sourceConstraintComponent).term || null
+    return this.cf.out(this.ns.sh.sourceConstraintComponent).term || null
   }
 
   get sourceShape () {
-    return this.cf.out(sh.sourceShape).term || null
+    return this.cf.out(this.ns.sh.sourceShape).term || null
   }
 }
 

@@ -20,7 +20,6 @@ const NodeSet = require('./node-set')
 const ValidationFunction = require('./validation-function')
 const validatorsRegistry = require('./validators-registry')
 const { extractPropertyPath, getPathObjects } = require('./property-path')
-const { rdfs, sh } = require('./namespaces')
 const { getInstancesOf, isInstanceOf } = require('./dataset-utils')
 
 class ShapesGraph {
@@ -28,7 +27,8 @@ class ShapesGraph {
     this.context = context
 
     // Collect all defined constraint components
-    const componentNodes = getInstancesOf(context.$shapes.node(sh.ConstraintComponent))
+    const { sh } = context.ns
+    const componentNodes = getInstancesOf(context.$shapes.node(sh.ConstraintComponent), context.ns)
     this._components = [...componentNodes].map((node) => new ConstraintComponent(node, context))
 
     // Build map from parameters to constraint components
@@ -75,12 +75,13 @@ class ShapesGraph {
   }
 
   get shapesWithTarget () {
-    const $shapes = this.context.$shapes
+    const { $shapes, ns } = this.context
+    const { rdfs, sh } = ns
 
     if (!this._shapesWithTarget) {
       this._shapesWithTarget = this.shapeNodesWithConstraints
         .filter((shapeNode) => (
-          isInstanceOf($shapes.node(shapeNode), $shapes.node(rdfs.Class)) ||
+          isInstanceOf($shapes.node(shapeNode), $shapes.node(rdfs.Class), ns) ||
           $shapes.node(shapeNode).out([
             sh.targetClass,
             sh.targetNode,
@@ -115,17 +116,18 @@ class Constraint {
 
 class ConstraintComponent {
   constructor (node, context) {
+    const { $shapes, factory, ns } = context
+    const { sh, xsd } = ns
+
     this.context = context
-    this.factory = context.factory
-    this.ns = context.ns
     this.node = node
-    this.nodePointer = this.context.$shapes.node(node)
+    this.nodePointer = $shapes.node(node)
 
     this.parameters = []
     this.parameterNodes = []
     this.requiredParameters = []
     this.optionals = {}
-    const trueTerm = this.factory.literal('true', this.ns.xsd.boolean)
+    const trueTerm = factory.literal('true', xsd.boolean)
     this.nodePointer
       .out(sh.parameter)
       .forEach(parameterCf => {
@@ -134,7 +136,7 @@ class ConstraintComponent {
         parameterCf.out(sh.path).forEach(({ term: path }) => {
           this.parameters.push(path)
           this.parameterNodes.push(parameter)
-          if (this.context.$shapes.dataset.match(parameter, sh.optional, trueTerm).size > 0) {
+          if ($shapes.dataset.match(parameter, sh.optional, trueTerm).size > 0) {
             this.optionals[path.value] = true
           } else {
             this.requiredParameters.push(path)
@@ -199,12 +201,15 @@ class ConstraintComponent {
 
 class Shape {
   constructor (context, shapeNode) {
+    const { $shapes, ns, shapesGraph } = context
+    const { sh } = ns
+
     this.context = context
-    this.shapeNodePointer = this.context.$shapes.node(shapeNode)
+    this.shapeNodePointer = $shapes.node(shapeNode)
     this.severity = this.shapeNodePointer.out(sh.severity).term
 
     if (!this.severity) {
-      this.severity = context.ns.sh.Violation
+      this.severity = sh.Violation
     }
 
     this.deactivated = this.shapeNodePointer.out(sh.deactivated).value === 'true'
@@ -214,15 +219,15 @@ class Shape {
     this.constraints = []
 
     const handled = new NodeSet()
-    const shapeProperties = [...context.$shapes.dataset.match(shapeNode, null, null)]
+    const shapeProperties = [...$shapes.dataset.match(shapeNode, null, null)]
     shapeProperties.forEach((sol) => {
-      const component = this.context.shapesGraph.getComponentWithParameter(sol.predicate)
+      const component = shapesGraph.getComponentWithParameter(sol.predicate)
       if (component && !handled.has(component.node)) {
         const params = component.parameters
         if (params.length === 1) {
-          this.constraints.push(new Constraint(this, component, sol.object, context.$shapes))
+          this.constraints.push(new Constraint(this, component, sol.object, $shapes))
         } else if (component.isComplete(shapeNode)) {
-          this.constraints.push(new Constraint(this, component, undefined, context.$shapes))
+          this.constraints.push(new Constraint(this, component, undefined, $shapes))
           handled.add(component.node)
         }
       }
@@ -233,8 +238,10 @@ class Shape {
    * Property path object
    */
   get pathObject () {
+    const { $shapes, ns } = this.context
+
     if (this._pathObject === undefined) {
-      this._pathObject = this.path ? extractPropertyPath(this.context.$shapes.node(this.path)) : null
+      this._pathObject = this.path ? extractPropertyPath($shapes.node(this.path), ns) : null
     }
 
     return this._pathObject
@@ -244,16 +251,17 @@ class Shape {
    * @param {Clownface} dataGraph
    */
   getTargetNodes (dataGraph) {
-    const $shapes = this.context.$shapes
+    const { $shapes, ns } = this.context
+    const { rdfs, sh } = ns
     const results = new NodeSet()
 
-    if (isInstanceOf($shapes.node(this.shapeNode), $shapes.node(rdfs.Class))) {
-      results.addAll(getInstancesOf(dataGraph.node(this.shapeNode)))
+    if (isInstanceOf($shapes.node(this.shapeNode), $shapes.node(rdfs.Class), ns)) {
+      results.addAll(getInstancesOf(dataGraph.node(this.shapeNode), ns))
     }
 
-    const targetClasses = [...this.context.$shapes.dataset.match(this.shapeNode, sh.targetClass, null)]
+    const targetClasses = [...$shapes.dataset.match(this.shapeNode, sh.targetClass, null)]
     targetClasses.forEach(({ object: targetClass }) => {
-      results.addAll(getInstancesOf(dataGraph.node(targetClass)))
+      results.addAll(getInstancesOf(dataGraph.node(targetClass), ns))
     })
 
     results.addAll(this.shapeNodePointer.out(sh.targetNode).terms)
