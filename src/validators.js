@@ -20,8 +20,9 @@ function validateClosed (context, focusNode, valueNode, constraint) {
   const closedNode = constraint.getParameterValue(sh.closed)
   const ignoredPropertiesNode = constraint.getParameterValue(sh.ignoredProperties)
   const currentShape = constraint.shape.shapeNode
+  const trueTerm = context.factory.literal('true', context.ns.xsd.boolean)
 
-  if (!context.factory.true.equals(closedNode)) {
+  if (!trueTerm.equals(closedNode)) {
     return
   }
 
@@ -323,10 +324,11 @@ function validateQualifiedHelper (context, focusNode, constraint) {
   const currentShapeNode = constraint.shape.shapeNode
   const qualifiedValueShapesDisjointNode = constraint.getParameterValue(sh.qualifiedValueShapesDisjoint)
   const qualifiedValueShapeNode = constraint.getParameterValue(sh.qualifiedValueShape)
+  const trueTerm = context.factory.literal('true', context.ns.xsd.boolean)
 
   const siblingShapes = new NodeSet()
 
-  if (context.factory.true.equals(qualifiedValueShapesDisjointNode)) {
+  if (trueTerm.equals(qualifiedValueShapesDisjointNode)) {
     const qualifiedSiblingShapes = context.$shapes
       .node(currentShapeNode)
       // Move up to parent
@@ -361,8 +363,9 @@ function validateQualifiedConformsToASibling (context, value, siblingShapes) {
 
 function validateUniqueLangProperty (context, focusNode, valueNode, constraint) {
   const uniqueLangNode = constraint.getParameterValue(sh.uniqueLang)
+  const trueTerm = context.factory.literal('true', context.ns.xsd.boolean)
 
-  if (!context.factory.true.equals(uniqueLangNode)) {
+  if (!trueTerm.equals(uniqueLangNode)) {
     return
   }
 

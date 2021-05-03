@@ -1,5 +1,5 @@
 const clownface = require('clownface')
-const DataFactory = require('./src/data-factory')
+const { prepareNamespaces } = require('./src/namespaces')
 const ShapesGraph = require('./src/shapes-graph')
 const ValidationEngine = require('./src/validation-engine')
 const shaclVocabularyFactory = require('./src/vocabularies/shacl')
@@ -17,7 +17,8 @@ class SHACLValidator {
   constructor (shapes, options) {
     options = options || {}
 
-    this.factory = new DataFactory(options.factory || require('@rdfjs/dataset'))
+    this.factory = options.factory || require('@rdfjs/dataset')
+    this.ns = prepareNamespaces(this.factory)
     this.loadShapes(shapes)
     this.validationEngine = new ValidationEngine(this, options)
 

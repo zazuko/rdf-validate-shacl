@@ -22,7 +22,7 @@ class ValidationEngine {
    * properties for the constraint, focused node and value node
    */
   createResult (constraint, focusNode, valueNode) {
-    const { rdf, sh } = this.factory.ns
+    const { rdf, sh } = this.context.ns
     const result = this.factory.blankNode()
     const severity = constraint.shape.severity
     const sourceConstraintComponent = constraint.component.node
@@ -54,7 +54,7 @@ class ValidationEngine {
    * If none of these values is passed no error result or error message will be created.
    */
   createResultFromObject (obj, constraint, focusNode, valueNode) {
-    const { sh, xsd } = this.factory.ns
+    const { sh, xsd } = this.context.ns
 
     if (obj === false) {
       if (this.recordErrorsLevel > 0) {
@@ -108,7 +108,7 @@ class ValidationEngine {
    */
   createResultMessages (result, constraint) {
     const $shapes = this.context.$shapes
-    const { sh } = this.factory.ns
+    const { sh } = this.context.ns
 
     // 1. Try to get message from the shape itself
     let messages = $shapes
@@ -188,7 +188,7 @@ class ValidationEngine {
   }
 
   validateNodeAgainstConstraint (focusNode, valueNodes, constraint, dataGraph) {
-    const { sh } = this.factory.ns
+    const { sh } = this.context.ns
 
     if (this.maxErrorsReached()) {
       return true
@@ -295,7 +295,7 @@ class ValidationEngine {
       error('Validation Failure: ' + this.validationError)
       throw (this.validationError)
     } else {
-      return new ValidationReport(this.results, { factory: this.factory })
+      return new ValidationReport(this.results, { factory: this.factory, ns: this.context.ns })
     }
   }
 }
