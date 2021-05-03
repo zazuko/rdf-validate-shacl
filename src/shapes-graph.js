@@ -117,6 +117,7 @@ class ConstraintComponent {
   constructor (node, context) {
     this.context = context
     this.factory = context.factory
+    this.ns = context.ns
     this.node = node
     this.nodePointer = this.context.$shapes.node(node)
 
@@ -124,6 +125,7 @@ class ConstraintComponent {
     this.parameterNodes = []
     this.requiredParameters = []
     this.optionals = {}
+    const trueTerm = this.factory.literal('true', this.ns.xsd.boolean)
     this.nodePointer
       .out(sh.parameter)
       .forEach(parameterCf => {
@@ -132,7 +134,7 @@ class ConstraintComponent {
         parameterCf.out(sh.path).forEach(({ term: path }) => {
           this.parameters.push(path)
           this.parameterNodes.push(parameter)
-          if (this.context.$shapes.dataset.match(parameter, sh.optional, this.factory.true).size > 0) {
+          if (this.context.$shapes.dataset.match(parameter, sh.optional, trueTerm).size > 0) {
             this.optionals[path.value] = true
           } else {
             this.requiredParameters.push(path)
@@ -202,7 +204,7 @@ class Shape {
     this.severity = this.shapeNodePointer.out(sh.severity).term
 
     if (!this.severity) {
-      this.severity = context.factory.ns.sh.Violation
+      this.severity = context.ns.sh.Violation
     }
 
     this.deactivated = this.shapeNodePointer.out(sh.deactivated).value === 'true'

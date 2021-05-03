@@ -1,6 +1,5 @@
 const clownface = require('clownface')
-const DataFactory = require('./data-factory')
-const { sh } = require('./namespaces')
+const { sh, prepareNamespaces } = require('./namespaces')
 
 /**
  * Result of a SHACL validation.
@@ -8,8 +7,10 @@ const { sh } = require('./namespaces')
 class ValidationReport {
   constructor (resultsQuads, options) {
     options = options || {}
-    this.factory = new DataFactory(options.factory || require('@rdfjs/dataset'))
-    const { rdf, sh, xsd } = this.factory.ns
+    this.factory = options.factory || require('@rdfjs/dataset')
+    this.ns = options.ns || prepareNamespaces(this.factory)
+
+    const { rdf, sh, xsd } = this.ns
 
     this.term = this.factory.blankNode('report')
     this.dataset = this.factory.dataset(resultsQuads)
