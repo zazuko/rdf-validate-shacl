@@ -205,18 +205,14 @@ class Shape {
     const { sh } = ns
 
     this.context = context
+    this.shapeNode = shapeNode
     this.shapeNodePointer = $shapes.node(shapeNode)
-    this.severity = this.shapeNodePointer.out(sh.severity).term
 
-    if (!this.severity) {
-      this.severity = sh.Violation
-    }
-
+    this.severity = this.shapeNodePointer.out(sh.severity).term || sh.Violation
     this.deactivated = this.shapeNodePointer.out(sh.deactivated).value === 'true'
     this.path = this.shapeNodePointer.out(sh.path).term
     this.isPropertyShape = this.path != null
     this._pathObject = undefined
-    this.shapeNode = shapeNode
 
     this.constraints = []
     const handled = new NodeSet()

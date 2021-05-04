@@ -141,9 +141,7 @@ class ValidationEngine {
    * @param {Clownface} dataGraph
    */
   validateAll (dataGraph) {
-    if (this.maxErrorsReached()) {
-      return true
-    }
+    if (this.maxErrorsReached()) return true
 
     this.validationError = null
     try {
@@ -169,13 +167,9 @@ class ValidationEngine {
    * Returns true if any violation has been found
    */
   validateNodeAgainstShape (focusNode, shape, dataGraph) {
-    if (this.maxErrorsReached()) {
-      return true
-    }
+    if (this.maxErrorsReached()) return true
 
-    if (shape.deactivated) {
-      return false
-    }
+    if (shape.deactivated) return false
 
     const valueNodes = shape.getValueNodes(focusNode, dataGraph)
     let errorFound = false
@@ -190,9 +184,7 @@ class ValidationEngine {
   validateNodeAgainstConstraint (focusNode, valueNodes, constraint, dataGraph) {
     const { sh } = this.context.ns
 
-    if (this.maxErrorsReached()) {
-      return true
-    }
+    if (this.maxErrorsReached()) return true
 
     if (sh.PropertyConstraintComponent.equals(constraint.component.node)) {
       let errorFound = false
