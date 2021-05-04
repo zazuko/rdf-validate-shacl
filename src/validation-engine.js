@@ -62,7 +62,7 @@ class ValidationEngine {
       }
 
       const result = this.createResult(constraint, focusNode, valueNode)
-      if (constraint.shape.isPropertyShape()) {
+      if (constraint.shape.isPropertyShape) {
         this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
       }
       this.createResultMessages(result, constraint)
@@ -72,7 +72,7 @@ class ValidationEngine {
         return true
       }
       const result = this.createResult(constraint, focusNode, valueNode)
-      if (constraint.shape.isPropertyShape()) {
+      if (constraint.shape.isPropertyShape) {
         this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
       }
       this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj, xsd.string))
@@ -85,7 +85,7 @@ class ValidationEngine {
       const result = this.createResult(constraint, focusNode)
       if (obj.path) {
         this.addResultPropertyDeep(result, sh.resultPath, obj.path, true)
-      } else if (constraint.shape.isPropertyShape()) {
+      } else if (constraint.shape.isPropertyShape) {
         this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
       }
       if (obj.value) {
@@ -204,11 +204,11 @@ class ValidationEngine {
       return errorFound
     }
 
-    const validationFunction = constraint.shape.isPropertyShape()
+    const validationFunction = constraint.shape.isPropertyShape
       ? constraint.component.propertyValidationFunction
       : constraint.component.nodeValidationFunction
     if (validationFunction) {
-      const generic = constraint.shape.isPropertyShape()
+      const generic = constraint.shape.isPropertyShape
         ? constraint.component.propertyValidationFunctionGeneric
         : constraint.component.nodeValidationFunctionGeneric
       if (generic) {
