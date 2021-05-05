@@ -1,7 +1,7 @@
 
 # rdf-validate-shacl
 
-JavaScript SHACL validation ([RDF/JS](https://rdf.js.org/) compatible)
+Validate RDF data purely in JavaScript. An implementation of the [W3C SHACL](https://www.w3.org/TR/shacl/) specification on top of the [RDFJS](https://www.w3.org/TR/shacl/) stack. 
 
 [![npm version](https://badge.fury.io/js/rdf-validate-shacl.svg)](https://badge.fury.io/js/rdf-validate-shacl)
 
