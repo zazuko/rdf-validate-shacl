@@ -38,6 +38,20 @@ class SHACLValidator {
   }
 
   /**
+   * Validates the provided focus node against the provided shape
+   *
+   * @param {DatasetCore} data - Dataset containing the data to validate
+   * @param {Term} focusNode - Node to validate
+   * @param {Term} shapeNode - Shape used to validate the node. It must be present in the shapes graph.
+   * @returns {ValidationReport} - Result of the validation
+   */
+  validateNode (data, focusNode, shapeNode) {
+    this.$data = clownface({ dataset: data, factory: this.factory })
+    this.nodeConformsToShape(focusNode, shapeNode)
+    return this.validationEngine.getReport()
+  }
+
+  /**
    * Load SHACL shapes constraints from dataset.
    *
    * @param {DatasetCore} shapes - Dataset containing the shapes for validation
