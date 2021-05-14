@@ -1,11 +1,17 @@
 
 # Changelog
 
+## 0.3.2 (2021-05-14)
+
+* Add `validateNode` function to validate a given node against a given shape.
+  [[#59](https://github.com/zazuko/rdf-validate-shacl/issues/59)]
+  [[#65](https://github.com/zazuko/rdf-validate-shacl/pull/65)]
+
 ## 0.3.1 (2021-05-03)
 
 * Use provided data factory everywhere
-  [[#52][https://github.com/zazuko/rdf-validate-shacl/issues/52]]
-  [[#62][https://github.com/zazuko/rdf-validate-shacl/pull/62]]
+  [[#52](https://github.com/zazuko/rdf-validate-shacl/issues/52)]
+  [[#62](https://github.com/zazuko/rdf-validate-shacl/pull/62)]
 
 ## 0.3.0 (2021-04-13)
 
@@ -13,8 +19,8 @@
   validators are now a `clownface` object instead of an `RdfLibGraph`.
 * Fix comparison of non-numeric literals with `minExclusive`, `maxExclusive`,
   `minInclusive` and `maxInclusive` constraints.
-  [[#23][https://github.com/zazuko/rdf-validate-shacl/issues/23]]
-  [[#55][https://github.com/zazuko/rdf-validate-shacl/pull/55]]
+  [[#23](https://github.com/zazuko/rdf-validate-shacl/issues/23)]
+  [[#55](https://github.com/zazuko/rdf-validate-shacl/pull/55)]
 
 ## 0.2.6 (2021-02-22)
 
