@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@rdfjs/parser-n3": "^1.1.4",
-    "@zazuko/rdf-vocabularies": "^2021.3.31",
+    "@zazuko/rdf-vocabularies": "^2021.6.10",
     "get-stream": "^6.0.0",
     "mocha": "^8.3.0",
     "nanoid": "^3.1.20",
