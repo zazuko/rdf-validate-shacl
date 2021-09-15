@@ -92,12 +92,12 @@ SHACLValidator.propertyPaths = require('./src/property-path');
 * Use as follows:
 *    validator.getPathObjectsFromQuads (quads, subject, validator.propertyPaths.extractPropertyPath)
 * 
-* @param {Quad[]} graph
+* @param {Quad[]} quads
 * @param {Term} subject - Start node
 * @param {object} path - Property path object
 * @return {Term[]} - Nodes that are reachable through the property path
 */
-SHACLValidator.getPathObjectsFromQuads = function (quads, subject, path) {
+SHACLValidator.propertyPaths.getPathObjectsFromQuads = function (quads, subject, path) {
  const graph = clownface({ dataset: rdf.dataset(quads) })
  return SHACLValidator.propertyPaths.getPathObjects(graph, subject, path)
 }
