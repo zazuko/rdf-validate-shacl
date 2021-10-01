@@ -30,28 +30,32 @@ async function loadDataset (filePath) {
   return factory.dataset().import(parser.import(stream))
 }
 
-const shapes = await loadDataset('my-shapes.ttl')
-const data = await loadDataset('my-data.ttl')
+async function main() {
+  const shapes = await loadDataset('my-shapes.ttl')
+  const data = await loadDataset('my-data.ttl')
 
-const validator = new SHACLValidator(shapes, { factory })
-const report = await validator.validate(data)
+  const validator = new SHACLValidator(shapes, { factory })
+  const report = await validator.validate(data)
 
-// Check conformance: `true` or `false`
-console.log(report.conforms)
+  // Check conformance: `true` or `false`
+  console.log(report.conforms)
 
-for (const result of report.results) {
-  // See https://www.w3.org/TR/shacl/#results-validation-result for details
-  // about each property
-  console.log(result.message)
-  console.log(result.path)
-  console.log(result.focusNode)
-  console.log(result.severity)
-  console.log(result.sourceConstraintComponent)
-  console.log(result.sourceShape)
+  for (const result of report.results) {
+    // See https://www.w3.org/TR/shacl/#results-validation-result for details
+    // about each property
+    console.log(result.message)
+    console.log(result.path)
+    console.log(result.focusNode)
+    console.log(result.severity)
+    console.log(result.sourceConstraintComponent)
+    console.log(result.sourceShape)
+  }
+
+  // Validation report as RDF dataset
+  console.log(report.dataset)
 }
 
-// Validation report as RDF dataset
-console.log(report.dataset)
+main();
 ```
 
 ### Validator options
