@@ -8,88 +8,51 @@ const ValidationReport = require('../src/validation-report')
 
 describe('ValidationReport', () => {
   it('returns a validation report', () => {
-    const report = new ValidationReport([])
+    const pointer = clownface({ dataset: RDF.dataset() }).blankNode()
+    const report = new ValidationReport(pointer)
 
     assert.ok(report instanceof ValidationReport)
   })
 
   describe('#conforms', () => {
     it('conforms', () => {
-      const report = new ValidationReport([])
+      const pointer = clownface({ dataset: RDF.dataset() }).blankNode()
+      const report = new ValidationReport(pointer)
 
       assert.strictEqual(report.conforms, true)
     })
 
     it('does not conform', () => {
-      const results = [RDF.quad(RDF.blankNode(), rdf.type, sh.ValidationResult)]
+      const pointer = clownface({ dataset: RDF.dataset() }).blankNode()
+        .addOut(sh.result, result => { result.addOut(rdf.type, sh.ValidationResult) })
+      const report = new ValidationReport(pointer)
 
-      const report = new ValidationReport(results)
       assert.strictEqual(report.conforms, false)
     })
   })
 
   describe('#results', () => {
     it('returns empty list', () => {
-      const report = new ValidationReport([])
+      const pointer = clownface({ dataset: RDF.dataset() }).blankNode()
+      const report = new ValidationReport(pointer)
 
       assert.deepStrictEqual(report.results, [])
     })
 
     it('returns reports list', () => {
-      const results = [
-        RDF.quad(RDF.blankNode(), rdf.type, sh.ValidationResult),
-        RDF.quad(RDF.blankNode(), rdf.type, sh.ValidationResult)
-      ]
-
-      const report = new ValidationReport(results)
+      const pointer = clownface({ dataset: RDF.dataset() }).blankNode()
+        .addOut(sh.result, result => { result.addOut(rdf.type, sh.ValidationResult) })
+        .addOut(sh.result, result => { result.addOut(rdf.type, sh.ValidationResult) })
+      const report = new ValidationReport(pointer)
 
       assert.strictEqual(report.results.length, 2)
     })
   })
 
-  describe('#dataset', () => {
-    it('returns a dataset with a report that conforms', () => {
-      const report = new ValidationReport([])
-
-      const dataset = report.dataset
-
-      const cf = clownface({ dataset })
-      const cfReport = cf.namedNode(sh.ValidationReport).in(rdf.type)
-      const conforms = cfReport.out(sh.conforms).values
-      assert.deepStrictEqual(conforms, ['true'])
-      const results = cfReport.out(sh.result).values
-      assert.deepStrictEqual(results, [])
-    })
-
-    it('returns a dataset with a report that does not conform', () => {
-      const resultID1 = RDF.blankNode()
-      const resultID2 = RDF.blankNode()
-      const report = new ValidationReport([
-        RDF.quad(resultID1, rdf.type, sh.ValidationResult),
-        RDF.quad(resultID1, sh.resultMessage, 'Something is invalid'),
-        RDF.quad(resultID2, rdf.type, sh.ValidationResult),
-        RDF.quad(resultID2, sh.resultMessage, 'Some other thing is invalid'),
-        RDF.quad(resultID1, sh.resultPath, RDF.namedNode('ex:aProperty')),
-        RDF.quad(resultID2, sh.resultPath, RDF.namedNode('ex:aProperty'))
-      ])
-
-      const dataset = report.dataset
-
-      const cf = clownface({ dataset })
-      const cfReport = cf.namedNode(sh.ValidationReport).in(rdf.type)
-      const conforms = cfReport.out(sh.conforms).values
-      assert.deepStrictEqual(conforms, ['false'])
-      const results = cfReport.out(sh.result).map((cfResult) => cfResult.out().values)
-      assert.deepStrictEqual(results, [
-        ['http://www.w3.org/ns/shacl#ValidationResult', 'Something is invalid', 'ex:aProperty'],
-        ['http://www.w3.org/ns/shacl#ValidationResult', 'Some other thing is invalid', 'ex:aProperty']
-      ])
-    })
-  })
-
   describe('#term', () => {
     it('returns the sh:ValidationReport term', () => {
-      const report = new ValidationReport([])
+      const pointer = clownface({ dataset: RDF.dataset() }).blankNode()
+      const report = new ValidationReport(pointer)
 
       assert.strictEqual(report.term.termType, 'BlankNode')
     })
@@ -110,9 +73,9 @@ describe('ValidationReport', () => {
       namedNode: wrap('namedNode'),
       literal: wrap('literal')
     }
-    const report = new ValidationReport([], { factory })
+    const pointer = clownface({ dataset: RDF.dataset(), factory }).blankNode()
+    const report = new ValidationReport(pointer, { factory })
 
-    assert.ok(report.dataset._test === 'test')
     report.dataset.forEach((quad) => {
       assert.ok(quad._test === 'test')
       assert.ok(quad.subject._test === 'test')
@@ -124,9 +87,10 @@ describe('ValidationReport', () => {
 
 describe('ValidationResult', () => {
   it('returns empty values', () => {
-    const results = [RDF.quad(RDF.blankNode(), rdf.type, sh.ValidationResult)]
+    const pointer = clownface({ dataset: RDF.dataset() }).blankNode()
+      .addOut(sh.result, result => { result.addOut(rdf.type, sh.ValidationResult) })
+    const report = new ValidationReport(pointer)
 
-    const report = new ValidationReport(results)
     const result = report.results[0]
 
     assert.deepStrictEqual(result.message, [])
@@ -138,18 +102,19 @@ describe('ValidationResult', () => {
   })
 
   describe('shorthand properties', () => {
-    const resultNode = RDF.blankNode()
-    const results = [
-      RDF.quad(resultNode, rdf.type, sh.ValidationResult),
-      RDF.quad(resultNode, sh.resultMessage, RDF.literal('result message')),
-      RDF.quad(resultNode, sh.resultPath, RDF.namedNode('result path')),
-      RDF.quad(resultNode, sh.focusNode, RDF.namedNode('focus node')),
-      RDF.quad(resultNode, sh.resultSeverity, sh.Warning),
-      RDF.quad(resultNode, sh.sourceShape, RDF.namedNode('source shape')),
-      RDF.quad(resultNode, sh.sourceConstraintComponent, RDF.namedNode('source constraint component'))
-    ]
+    const pointer = clownface({ dataset: RDF.dataset() }).blankNode()
+      .addOut(sh.result, result => {
+        result
+          .addOut(rdf.type, sh.ValidationResult)
+          .addOut(sh.resultMessage, RDF.literal('result message'))
+          .addOut(sh.resultPath, RDF.namedNode('result path'))
+          .addOut(sh.focusNode, RDF.namedNode('focus node'))
+          .addOut(sh.resultSeverity, sh.Warning)
+          .addOut(sh.sourceShape, RDF.namedNode('source shape'))
+          .addOut(sh.sourceConstraintComponent, RDF.namedNode('source constraint component'))
+      })
+    const report = new ValidationReport(pointer)
 
-    const report = new ValidationReport(results)
     const result = report.results[0]
 
     it('returns a message list', () => {

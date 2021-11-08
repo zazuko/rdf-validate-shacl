@@ -1,3 +1,4 @@
+const clownface = require('clownface')
 const ValidationReport = require('./validation-report')
 const { extractStructure } = require('./dataset-utils')
 const error = require('debug')('validation-enging::error')
@@ -7,14 +8,21 @@ class ValidationEngine {
     this.context = context
     this.factory = context.factory
     this.maxErrors = options.maxErrors
-    this.results = []
+    this.initReport()
     this.recordErrorsLevel = 0
     this.violationsCount = 0
     this.validationError = null
   }
 
-  addResultProperty (result, predicate, object) {
-    this.results.push(this.factory.quad(result, predicate, object))
+  initReport () {
+    const { rdf, sh } = this.context.ns
+
+    this.reportPointer = clownface({
+      dataset: this.factory.dataset(),
+      factory: this.factory,
+      term: this.factory.blankNode('report'),
+    }).addOut(rdf.type, sh.ValidationReport)
+    this.currentResultAnchorPointer = this.reportPointer
   }
 
   /**
@@ -23,28 +31,30 @@ class ValidationEngine {
    */
   createResult (constraint, focusNode, valueNode) {
     const { rdf, sh } = this.context.ns
-    const result = this.factory.blankNode()
     const severity = constraint.shape.severity
     const sourceConstraintComponent = constraint.component.node
     const sourceShape = constraint.shape.shapeNode
-    this.addResultProperty(result, rdf.type, sh.ValidationResult)
-    this.addResultProperty(result, sh.resultSeverity, severity)
-    this.addResultProperty(result, sh.sourceConstraintComponent, sourceConstraintComponent)
-    this.addResultPropertyDeep(result, sh.sourceShape, sourceShape)
-    this.addResultPropertyDeep(result, sh.focusNode, focusNode)
+    // TODO: handle sh.detail
+    const resultId = this.currentResultAnchorPointer.blankNode()
+    this.currentResultAnchorPointer.addOut(sh.result, resultId)
+    const result = this.currentResultAnchorPointer.node(resultId)
+
+    result
+      .addOut(rdf.type, sh.ValidationResult)
+      .addOut(sh.resultSeverity, severity)
+      .addOut(sh.sourceConstraintComponent, sourceConstraintComponent)
+      .addOut(sh.sourceShape, sourceShape)
+      .addOut(sh.focusNode, focusNode)
+
+    this.copyNestedStructure(sourceShape)
+    this.copyNestedStructure(focusNode)
+
     if (valueNode) {
-      this.addResultPropertyDeep(result, sh.value, valueNode)
+      result.addOut(sh.value, valueNode)
+      this.copyNestedStructure(valueNode)
     }
+
     return result
-  }
-
-  addResultPropertyDeep (result, predicate, node) {
-    this.addResultProperty(result, predicate, node)
-
-    const structureQuads = extractStructure(this.context.$shapes.dataset, node)
-    for (const quad of structureQuads) {
-      this.results.push(quad)
-    }
   }
 
   /**
@@ -62,44 +72,67 @@ class ValidationEngine {
       }
 
       const result = this.createResult(constraint, focusNode, valueNode)
+
       if (constraint.shape.isPropertyShape) {
-        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
+        result.addOut(sh.resultPath, constraint.shape.path)
+        this.copyNestedStructure(constraint.shape.path)
       }
+
       this.createResultMessages(result, constraint)
+
       return true
     } else if (typeof obj === 'string') {
       if (this.recordErrorsLevel > 0) {
         return true
       }
       const result = this.createResult(constraint, focusNode, valueNode)
+
       if (constraint.shape.isPropertyShape) {
-        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
+        result.addOut(sh.resultPath, constraint.shape.path)
+        this.copyNestedStructure(constraint.shape.path)
       }
-      this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj, xsd.string))
+
+      result.addOut(sh.resultMessage, this.factory.literal(obj, xsd.string))
+
       return true
     } else if (typeof obj === 'object') {
       if (this.recordErrorsLevel > 0) {
         return true
       }
       const result = this.createResult(constraint, focusNode)
+
       if (obj.path) {
-        this.addResultPropertyDeep(result, sh.resultPath, obj.path, true)
+        result.addOut(sh.resultPath, obj.path)
+        this.copyNestedStructure(obj.path)
       } else if (constraint.shape.isPropertyShape) {
-        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
+        result.addOut(sh.resultPath, constraint.shape.path)
+        this.copyNestedStructure(constraint.shape.path)
       }
+
       if (obj.value) {
-        this.addResultPropertyDeep(result, sh.value, obj.value)
+        result.addOut(sh.value, obj.value)
+        this.copyNestedStructure(obj.value)
       } else if (valueNode) {
-        this.addResultPropertyDeep(result, sh.value, valueNode)
+        result.addOut(sh.value, valueNode)
+        this.copyNestedStructure(valueNode)
       }
+
       if (obj.message) {
-        this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj.message, xsd.string))
+        result.addOut(sh.resultMessage, this.factory.literal(obj.message, xsd.string))
       } else {
         this.createResultMessages(result, constraint)
       }
+
       return true
     }
     return false
+  }
+
+  copyNestedStructure (subject) {
+    const structureQuads = extractStructure(this.context.$shapes.dataset, subject)
+    for (const quad of structureQuads) {
+      this.currentResultAnchorPointer.dataset.add(quad)
+    }
   }
 
   /**
@@ -129,8 +162,8 @@ class ValidationEngine {
     }
 
     for (const message of messages) {
-      const str = this.withSubstitutions(message, constraint)
-      this.addResultProperty(result, sh.resultMessage, str)
+      const str = withSubstitutions(message, constraint, this.factory)
+      result.addOut(sh.resultMessage, str)
     }
   }
 
@@ -144,7 +177,7 @@ class ValidationEngine {
 
     this.validationError = null
     try {
-      this.results = []
+      this.initReport()
       let foundError = false
       const shapes = this.context.shapesGraph.shapesWithTarget
       for (const shape of shapes) {
@@ -269,24 +302,12 @@ class ValidationEngine {
     }
   }
 
-  withSubstitutions (messageNode, constraint) {
-    const message = constraint.component.parameters.reduce((message, param) => {
-      const paramName = localName(param.value)
-      const paramValue = nodeLabel(constraint.getParameterValue(param))
-      return message
-        .replace(`{$${paramName}}`, paramValue)
-        .replace(`{?${paramName}}`, paramValue)
-    }, messageNode.value)
-
-    return this.factory.literal(message, messageNode.language || messageNode.datatype)
-  }
-
   getReport () {
     if (this.validationError) {
       error('Validation Failure: ' + this.validationError)
       throw (this.validationError)
     } else {
-      return new ValidationReport(this.results, { factory: this.factory, ns: this.context.ns })
+      return new ValidationReport(this.reportPointer, { factory: this.factory, ns: this.context.ns })
     }
   }
 }
@@ -321,6 +342,18 @@ function nodeLabel (node) {
   }
 
   return node.value
+}
+
+function withSubstitutions (messageNode, constraint, factory) {
+  const message = constraint.component.parameters.reduce((message, param) => {
+    const paramName = localName(param.value)
+    const paramValue = nodeLabel(constraint.getParameterValue(param))
+    return message
+      .replace(`{$${paramName}}`, paramValue)
+      .replace(`{?${paramName}}`, paramValue)
+  }, messageNode.value)
+
+  return factory.literal(message, messageNode.language || messageNode.datatype)
 }
 
 module.exports = ValidationEngine
