@@ -109,6 +109,18 @@ class Constraint {
     return this.paramValue || this.shapeNodePointer.out(param).term
   }
 
+  get validationFunction () {
+    return this.shape.isPropertyShape
+      ? this.component.propertyValidationFunction
+      : this.component.nodeValidationFunction
+  }
+
+  get isValidationFunctionGeneric () {
+    return this.shape.isPropertyShape
+      ? this.component.propertyValidationFunctionGeneric
+      : this.component.nodeValidationFunctionGeneric
+  }
+
   get componentMessages () {
     return this.component.getMessages(this.shape)
   }

@@ -218,6 +218,7 @@ class ValidationEngine {
 
     if (this.maxErrorsReached()) return true
 
+    // If constraint is `sh:property`, follow `sh:property` and validate each value against the property shape
     if (sh.PropertyConstraintComponent.equals(constraint.component.node)) {
       let errorFound = false
       for (const valueNode of valueNodes) {
@@ -228,69 +229,58 @@ class ValidationEngine {
       return errorFound
     }
 
-    const validationFunction = constraint.shape.isPropertyShape
-      ? constraint.component.propertyValidationFunction
-      : constraint.component.nodeValidationFunction
-    if (validationFunction) {
-      const generic = constraint.shape.isPropertyShape
-        ? constraint.component.propertyValidationFunctionGeneric
-        : constraint.component.nodeValidationFunctionGeneric
-      if (generic) {
-        // Generic sh:validator is called for each value node separately
-        let errorFound = false
-        for (const valueNode of valueNodes) {
-          if (this.maxErrorsReached()) {
-            break
-          }
-          let iterationError = false
-          // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
-          this.recordErrorsLevel++
-          // }
-          const obj = validationFunction.execute(focusNode, valueNode, constraint)
-          // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
-          this.recordErrorsLevel--
-          // }
-          if (Array.isArray(obj)) {
-            for (const item of obj) {
-              if (this.createResultFromObject(item, constraint, focusNode, valueNode)) {
-                iterationError = true
-              }
-            }
-          } else {
-            if (this.createResultFromObject(obj, constraint, focusNode, valueNode)) {
-              iterationError = true
-            }
-          }
-          if (iterationError) {
-            this.violationsCount++
-          }
-          errorFound = errorFound || iterationError
+    const validationFunction = constraint.validationFunction
+    if (!validationFunction) {
+      throw new Error('Cannot find validator for constraint component ' + constraint.component.node.value)
+    }
+
+    if (constraint.isValidationFunctionGeneric) {
+      // Generic sh:validator is called for each value node separately
+      let errorFound = false
+      for (const valueNode of valueNodes) {
+        if (this.maxErrorsReached()) {
+          break
         }
-        return errorFound
-      } else {
+
         // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
         this.recordErrorsLevel++
         // }
-        const obj = validationFunction.execute(focusNode, null, constraint)
+        const obj = validationFunction.execute(focusNode, valueNode, constraint)
         // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
         this.recordErrorsLevel--
         // }
-        if (Array.isArray(obj)) {
-          let errorFound = false
-          for (const item of obj) {
-            if (this.createResultFromObject(item, constraint, focusNode)) {
-              errorFound = true
-            }
-          }
-          return errorFound
-        } else {
-          if (this.createResultFromObject(obj, constraint, focusNode)) {
-            return true
-          }
+
+        let iterationError = false
+        const objs = Array.isArray(obj) ? obj : [obj]
+        for (const item of objs) {
+          const objError = this.createResultFromObject(item, constraint, focusNode, valueNode)
+          iterationError = iterationError || objError
         }
+
+        if (iterationError) {
+          this.violationsCount++
+        }
+
+        errorFound = errorFound || iterationError
       }
+
+      return errorFound
     } else {
-      throw new Error('Cannot find validator for constraint component ' + constraint.component.node.value)
+      // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
+      this.recordErrorsLevel++
+      // }
+      const obj = validationFunction.execute(focusNode, null, constraint)
+      // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
+      this.recordErrorsLevel--
+      // }
+
+      let errorFound = false
+      const objs = Array.isArray(obj) ? obj : [obj]
+      for (const item of objs) {
+        const objError = this.createResultFromObject(item, constraint, focusNode)
+        errorFound = errorFound || objError
+      }
+      return errorFound
     }
   }
 
