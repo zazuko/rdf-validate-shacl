@@ -76,7 +76,6 @@ class ValidationEngine {
         this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
       }
       this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj, xsd.string))
-      this.createResultMessages(result, constraint)
       return true
     } else if (typeof obj === 'object') {
       if (this.recordErrorsLevel > 0) {
