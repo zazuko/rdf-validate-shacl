@@ -26,10 +26,76 @@ class ValidationEngine {
   }
 
   /**
+   * Creates all the validation result nodes and messages for the result of applying the validation logic
+   * of a constraints against a node.
+   * Result passed as the first argument can be false, a resultMessage or a validation result object.
+   * If none of these values is passed no error result or error message will be created.
+   */
+  createResultFromObject (validationResult, constraint, focusNode, valueNode) {
+    const { sh, xsd } = this.context.ns
+
+    const validationResultObj = this.normalizeValidationResult(validationResult, valueNode)
+
+    // Validation was successful. No result.
+    if (!validationResultObj) {
+      return false
+    }
+
+    // Nested validation results are currently discarded.
+    if (this.recordErrorsLevel > 0) {
+      return true
+    }
+
+    const result = this.createResult(constraint, focusNode)
+
+    if (validationResultObj.path) {
+      result.addOut(sh.resultPath, validationResultObj.path)
+      this.copyNestedStructure(validationResultObj.path)
+    } else if (constraint.shape.isPropertyShape) {
+      result.addOut(sh.resultPath, constraint.shape.path)
+      this.copyNestedStructure(constraint.shape.path)
+    }
+
+    if (validationResultObj.value) {
+      result.addOut(sh.value, validationResultObj.value)
+      this.copyNestedStructure(validationResultObj.value)
+    } else if (valueNode) {
+      result.addOut(sh.value, valueNode)
+      this.copyNestedStructure(valueNode)
+    }
+
+    if (validationResultObj.message) {
+      result.addOut(sh.resultMessage, this.factory.literal(validationResultObj.message, xsd.string))
+    } else {
+      this.createResultMessages(result, constraint)
+    }
+
+    return true
+  }
+
+  /**
+   * Validators can return a boolean, a string (message) or a validation result object.
+   * This function normalizes all of them as a validation result object.
+   *
+   * Returns null if validation was successful.
+   */
+  normalizeValidationResult (validationResult, valueNode) {
+    if (validationResult === false) {
+      return { value: valueNode }
+    } else if (typeof validationResult === 'string') {
+      return { message: validationResult, value: valueNode }
+    } else if (typeof validationResult === 'object') {
+      return validationResult
+    } else {
+      return null
+    }
+  }
+
+  /**
    * Creates a new BlankNode holding the SHACL validation result, adding the default
    * properties for the constraint, focused node and value node
    */
-  createResult (constraint, focusNode, valueNode) {
+  createResult (constraint, focusNode) {
     const { rdf, sh } = this.context.ns
     const severity = constraint.shape.severity
     const sourceConstraintComponent = constraint.component.node
@@ -49,83 +115,7 @@ class ValidationEngine {
     this.copyNestedStructure(sourceShape)
     this.copyNestedStructure(focusNode)
 
-    if (valueNode) {
-      result.addOut(sh.value, valueNode)
-      this.copyNestedStructure(valueNode)
-    }
-
     return result
-  }
-
-  /**
-   * Creates all the validation result nodes and messages for the result of applying the validation logic
-   * of a constraints against a node.
-   * Result passed as the first argument can be false, a resultMessage or a validation result object.
-   * If none of these values is passed no error result or error message will be created.
-   */
-  createResultFromObject (obj, constraint, focusNode, valueNode) {
-    const { sh, xsd } = this.context.ns
-
-    if (obj === false) {
-      if (this.recordErrorsLevel > 0) {
-        return true
-      }
-
-      const result = this.createResult(constraint, focusNode, valueNode)
-
-      if (constraint.shape.isPropertyShape) {
-        result.addOut(sh.resultPath, constraint.shape.path)
-        this.copyNestedStructure(constraint.shape.path)
-      }
-
-      this.createResultMessages(result, constraint)
-
-      return true
-    } else if (typeof obj === 'string') {
-      if (this.recordErrorsLevel > 0) {
-        return true
-      }
-      const result = this.createResult(constraint, focusNode, valueNode)
-
-      if (constraint.shape.isPropertyShape) {
-        result.addOut(sh.resultPath, constraint.shape.path)
-        this.copyNestedStructure(constraint.shape.path)
-      }
-
-      result.addOut(sh.resultMessage, this.factory.literal(obj, xsd.string))
-
-      return true
-    } else if (typeof obj === 'object') {
-      if (this.recordErrorsLevel > 0) {
-        return true
-      }
-      const result = this.createResult(constraint, focusNode)
-
-      if (obj.path) {
-        result.addOut(sh.resultPath, obj.path)
-        this.copyNestedStructure(obj.path)
-      } else if (constraint.shape.isPropertyShape) {
-        result.addOut(sh.resultPath, constraint.shape.path)
-        this.copyNestedStructure(constraint.shape.path)
-      }
-
-      if (obj.value) {
-        result.addOut(sh.value, obj.value)
-        this.copyNestedStructure(obj.value)
-      } else if (valueNode) {
-        result.addOut(sh.value, valueNode)
-        this.copyNestedStructure(valueNode)
-      }
-
-      if (obj.message) {
-        result.addOut(sh.resultMessage, this.factory.literal(obj.message, xsd.string))
-      } else {
-        this.createResultMessages(result, constraint)
-      }
-
-      return true
-    }
-    return false
   }
 
   copyNestedStructure (subject) {
