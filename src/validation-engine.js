@@ -219,8 +219,7 @@ class ValidationEngine {
       return errorFound
     }
 
-    const validationFunction = constraint.validationFunction
-    if (!validationFunction) {
+    if (!constraint.validationFunction) {
       throw new Error('Cannot find validator for constraint component ' + constraint.component.node.value)
     }
 
@@ -232,38 +231,33 @@ class ValidationEngine {
           break
         }
 
-        this.recordErrorsLevel++
-        const obj = validationFunction.execute(focusNode, valueNode, constraint)
-        this.recordErrorsLevel--
+        const valueNodeError = this.validateValueNodeAgainstConstraint(focusNode, valueNode, constraint)
 
-        let iterationError = false
-        const objs = Array.isArray(obj) ? obj : [obj]
-        for (const item of objs) {
-          const objError = this.createResultFromObject(item, constraint, focusNode, valueNode)
-          iterationError = iterationError || objError
-        }
-
-        if (iterationError) {
+        if (valueNodeError) {
           this.violationsCount++
         }
 
-        errorFound = errorFound || iterationError
+        errorFound = errorFound || valueNodeError
       }
 
       return errorFound
     } else {
-      this.recordErrorsLevel++
-      const obj = validationFunction.execute(focusNode, null, constraint)
-      this.recordErrorsLevel--
-
-      let errorFound = false
-      const objs = Array.isArray(obj) ? obj : [obj]
-      for (const item of objs) {
-        const objError = this.createResultFromObject(item, constraint, focusNode)
-        errorFound = errorFound || objError
-      }
-      return errorFound
+      return this.validateValueNodeAgainstConstraint(focusNode, null, constraint)
     }
+  }
+
+  validateValueNodeAgainstConstraint(focusNode, valueNode, constraint) {
+    this.recordErrorsLevel++
+    const obj = constraint.validationFunction.execute(focusNode, valueNode, constraint)
+    this.recordErrorsLevel--
+
+    let errorFound = false
+    const objs = Array.isArray(obj) ? obj : [obj]
+    for (const item of objs) {
+      const objError = this.createResultFromObject(item, constraint, focusNode, valueNode)
+      errorFound = errorFound || objError
+    }
+    return errorFound
   }
 
   maxErrorsReached () {
