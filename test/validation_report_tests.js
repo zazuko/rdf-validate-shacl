@@ -112,6 +112,7 @@ describe('ValidationResult', () => {
           .addOut(sh.resultSeverity, sh.Warning)
           .addOut(sh.sourceShape, RDF.namedNode('source shape'))
           .addOut(sh.sourceConstraintComponent, RDF.namedNode('source constraint component'))
+          .addOut(sh.value, RDF.namedNode('value'))
       })
     const report = new ValidationReport(pointer)
 
@@ -139,6 +140,10 @@ describe('ValidationResult', () => {
 
     it('returns sourceConstraintComponent term', () => {
       assert.deepStrictEqual(result.sourceConstraintComponent, RDF.namedNode('source constraint component'))
+    })
+
+    it('returns value term', () => {
+      assert.deepStrictEqual(result.value, RDF.namedNode('value'))
     })
   })
 })
