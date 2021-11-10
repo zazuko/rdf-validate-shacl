@@ -22,7 +22,6 @@ class ValidationEngine {
       factory: this.factory,
       term: this.factory.blankNode('report'),
     }).addOut(rdf.type, sh.ValidationReport)
-    this.currentResultAnchorPointer = this.reportPointer
   }
 
   /**
@@ -219,10 +218,9 @@ class ValidationEngine {
     const severity = constraint.shape.severity
     const sourceConstraintComponent = constraint.component.node
     const sourceShape = constraint.shape.shapeNode
-    // TODO: handle sh.detail
-    const resultId = this.currentResultAnchorPointer.blankNode()
-    this.currentResultAnchorPointer.addOut(sh.result, resultId)
-    const result = this.currentResultAnchorPointer.node(resultId)
+    const resultId = this.reportPointer.blankNode()
+    this.reportPointer.addOut(sh.result, resultId)
+    const result = this.reportPointer.node(resultId)
 
     result
       .addOut(rdf.type, sh.ValidationResult)
@@ -240,7 +238,7 @@ class ValidationEngine {
   copyNestedStructure (subject) {
     const structureQuads = extractStructure(this.context.$shapes.dataset, subject)
     for (const quad of structureQuads) {
-      this.currentResultAnchorPointer.dataset.add(quad)
+      this.reportPointer.dataset.add(quad)
     }
   }
 
