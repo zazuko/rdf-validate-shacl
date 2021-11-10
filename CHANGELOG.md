@@ -1,6 +1,14 @@
 
 # Changelog
 
+## 0.3.3 (2021-11-10)
+
+* Add `ValidationResult.value` getter
+  [[#38](https://github.com/zazuko/rdf-validate-shacl/issues/38)]
+  [[#78](https://github.com/zazuko/rdf-validate-shacl/pull/78)]
+* Fix duplicate validation message for `uniqueLang` constraint
+  [[#76](https://github.com/zazuko/rdf-validate-shacl/pull/76)]
+
 ## 0.3.2 (2021-05-14)
 
 * Add `validateNode` function to validate a given node against a given shape.
