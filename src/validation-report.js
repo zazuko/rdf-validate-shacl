@@ -5,24 +5,21 @@ const { prepareNamespaces } = require('./namespaces')
  * Result of a SHACL validation.
  */
 class ValidationReport {
-  constructor (resultsQuads, options) {
+  constructor (pointer, options) {
     options = options || {}
     this.factory = options.factory || require('@rdfjs/dataset')
     this.ns = options.ns || prepareNamespaces(this.factory)
 
     const { rdf, sh, xsd } = this.ns
 
-    this.term = this.factory.blankNode('report')
-    this.dataset = this.factory.dataset(resultsQuads)
+    this.term = pointer.term
+    this.dataset = pointer.dataset
 
     // Prepare report dataset
-    const cf = clownface({ dataset: this.dataset, factory: this.factory })
-    const resultNodes = cf.node(sh.ValidationResult).in(rdf.type).terms
+    // TODO: This probybly doesn't have anything to do here
+    const resultNodes = pointer.node(sh.ValidationResult).in(rdf.type).terms
     const conforms = resultNodes.length === 0
-    cf.node(this.term)
-      .addOut(rdf.type, sh.ValidationReport)
-      .addOut(sh.conforms, this.factory.literal(conforms.toString(), xsd.boolean))
-      .addOut(sh.result, resultNodes)
+    pointer.addOut(sh.conforms, this.factory.literal(conforms.toString(), xsd.boolean))
 
     /**
      * `true` if the data conforms to the defined shapes, `false` otherwise.

@@ -1,3 +1,4 @@
+const clownface = require('clownface')
 const ValidationReport = require('./validation-report')
 const { extractStructure } = require('./dataset-utils')
 const error = require('debug')('validation-enging::error')
@@ -7,131 +8,20 @@ class ValidationEngine {
     this.context = context
     this.factory = context.factory
     this.maxErrors = options.maxErrors
-    this.results = []
+    this.initReport()
     this.recordErrorsLevel = 0
     this.violationsCount = 0
     this.validationError = null
   }
 
-  addResultProperty (result, predicate, object) {
-    this.results.push(this.factory.quad(result, predicate, object))
-  }
-
-  /**
-   * Creates a new BlankNode holding the SHACL validation result, adding the default
-   * properties for the constraint, focused node and value node
-   */
-  createResult (constraint, focusNode, valueNode) {
+  initReport () {
     const { rdf, sh } = this.context.ns
-    const result = this.factory.blankNode()
-    const severity = constraint.shape.severity
-    const sourceConstraintComponent = constraint.component.node
-    const sourceShape = constraint.shape.shapeNode
-    this.addResultProperty(result, rdf.type, sh.ValidationResult)
-    this.addResultProperty(result, sh.resultSeverity, severity)
-    this.addResultProperty(result, sh.sourceConstraintComponent, sourceConstraintComponent)
-    this.addResultPropertyDeep(result, sh.sourceShape, sourceShape)
-    this.addResultPropertyDeep(result, sh.focusNode, focusNode)
-    if (valueNode) {
-      this.addResultPropertyDeep(result, sh.value, valueNode)
-    }
-    return result
-  }
 
-  addResultPropertyDeep (result, predicate, node) {
-    this.addResultProperty(result, predicate, node)
-
-    const structureQuads = extractStructure(this.context.$shapes.dataset, node)
-    for (const quad of structureQuads) {
-      this.results.push(quad)
-    }
-  }
-
-  /**
-   * Creates all the validation result nodes and messages for the result of applying the validation logic
-   * of a constraints against a node.
-   * Result passed as the first argument can be false, a resultMessage or a validation result object.
-   * If none of these values is passed no error result or error message will be created.
-   */
-  createResultFromObject (obj, constraint, focusNode, valueNode) {
-    const { sh, xsd } = this.context.ns
-
-    if (obj === false) {
-      if (this.recordErrorsLevel > 0) {
-        return true
-      }
-
-      const result = this.createResult(constraint, focusNode, valueNode)
-      if (constraint.shape.isPropertyShape) {
-        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
-      }
-      this.createResultMessages(result, constraint)
-      return true
-    } else if (typeof obj === 'string') {
-      if (this.recordErrorsLevel > 0) {
-        return true
-      }
-      const result = this.createResult(constraint, focusNode, valueNode)
-      if (constraint.shape.isPropertyShape) {
-        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
-      }
-      this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj, xsd.string))
-      return true
-    } else if (typeof obj === 'object') {
-      if (this.recordErrorsLevel > 0) {
-        return true
-      }
-      const result = this.createResult(constraint, focusNode)
-      if (obj.path) {
-        this.addResultPropertyDeep(result, sh.resultPath, obj.path, true)
-      } else if (constraint.shape.isPropertyShape) {
-        this.addResultPropertyDeep(result, sh.resultPath, constraint.shape.path, true)
-      }
-      if (obj.value) {
-        this.addResultPropertyDeep(result, sh.value, obj.value)
-      } else if (valueNode) {
-        this.addResultPropertyDeep(result, sh.value, valueNode)
-      }
-      if (obj.message) {
-        this.addResultProperty(result, sh.resultMessage, this.factory.literal(obj.message, xsd.string))
-      } else {
-        this.createResultMessages(result, constraint)
-      }
-      return true
-    }
-    return false
-  }
-
-  /**
-   * Creates a result message from the result and the message pattern in the constraint
-   */
-  createResultMessages (result, constraint) {
-    const { $shapes, ns } = this.context
-    const { sh } = ns
-
-    // 1. Try to get message from the shape itself
-    let messages = $shapes
-      .node(constraint.shape.shapeNode)
-      .out(sh.message)
-      .terms
-
-    // 2. Try to get message from the constraint component validator
-    if (messages.length === 0) {
-      messages = constraint.componentMessages.map((m) => this.factory.literal(m))
-    }
-
-    // 3. Try to get message from the constraint component node
-    if (messages.length === 0) {
-      messages = $shapes
-        .node(constraint.component.node)
-        .out(sh.message)
-        .terms
-    }
-
-    for (const message of messages) {
-      const str = this.withSubstitutions(message, constraint)
-      this.addResultProperty(result, sh.resultMessage, str)
-    }
+    this.reportPointer = clownface({
+      dataset: this.factory.dataset(),
+      factory: this.factory,
+      term: this.factory.blankNode('report')
+    }).addOut(rdf.type, sh.ValidationReport)
   }
 
   /**
@@ -144,7 +34,7 @@ class ValidationEngine {
 
     this.validationError = null
     try {
-      this.results = []
+      this.initReport()
       let foundError = false
       const shapes = this.context.shapesGraph.shapesWithTarget
       for (const shape of shapes) {
@@ -185,6 +75,7 @@ class ValidationEngine {
 
     if (this.maxErrorsReached()) return true
 
+    // If constraint is `sh:property`, follow `sh:property` and validate each value against the property shape
     if (sh.PropertyConstraintComponent.equals(constraint.component.node)) {
       let errorFound = false
       for (const valueNode of valueNodes) {
@@ -195,70 +86,45 @@ class ValidationEngine {
       return errorFound
     }
 
-    const validationFunction = constraint.shape.isPropertyShape
-      ? constraint.component.propertyValidationFunction
-      : constraint.component.nodeValidationFunction
-    if (validationFunction) {
-      const generic = constraint.shape.isPropertyShape
-        ? constraint.component.propertyValidationFunctionGeneric
-        : constraint.component.nodeValidationFunctionGeneric
-      if (generic) {
-        // Generic sh:validator is called for each value node separately
-        let errorFound = false
-        for (const valueNode of valueNodes) {
-          if (this.maxErrorsReached()) {
-            break
-          }
-          let iterationError = false
-          // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
-          this.recordErrorsLevel++
-          // }
-          const obj = validationFunction.execute(focusNode, valueNode, constraint)
-          // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
-          this.recordErrorsLevel--
-          // }
-          if (Array.isArray(obj)) {
-            for (const item of obj) {
-              if (this.createResultFromObject(item, constraint, focusNode, valueNode)) {
-                iterationError = true
-              }
-            }
-          } else {
-            if (this.createResultFromObject(obj, constraint, focusNode, valueNode)) {
-              iterationError = true
-            }
-          }
-          if (iterationError) {
-            this.violationsCount++
-          }
-          errorFound = errorFound || iterationError
-        }
-        return errorFound
-      } else {
-        // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
-        this.recordErrorsLevel++
-        // }
-        const obj = validationFunction.execute(focusNode, null, constraint)
-        // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
-        this.recordErrorsLevel--
-        // }
-        if (Array.isArray(obj)) {
-          let errorFound = false
-          for (const item of obj) {
-            if (this.createResultFromObject(item, constraint, focusNode)) {
-              errorFound = true
-            }
-          }
-          return errorFound
-        } else {
-          if (this.createResultFromObject(obj, constraint, focusNode)) {
-            return true
-          }
-        }
-      }
-    } else {
+    if (!constraint.validationFunction) {
       throw new Error('Cannot find validator for constraint component ' + constraint.component.node.value)
     }
+
+    if (constraint.isValidationFunctionGeneric) {
+      // Generic sh:validator is called for each value node separately
+      let errorFound = false
+      for (const valueNode of valueNodes) {
+        if (this.maxErrorsReached()) {
+          break
+        }
+
+        const valueNodeError = this.validateValueNodeAgainstConstraint(focusNode, valueNode, constraint)
+
+        if (valueNodeError) {
+          this.violationsCount++
+        }
+
+        errorFound = errorFound || valueNodeError
+      }
+
+      return errorFound
+    } else {
+      return this.validateValueNodeAgainstConstraint(focusNode, null, constraint)
+    }
+  }
+
+  validateValueNodeAgainstConstraint (focusNode, valueNode, constraint) {
+    this.recordErrorsLevel++
+    const obj = constraint.validationFunction.execute(focusNode, valueNode, constraint)
+    this.recordErrorsLevel--
+
+    let errorFound = false
+    const objs = Array.isArray(obj) ? obj : [obj]
+    for (const item of objs) {
+      const objError = this.createResultFromObject(item, constraint, focusNode, valueNode)
+      errorFound = errorFound || objError
+    }
+    return errorFound
   }
 
   maxErrorsReached () {
@@ -269,25 +135,149 @@ class ValidationEngine {
     }
   }
 
-  withSubstitutions (messageNode, constraint) {
-    const message = constraint.component.parameters.reduce((message, param) => {
-      const paramName = localName(param.value)
-      const paramValue = nodeLabel(constraint.getParameterValue(param))
-      return message
-        .replace(`{$${paramName}}`, paramValue)
-        .replace(`{?${paramName}}`, paramValue)
-    }, messageNode.value)
-
-    return this.factory.literal(message, messageNode.language || messageNode.datatype)
-  }
-
   getReport () {
     if (this.validationError) {
       error('Validation Failure: ' + this.validationError)
       throw (this.validationError)
     } else {
-      return new ValidationReport(this.results, { factory: this.factory, ns: this.context.ns })
+      return new ValidationReport(this.reportPointer, { factory: this.factory, ns: this.context.ns })
     }
+  }
+
+  /**
+   * Creates all the validation result nodes and messages for the result of applying the validation logic
+   * of a constraints against a node.
+   * Result passed as the first argument can be false, a resultMessage or a validation result object.
+   * If none of these values is passed no error result or error message will be created.
+   */
+  createResultFromObject (validationResult, constraint, focusNode, valueNode) {
+    const { sh } = this.context.ns
+
+    const validationResultObj = this.normalizeValidationResult(validationResult, valueNode)
+
+    // Validation was successful. No result.
+    if (!validationResultObj) {
+      return false
+    }
+
+    // Nested validation results are currently discarded.
+    if (this.recordErrorsLevel > 0) {
+      return true
+    }
+
+    const result = this.createResult(constraint, focusNode)
+
+    if (validationResultObj.path) {
+      result.addOut(sh.resultPath, validationResultObj.path)
+      this.copyNestedStructure(validationResultObj.path)
+    } else if (constraint.shape.isPropertyShape) {
+      result.addOut(sh.resultPath, constraint.shape.path)
+      this.copyNestedStructure(constraint.shape.path)
+    }
+
+    if (validationResultObj.value) {
+      result.addOut(sh.value, validationResultObj.value)
+      this.copyNestedStructure(validationResultObj.value)
+    } else if (valueNode) {
+      result.addOut(sh.value, valueNode)
+      this.copyNestedStructure(valueNode)
+    }
+
+    const messages = this.createResultMessages(validationResultObj, constraint)
+    for (const message of messages) {
+      result.addOut(sh.resultMessage, message)
+    }
+
+    return true
+  }
+
+  /**
+   * Validators can return a boolean, a string (message) or a validation result object.
+   * This function normalizes all of them as a validation result object.
+   *
+   * Returns null if validation was successful.
+   */
+  normalizeValidationResult (validationResult, valueNode) {
+    if (validationResult === false) {
+      return { value: valueNode }
+    } else if (typeof validationResult === 'string') {
+      return { message: validationResult, value: valueNode }
+    } else if (typeof validationResult === 'object') {
+      return validationResult
+    } else {
+      return null
+    }
+  }
+
+  /**
+   * Creates a new BlankNode holding the SHACL validation result, adding the default
+   * properties for the constraint, focused node and value node
+   */
+  createResult (constraint, focusNode) {
+    const { rdf, sh } = this.context.ns
+    const severity = constraint.shape.severity
+    const sourceConstraintComponent = constraint.component.node
+    const sourceShape = constraint.shape.shapeNode
+    const resultId = this.reportPointer.blankNode()
+    this.reportPointer.addOut(sh.result, resultId)
+    const result = this.reportPointer.node(resultId)
+
+    result
+      .addOut(rdf.type, sh.ValidationResult)
+      .addOut(sh.resultSeverity, severity)
+      .addOut(sh.sourceConstraintComponent, sourceConstraintComponent)
+      .addOut(sh.sourceShape, sourceShape)
+      .addOut(sh.focusNode, focusNode)
+
+    this.copyNestedStructure(sourceShape)
+    this.copyNestedStructure(focusNode)
+
+    return result
+  }
+
+  copyNestedStructure (subject) {
+    const structureQuads = extractStructure(this.context.$shapes.dataset, subject)
+    for (const quad of structureQuads) {
+      this.reportPointer.dataset.add(quad)
+    }
+  }
+
+  /**
+   * Creates a result message from the validation result and the message pattern in the constraint
+   */
+  createResultMessages (validationResult, constraint) {
+    const { $shapes, ns } = this.context
+    const { sh } = ns
+
+    let messages = []
+
+    // 1. Try to get message from the validation result
+    if (validationResult.message) {
+      messages = [this.factory.literal(validationResult.message)]
+    }
+
+    // 2. Try to get message from the shape itself
+    if (messages.length === 0) {
+      messages = $shapes
+        .node(constraint.shape.shapeNode)
+        .out(sh.message)
+        .terms
+    }
+
+    // 3. Try to get message from the constraint component validator
+    if (messages.length === 0) {
+      messages = constraint.componentMessages.map((m) => this.factory.literal(m))
+    }
+
+    // 4. Try to get message from the constraint component node
+    if (messages.length === 0) {
+      messages = $shapes
+        .node(constraint.component.node)
+        .out(sh.message)
+        .terms
+    }
+
+    return messages.map(message => withSubstitutions(message, constraint, this.factory))
   }
 }
 
@@ -321,6 +311,18 @@ function nodeLabel (node) {
   }
 
   return node.value
+}
+
+function withSubstitutions (messageTerm, constraint, factory) {
+  const message = constraint.component.parameters.reduce((message, param) => {
+    const paramName = localName(param.value)
+    const paramValue = nodeLabel(constraint.getParameterValue(param))
+    return message
+      .replace(`{$${paramName}}`, paramValue)
+      .replace(`{?${paramName}}`, paramValue)
+  }, messageTerm.value)
+
+  return factory.literal(message, messageTerm.language || messageTerm.datatype)
 }
 
 module.exports = ValidationEngine
