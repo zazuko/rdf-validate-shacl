@@ -20,7 +20,7 @@ class ValidationEngine {
     this.reportPointer = clownface({
       dataset: this.factory.dataset(),
       factory: this.factory,
-      term: this.factory.blankNode('report'),
+      term: this.factory.blankNode('report')
     }).addOut(rdf.type, sh.ValidationReport)
   }
 
@@ -113,7 +113,7 @@ class ValidationEngine {
     }
   }
 
-  validateValueNodeAgainstConstraint(focusNode, valueNode, constraint) {
+  validateValueNodeAgainstConstraint (focusNode, valueNode, constraint) {
     this.recordErrorsLevel++
     const obj = constraint.validationFunction.execute(focusNode, valueNode, constraint)
     this.recordErrorsLevel--
