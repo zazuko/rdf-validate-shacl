@@ -32,7 +32,7 @@ class ValidationEngine {
    * If none of these values is passed no error result or error message will be created.
    */
   createResultFromObject (validationResult, constraint, focusNode, valueNode) {
-    const { sh, xsd } = this.context.ns
+    const { sh } = this.context.ns
 
     const validationResultObj = this.normalizeValidationResult(validationResult, valueNode)
 
@@ -64,10 +64,9 @@ class ValidationEngine {
       this.copyNestedStructure(valueNode)
     }
 
-    if (validationResultObj.message) {
-      result.addOut(sh.resultMessage, this.factory.literal(validationResultObj.message, xsd.string))
-    } else {
-      this.createResultMessages(result, constraint)
+    const messages = this.createResultMessages(validationResultObj, constraint)
+    for (const message of messages) {
+      result.addOut(sh.resultMessage, message)
     }
 
     return true
@@ -126,24 +125,33 @@ class ValidationEngine {
   }
 
   /**
-   * Creates a result message from the result and the message pattern in the constraint
+   * Creates a result message from the validation result and the message pattern in the constraint
    */
-  createResultMessages (result, constraint) {
+  createResultMessages (validationResult, constraint) {
     const { $shapes, ns } = this.context
     const { sh } = ns
 
-    // 1. Try to get message from the shape itself
-    let messages = $shapes
-      .node(constraint.shape.shapeNode)
-      .out(sh.message)
-      .terms
+    let messages = []
 
-    // 2. Try to get message from the constraint component validator
+    // 1. Try to get message from the validation result
+    if (validationResult.message) {
+      messages = [this.factory.literal(validationResult.message)]
+    }
+
+    // 2. Try to get message from the shape itself
+    if (messages.length === 0) {
+      messages = $shapes
+        .node(constraint.shape.shapeNode)
+        .out(sh.message)
+        .terms
+    }
+
+    // 3. Try to get message from the constraint component validator
     if (messages.length === 0) {
       messages = constraint.componentMessages.map((m) => this.factory.literal(m))
     }
 
-    // 3. Try to get message from the constraint component node
+    // 4. Try to get message from the constraint component node
     if (messages.length === 0) {
       messages = $shapes
         .node(constraint.component.node)
@@ -151,10 +159,7 @@ class ValidationEngine {
         .terms
     }
 
-    for (const message of messages) {
-      const str = withSubstitutions(message, constraint, this.factory)
-      result.addOut(sh.resultMessage, str)
-    }
+    return messages.map(message => withSubstitutions(message, constraint, this.factory))
   }
 
   /**
@@ -310,16 +315,16 @@ function nodeLabel (node) {
   return node.value
 }
 
-function withSubstitutions (messageNode, constraint, factory) {
+function withSubstitutions (messageTerm, constraint, factory) {
   const message = constraint.component.parameters.reduce((message, param) => {
     const paramName = localName(param.value)
     const paramValue = nodeLabel(constraint.getParameterValue(param))
     return message
       .replace(`{$${paramName}}`, paramValue)
       .replace(`{?${paramName}}`, paramValue)
-  }, messageNode.value)
+  }, messageTerm.value)
 
-  return factory.literal(message, messageNode.language || messageNode.datatype)
+  return factory.literal(message, messageTerm.language || messageTerm.datatype)
 }
 
 module.exports = ValidationEngine
