@@ -232,13 +232,9 @@ class ValidationEngine {
           break
         }
 
-        // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
         this.recordErrorsLevel++
-        // }
         const obj = validationFunction.execute(focusNode, valueNode, constraint)
-        // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
         this.recordErrorsLevel--
-        // }
 
         let iterationError = false
         const objs = Array.isArray(obj) ? obj : [obj]
@@ -256,13 +252,9 @@ class ValidationEngine {
 
       return errorFound
     } else {
-      // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
       this.recordErrorsLevel++
-      // }
       const obj = validationFunction.execute(focusNode, null, constraint)
-      // if (validationFunction.funcName === "validateAnd" || validationFunction.funcName === "validateOr" || validationFunction.funcName === "validateNot") {
       this.recordErrorsLevel--
-      // }
 
       let errorFound = false
       const objs = Array.isArray(obj) ? obj : [obj]
