@@ -65,6 +65,10 @@ class ValidationResult {
   get sourceShape () {
     return this.cf.out(this.ns.sh.sourceShape).term || null
   }
+
+  get value () {
+    return this.cf.out(this.ns.sh.value).term || null
+  }
 }
 
 module.exports = ValidationReport
