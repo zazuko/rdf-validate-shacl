@@ -26,6 +26,126 @@ class ValidationEngine {
   }
 
   /**
+   * Validates the data graph against the shapes graph
+   *
+   * @param {Clownface} dataGraph
+   */
+  validateAll (dataGraph) {
+    if (this.maxErrorsReached()) return true
+
+    this.validationError = null
+    try {
+      this.initReport()
+      let foundError = false
+      const shapes = this.context.shapesGraph.shapesWithTarget
+      for (const shape of shapes) {
+        const focusNodes = shape.getTargetNodes(dataGraph)
+        for (const focusNode of focusNodes) {
+          if (this.validateNodeAgainstShape(focusNode, shape, dataGraph)) {
+            foundError = true
+          }
+        }
+      }
+      return foundError
+    } catch (e) {
+      this.validationError = e
+      return true // Really? Why do we even return a boolean here?
+    }
+  }
+
+  /**
+   * Returns true if any violation has been found
+   */
+  validateNodeAgainstShape (focusNode, shape, dataGraph) {
+    if (this.maxErrorsReached()) return true
+
+    if (shape.deactivated) return false
+
+    const valueNodes = shape.getValueNodes(focusNode, dataGraph)
+    let errorFound = false
+    for (const constraint of shape.constraints) {
+      if (this.validateNodeAgainstConstraint(focusNode, valueNodes, constraint, dataGraph)) {
+        errorFound = true
+      }
+    }
+    return errorFound
+  }
+
+  validateNodeAgainstConstraint (focusNode, valueNodes, constraint, dataGraph) {
+    const { sh } = this.context.ns
+
+    if (this.maxErrorsReached()) return true
+
+    // If constraint is `sh:property`, follow `sh:property` and validate each value against the property shape
+    if (sh.PropertyConstraintComponent.equals(constraint.component.node)) {
+      let errorFound = false
+      for (const valueNode of valueNodes) {
+        if (this.validateNodeAgainstShape(valueNode, this.context.shapesGraph.getShape(constraint.paramValue), dataGraph)) {
+          errorFound = true
+        }
+      }
+      return errorFound
+    }
+
+    if (!constraint.validationFunction) {
+      throw new Error('Cannot find validator for constraint component ' + constraint.component.node.value)
+    }
+
+    if (constraint.isValidationFunctionGeneric) {
+      // Generic sh:validator is called for each value node separately
+      let errorFound = false
+      for (const valueNode of valueNodes) {
+        if (this.maxErrorsReached()) {
+          break
+        }
+
+        const valueNodeError = this.validateValueNodeAgainstConstraint(focusNode, valueNode, constraint)
+
+        if (valueNodeError) {
+          this.violationsCount++
+        }
+
+        errorFound = errorFound || valueNodeError
+      }
+
+      return errorFound
+    } else {
+      return this.validateValueNodeAgainstConstraint(focusNode, null, constraint)
+    }
+  }
+
+  validateValueNodeAgainstConstraint(focusNode, valueNode, constraint) {
+    this.recordErrorsLevel++
+    const obj = constraint.validationFunction.execute(focusNode, valueNode, constraint)
+    this.recordErrorsLevel--
+
+    let errorFound = false
+    const objs = Array.isArray(obj) ? obj : [obj]
+    for (const item of objs) {
+      const objError = this.createResultFromObject(item, constraint, focusNode, valueNode)
+      errorFound = errorFound || objError
+    }
+    return errorFound
+  }
+
+  maxErrorsReached () {
+    if (this.maxErrors) {
+      return this.violationsCount >= this.maxErrors
+    } else {
+      return false
+    }
+  }
+
+  getReport () {
+    if (this.validationError) {
+      error('Validation Failure: ' + this.validationError)
+      throw (this.validationError)
+    } else {
+      return new ValidationReport(this.reportPointer, { factory: this.factory, ns: this.context.ns })
+    }
+  }
+
+  /**
    * Creates all the validation result nodes and messages for the result of applying the validation logic
    * of a constraints against a node.
    * Result passed as the first argument can be false, a resultMessage or a validation result object.
@@ -160,126 +280,6 @@ class ValidationEngine {
     }
 
     return messages.map(message => withSubstitutions(message, constraint, this.factory))
-  }
-
-  /**
-   * Validates the data graph against the shapes graph
-   *
-   * @param {Clownface} dataGraph
-   */
-  validateAll (dataGraph) {
-    if (this.maxErrorsReached()) return true
-
-    this.validationError = null
-    try {
-      this.initReport()
-      let foundError = false
-      const shapes = this.context.shapesGraph.shapesWithTarget
-      for (const shape of shapes) {
-        const focusNodes = shape.getTargetNodes(dataGraph)
-        for (const focusNode of focusNodes) {
-          if (this.validateNodeAgainstShape(focusNode, shape, dataGraph)) {
-            foundError = true
-          }
-        }
-      }
-      return foundError
-    } catch (e) {
-      this.validationError = e
-      return true // Really? Why do we even return a boolean here?
-    }
-  }
-
-  /**
-   * Returns true if any violation has been found
-   */
-  validateNodeAgainstShape (focusNode, shape, dataGraph) {
-    if (this.maxErrorsReached()) return true
-
-    if (shape.deactivated) return false
-
-    const valueNodes = shape.getValueNodes(focusNode, dataGraph)
-    let errorFound = false
-    for (const constraint of shape.constraints) {
-      if (this.validateNodeAgainstConstraint(focusNode, valueNodes, constraint, dataGraph)) {
-        errorFound = true
-      }
-    }
-    return errorFound
-  }
-
-  validateNodeAgainstConstraint (focusNode, valueNodes, constraint, dataGraph) {
-    const { sh } = this.context.ns
-
-    if (this.maxErrorsReached()) return true
-
-    // If constraint is `sh:property`, follow `sh:property` and validate each value against the property shape
-    if (sh.PropertyConstraintComponent.equals(constraint.component.node)) {
-      let errorFound = false
-      for (const valueNode of valueNodes) {
-        if (this.validateNodeAgainstShape(valueNode, this.context.shapesGraph.getShape(constraint.paramValue), dataGraph)) {
-          errorFound = true
-        }
-      }
-      return errorFound
-    }
-
-    if (!constraint.validationFunction) {
-      throw new Error('Cannot find validator for constraint component ' + constraint.component.node.value)
-    }
-
-    if (constraint.isValidationFunctionGeneric) {
-      // Generic sh:validator is called for each value node separately
-      let errorFound = false
-      for (const valueNode of valueNodes) {
-        if (this.maxErrorsReached()) {
-          break
-        }
-
-        const valueNodeError = this.validateValueNodeAgainstConstraint(focusNode, valueNode, constraint)
-
-        if (valueNodeError) {
-          this.violationsCount++
-        }
-
-        errorFound = errorFound || valueNodeError
-      }
-
-      return errorFound
-    } else {
-      return this.validateValueNodeAgainstConstraint(focusNode, null, constraint)
-    }
-  }
-
-  validateValueNodeAgainstConstraint(focusNode, valueNode, constraint) {
-    this.recordErrorsLevel++
-    const obj = constraint.validationFunction.execute(focusNode, valueNode, constraint)
-    this.recordErrorsLevel--
-
-    let errorFound = false
-    const objs = Array.isArray(obj) ? obj : [obj]
-    for (const item of objs) {
-      const objError = this.createResultFromObject(item, constraint, focusNode, valueNode)
-      errorFound = errorFound || objError
-    }
-    return errorFound
-  }
-
-  maxErrorsReached () {
-    if (this.maxErrors) {
-      return this.violationsCount >= this.maxErrors
-    } else {
-      return false
-    }
-  }
-
-  getReport () {
-    if (this.validationError) {
-      error('Validation Failure: ' + this.validationError)
-      throw (this.validationError)
-    } else {
-      return new ValidationReport(this.reportPointer, { factory: this.factory, ns: this.context.ns })
-    }
   }
 }
 
