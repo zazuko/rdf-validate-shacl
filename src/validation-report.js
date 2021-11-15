@@ -1,4 +1,3 @@
-const clownface = require('clownface')
 const { prepareNamespaces } = require('./namespaces')
 
 /**
@@ -10,15 +9,15 @@ class ValidationReport {
     this.factory = options.factory || require('@rdfjs/dataset')
     this.ns = options.ns || prepareNamespaces(this.factory)
 
-    const { rdf, sh, xsd } = this.ns
+    const { sh, xsd } = this.ns
 
+    this.pointer = pointer
     this.term = pointer.term
     this.dataset = pointer.dataset
 
-    // Prepare report dataset
-    // TODO: This probybly doesn't have anything to do here
-    const resultNodes = pointer.node(sh.ValidationResult).in(rdf.type).terms
-    const conforms = resultNodes.length === 0
+    const resultsPointer = pointer.out(sh.result)
+
+    const conforms = resultsPointer.terms.length === 0
     pointer.addOut(sh.conforms, this.factory.literal(conforms.toString(), xsd.boolean))
 
     /**
@@ -30,44 +29,44 @@ class ValidationReport {
      * List of `ValidationResult` with details about nodes that don't conform to
      * the given shapes.
      */
-    this.results = resultNodes.map(resultNode => new ValidationResult(resultNode, this.dataset, this.ns))
+    this.results = resultsPointer.toArray().map(resultPointer => new ValidationResult(resultPointer, this.ns))
   }
 }
 
 class ValidationResult {
-  constructor (term, dataset, ns) {
-    this.term = term
-    this.dataset = dataset
+  constructor (pointer, ns) {
+    this.pointer = pointer
+    this.term = pointer.term
+    this.dataset = pointer.dataset
     this.ns = ns
-    this.cf = clownface({ dataset: dataset }).node(term)
   }
 
   get message () {
-    return this.cf.out(this.ns.sh.resultMessage).terms || []
+    return this.pointer.out(this.ns.sh.resultMessage).terms || []
   }
 
   get path () {
-    return this.cf.out(this.ns.sh.resultPath).term || null
+    return this.pointer.out(this.ns.sh.resultPath).term || null
   }
 
   get focusNode () {
-    return this.cf.out(this.ns.sh.focusNode).term || null
+    return this.pointer.out(this.ns.sh.focusNode).term || null
   }
 
   get severity () {
-    return this.cf.out(this.ns.sh.resultSeverity).term || null
+    return this.pointer.out(this.ns.sh.resultSeverity).term || null
   }
 
   get sourceConstraintComponent () {
-    return this.cf.out(this.ns.sh.sourceConstraintComponent).term || null
+    return this.pointer.out(this.ns.sh.sourceConstraintComponent).term || null
   }
 
   get sourceShape () {
-    return this.cf.out(this.ns.sh.sourceShape).term || null
+    return this.pointer.out(this.ns.sh.sourceShape).term || null
   }
 
   get value () {
-    return this.cf.out(this.ns.sh.value).term || null
+    return this.pointer.out(this.ns.sh.value).term || null
   }
 }
 
