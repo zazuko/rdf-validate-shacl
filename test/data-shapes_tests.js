@@ -120,6 +120,11 @@ function normalizeReport (report, expectedReport) {
     report.out(sh.result).deleteOut(sh.resultMessage)
   }
 
+  // Delete nested results
+  report.out(sh.result).out(sh.detail).out().deleteOut()
+  report.out(sh.result).out(sh.detail).deleteOut()
+  report.out(sh.result).deleteOut(sh.detail)
+
   // Split shared blank nodes into distinct blank node structures
   splitSharedBlankNodes(report.dataset)
 }

@@ -12,6 +12,7 @@ class ValidationEngine {
     this.recordErrorsLevel = 0
     this.violationsCount = 0
     this.validationError = null
+    this.nestedResults = {}
   }
 
   initReport () {
@@ -114,17 +115,28 @@ class ValidationEngine {
   }
 
   validateValueNodeAgainstConstraint (focusNode, valueNode, constraint) {
+    const { sh } = this.context.ns
+
     this.recordErrorsLevel++
-    const obj = constraint.validationFunction.execute(focusNode, valueNode, constraint)
+    const validationOutput = constraint.validationFunction.execute(focusNode, valueNode, constraint)
+
+    const validationResults = Array.isArray(validationOutput) ? validationOutput : [validationOutput]
+    const results = validationResults
+      .map(validationResult => this.createResultFromObject(validationResult, constraint, focusNode, valueNode))
+      .filter(Boolean)
+
+    if (this.recordErrorsLevel === 1) {
+      for (const result of results) {
+        copyResult(result, this.reportPointer, sh.result)
+      }
+    } else {
+      // Gather nested results. They will be linked later when their parent result is created.
+      this.nestedResults[this.recordErrorsLevel] = (this.nestedResults[this.recordErrorsLevel] || []).concat(results)
+    }
+
     this.recordErrorsLevel--
 
-    let errorFound = false
-    const objs = Array.isArray(obj) ? obj : [obj]
-    for (const item of objs) {
-      const objError = this.createResultFromObject(item, constraint, focusNode, valueNode)
-      errorFound = errorFound || objError
-    }
-    return errorFound
+    return results.length > 0
   }
 
   maxErrorsReached () {
@@ -157,30 +169,25 @@ class ValidationEngine {
 
     // Validation was successful. No result.
     if (!validationResultObj) {
-      return false
-    }
-
-    // Nested validation results are currently discarded.
-    if (this.recordErrorsLevel > 0) {
-      return true
+      return null
     }
 
     const result = this.createResult(constraint, focusNode)
 
     if (validationResultObj.path) {
       result.addOut(sh.resultPath, validationResultObj.path)
-      this.copyNestedStructure(validationResultObj.path)
+      this.copyNestedStructure(validationResultObj.path, result)
     } else if (constraint.shape.isPropertyShape) {
       result.addOut(sh.resultPath, constraint.shape.path)
-      this.copyNestedStructure(constraint.shape.path)
+      this.copyNestedStructure(constraint.shape.path, result)
     }
 
     if (validationResultObj.value) {
       result.addOut(sh.value, validationResultObj.value)
-      this.copyNestedStructure(validationResultObj.value)
+      this.copyNestedStructure(validationResultObj.value, result)
     } else if (valueNode) {
       result.addOut(sh.value, valueNode)
-      this.copyNestedStructure(valueNode)
+      this.copyNestedStructure(valueNode, result)
     }
 
     const messages = this.createResultMessages(validationResultObj, constraint)
@@ -188,7 +195,7 @@ class ValidationEngine {
       result.addOut(sh.resultMessage, message)
     }
 
-    return true
+    return result
   }
 
   /**
@@ -218,9 +225,8 @@ class ValidationEngine {
     const severity = constraint.shape.severity
     const sourceConstraintComponent = constraint.component.node
     const sourceShape = constraint.shape.shapeNode
-    const resultId = this.reportPointer.blankNode()
-    this.reportPointer.addOut(sh.result, resultId)
-    const result = this.reportPointer.node(resultId)
+    const resultId = this.factory.blankNode()
+    const result = clownface({ dataset: this.factory.dataset(), term: resultId })
 
     result
       .addOut(rdf.type, sh.ValidationResult)
@@ -229,16 +235,28 @@ class ValidationEngine {
       .addOut(sh.sourceShape, sourceShape)
       .addOut(sh.focusNode, focusNode)
 
-    this.copyNestedStructure(sourceShape)
-    this.copyNestedStructure(focusNode)
+    this.copyNestedStructure(sourceShape, result)
+    this.copyNestedStructure(focusNode, result)
+
+    const children = this.nestedResults[this.recordErrorsLevel + 1]
+    if (children) {
+      if (sourceConstraintComponent.equals(sh.NodeConstraintComponent)) {
+        for (const child of children) {
+          copyResult(child, result, sh.detail)
+        }
+      } else {
+        // Any nested result from non-sh:node shapes are currently droped
+      }
+      this.nestedResults[this.recordErrorsLevel + 1] = []
+    }
 
     return result
   }
 
-  copyNestedStructure (subject) {
+  copyNestedStructure (subject, result) {
     const structureQuads = extractStructure(this.context.$shapes.dataset, subject)
     for (const quad of structureQuads) {
-      this.reportPointer.dataset.add(quad)
+      result.dataset.add(quad)
     }
   }
 
@@ -323,6 +341,16 @@ function withSubstitutions (messageTerm, constraint, factory) {
   }, messageTerm.value)
 
   return factory.literal(message, messageTerm.language || messageTerm.datatype)
+}
+
+// Copy a standalone result pointer/dataset into another pointer/dataset
+// and link it with the given predicate
+function copyResult (resultPointer, targetPointer, predicate) {
+  for (const quad of resultPointer.dataset) {
+    targetPointer.dataset.add(quad)
+  }
+
+  targetPointer.addOut(predicate, resultPointer)
 }
 
 module.exports = ValidationEngine
