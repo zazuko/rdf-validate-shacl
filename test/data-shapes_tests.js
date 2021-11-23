@@ -27,6 +27,8 @@ before(async () => {
 
   describe('Official data-shapes test suite', () => {
     testCases.forEach((testCase) => it(testCase.label, async function () {
+      this.timeout(3000)
+
       if (SKIPPED.includes(testCase.node.value)) {
         this.skip()
       } else {
