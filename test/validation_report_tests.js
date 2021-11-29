@@ -113,6 +113,11 @@ describe('ValidationResult', () => {
           .addOut(sh.sourceShape, RDF.namedNode('source shape'))
           .addOut(sh.sourceConstraintComponent, RDF.namedNode('source constraint component'))
           .addOut(sh.value, RDF.namedNode('value'))
+          .addOut(sh.detail, nested => {
+            nested.addOut(rdf.type, sh.ValidationResult)
+              .addOut(sh.resultPath, RDF.namedNode('nested result path'))
+              .addOut(sh.resultMessage, RDF.literal('nested result message'))
+          })
       })
     const report = new ValidationReport(pointer)
 
@@ -144,6 +149,13 @@ describe('ValidationResult', () => {
 
     it('returns value term', () => {
       assert.deepStrictEqual(result.value, RDF.namedNode('value'))
+    })
+
+    it('returns detail results', () => {
+      const detail = result.detail
+      const nestedResult = detail[0]
+      assert.deepStrictEqual(nestedResult.path, RDF.namedNode('nested result path'))
+      assert.deepStrictEqual(nestedResult.message, [RDF.literal('nested result message')])
     })
   })
 })
