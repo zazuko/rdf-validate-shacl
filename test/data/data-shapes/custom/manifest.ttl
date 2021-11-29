@@ -9,4 +9,5 @@
 	mf:include <uniqueLang-false.ttl> ;
 	mf:include <multiLevelInheritance.ttl> ;
 	mf:include <multiLevelInheritanceWithImplicitTarget.ttl> ;
+	mf:include <targetNodeDoesNotExist.ttl> ;
 	.

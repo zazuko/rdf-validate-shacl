@@ -273,7 +273,14 @@ class Shape {
       results.addAll(getInstancesOf(dataGraph.node(targetClass), ns))
     })
 
-    results.addAll(this.shapeNodePointer.out(sh.targetNode).terms)
+    const targetNodes = this.shapeNodePointer.out(sh.targetNode).terms
+      // Ensure the node exists in data graph before considering it as a validatable target node
+      .filter(targetNode => (
+        dataGraph.dataset.match(targetNode).length > 0 ||
+        dataGraph.dataset.match(null, targetNode).length > 0 ||
+        dataGraph.dataset.match(null, null, targetNode).length > 0
+      ))
+    results.addAll(targetNodes)
 
     this.shapeNodePointer
       .out(sh.targetSubjectsOf)
