@@ -1,6 +1,14 @@
 
 # Changelog
 
+## 0.4.0 (2021-11-29)
+
+* Provide nested validation results of `sh:node` using `sh:detail`
+  [[#82](https://github.com/zazuko/rdf-validate-shacl/pull/82)]
+* Do not fail validation when target node doesn't exist in data graph
+  [[#66](https://github.com/zazuko/rdf-validate-shacl/issues/66)]
+  [[#81](https://github.com/zazuko/rdf-validate-shacl/pull/81)]
+
 ## 0.3.3 (2021-11-10)
 
 * Add `ValidationResult.value` getter
