@@ -1,0 +1,40 @@
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <http://example.org/shacl-test/> .
+
+ex:InvalidInstance1
+  ex:first ex:InvalidInstance1_first ;
+.
+
+ex:InvalidInstance1_first
+  ex:name "Hello", "Hi" ;
+.
+
+ex:TestShape
+  a sh:NodeShape ;
+  rdfs:label "Test shape" ;
+  sh:property ex:TestShape-first ;
+  sh:targetNode ex:InvalidInstance1 ;
+.
+
+ex:TestShape-first
+  sh:path ex:first ;
+  sh:node ex:NestedShape ;
+.
+
+ex:NestedShape
+  sh:property ex:Nested_name ;
+  sh:property ex:Nested_address ;
+.
+
+ex:Nested_name
+  a sh:PropertyShape ;
+  sh:path ex:name ;
+  sh:maxCount 1 ;
+.
+
+ex:Nested_address
+  a sh:PropertyShape ;
+  sh:path ex:address ;
+  sh:minCount 1 ;
+.

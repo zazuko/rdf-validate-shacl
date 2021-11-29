@@ -68,6 +68,11 @@ class ValidationResult {
   get value () {
     return this.pointer.out(this.ns.sh.value).term || null
   }
+
+  get detail () {
+    return this.pointer.out(this.ns.sh.detail).map(detailResult =>
+      new ValidationResult(detailResult, this.ns))
+  }
 }
 
 module.exports = ValidationReport

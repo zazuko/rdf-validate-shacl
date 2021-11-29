@@ -27,6 +27,8 @@ before(async () => {
 
   describe('Official data-shapes test suite', () => {
     testCases.forEach((testCase) => it(testCase.label, async function () {
+      this.timeout(3000)
+
       if (SKIPPED.includes(testCase.node.value)) {
         this.skip()
       } else {
@@ -119,6 +121,11 @@ function normalizeReport (report, expectedReport) {
   if (expectedReport.out(sh.result).out(sh.resultMessage).values.length === 0) {
     report.out(sh.result).deleteOut(sh.resultMessage)
   }
+
+  // Delete nested results
+  report.out(sh.result).out(sh.detail).out().deleteOut()
+  report.out(sh.result).out(sh.detail).deleteOut()
+  report.out(sh.result).deleteOut(sh.detail)
 
   // Split shared blank nodes into distinct blank node structures
   splitSharedBlankNodes(report.dataset)
