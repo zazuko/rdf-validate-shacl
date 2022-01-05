@@ -102,7 +102,7 @@ function validateEqualsNode (context, focusNode, valueNode, constraint) {
   let solutions = 0
   getPathObjects(context.$data, focusNode, equalsNode).forEach(value => {
     solutions++
-    if (compareTerms(focusNode, value, context.ns) !== 0) {
+    if (!value.equals(focusNode)) {
       results.push({ value })
     }
   })
@@ -204,23 +204,17 @@ function validateMaxCountProperty (context, focusNode, valueNode, constraint) {
 function validateMaxExclusive (context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const maxExclusiveNode = constraint.getParameterValue(sh.maxExclusive)
+  const comp = compareTerms(valueNode, maxExclusiveNode, context.ns)
 
-  return (
-    valueNode.termType === 'Literal' &&
-    checkTimezone(valueNode, maxExclusiveNode, context.ns) &&
-    fromRdf(valueNode) < fromRdf(maxExclusiveNode)
-  )
+  return (comp !== null && comp < 0)
 }
 
 function validateMaxInclusive (context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const maxInclusiveNode = constraint.getParameterValue(sh.maxInclusive)
+  const comp = compareTerms(valueNode, maxInclusiveNode, context.ns)
 
-  return (
-    valueNode.termType === 'Literal' &&
-    checkTimezone(valueNode, maxInclusiveNode, context.ns) &&
-    fromRdf(valueNode) <= fromRdf(maxInclusiveNode)
-  )
+  return (comp !== null && comp <= 0)
 }
 
 function validateMaxLength (context, focusNode, valueNode, constraint) {
@@ -245,35 +239,17 @@ function validateMinCountProperty (context, focusNode, valueNode, constraint) {
 function validateMinExclusive (context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const minExclusiveNode = constraint.getParameterValue(sh.minExclusive)
+  const comp = compareTerms(valueNode, minExclusiveNode, context.ns)
 
-  return (
-    valueNode.termType === 'Literal' &&
-    checkTimezone(valueNode, minExclusiveNode, context.ns) &&
-    fromRdf(valueNode) > fromRdf(minExclusiveNode)
-  )
+  return (comp !== null && comp > 0)
 }
 
 function validateMinInclusive (context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const minInclusiveNode = constraint.getParameterValue(sh.minInclusive)
+  const comp = compareTerms(valueNode, minInclusiveNode, context.ns)
 
-  return (
-    valueNode.termType === 'Literal' &&
-    checkTimezone(valueNode, minInclusiveNode, context.ns) &&
-    fromRdf(valueNode) >= fromRdf(minInclusiveNode)
-  )
-}
-
-// Checks that, if one of the compared nodes is a datetime with a timezone,
-// the other one is too. A datetime with a specified timezone is not comparable
-// with a datetime without a timezone.
-function checkTimezone (valueNode, constraintNode, ns) {
-  return hasTimezone(valueNode, ns) === hasTimezone(constraintNode, ns)
-}
-
-function hasTimezone (node, ns) {
-  const pattern = /^.*(((\+|-)\d{2}:\d{2})|Z)$/
-  return ns.xsd.dateTime.equals(node.datatype) && pattern.test(node.value)
+  return (comp !== null && comp >= 0)
 }
 
 function validateMinLength (context, focusNode, valueNode, constraint) {
@@ -443,48 +419,44 @@ function validateXone (context, focusNode, valueNode, constraint) {
 
 // Private helper functions
 
+/**
+ * Compare 2 terms.
+ *
+ * Returns:
+ * - a negative number if term1 occurs before term2
+ * - a positive number if the term1 occurs after term2
+ * - 0 if they are equivalent
+ * - null if they are not comparable
+ */
 function compareTerms (term1, term2, ns) {
-  if (!term1) {
-    return !term2 ? 0 : 1
-  } else if (!term2) {
-    return -1
-  }
-
-  // TODO: Does not handle the case where nodes cannot be compared
-  const bothLiterals = term1.termType === 'Literal' && term2.termType === 'Literal'
-  const differentDatatypes = bothLiterals && (
-    (term1.datatype !== null) !== (term2.datatype !== null) ||
-    (term1.datatype && term2.datatype && !term1.datatype.equals(term2.datatype))
-  )
-  if (differentDatatypes) {
+  if (!term1 || !term2 || term1.termType !== 'Literal' || term2.termType !== 'Literal') {
     return null
   }
 
-  const bt = term1.termType.localeCompare(term2.termType)
-  if (bt !== 0) {
-    return bt
+  // Check that if one of the compared nodes is a datetime with a timezone,
+  // the other one is too. A datetime with a specified timezone is not comparable
+  // with a datetime without a timezone.
+  if (hasTimezone(term1, ns) !== hasTimezone(term2, ns)) {
+    return null
   }
 
-  // TODO: Does not handle numeric or date comparison
-  const bv = term1.value.localeCompare(term2.value)
-  if (bv !== 0) {
-    return bv
+  const value1 = fromRdf(term1)
+  const value2 = fromRdf(term2)
+
+  if (typeof value1 !== typeof value2) {
+    return null
   }
 
-  if (term1.termType !== 'Literal') {
-    return 0
+  if (typeof value1 === 'string') {
+    return value1.localeCompare(value2)
+  } else {
+    return value1 - value2
   }
+}
 
-  const bd = term1.datatype.value.localeCompare(term2.datatype.value)
-  if (bd !== 0) {
-    return bd
-  }
-
-  if (ns.rdf.langString.equals(term1.datatype)) {
-    return term1.language.localeCompare(term2.language)
-  }
-
-  return 0
+function hasTimezone (node, ns) {
+  const pattern = /^.*(((\+|-)\d{2}:\d{2})|Z)$/
+  return ns.xsd.dateTime.equals(node.datatype) && pattern.test(node.value)
 }
 
 module.exports = {
