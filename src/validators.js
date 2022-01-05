@@ -102,7 +102,7 @@ function validateEqualsNode (context, focusNode, valueNode, constraint) {
   let solutions = 0
   getPathObjects(context.$data, focusNode, equalsNode).forEach(value => {
     solutions++
-    if (compareNodes(focusNode, value, context.ns) !== 0) {
+    if (compareTerms(focusNode, value, context.ns) !== 0) {
       results.push({ value })
     }
   })
@@ -164,7 +164,7 @@ function validateLessThanProperty (context, focusNode, valueNode, constraint) {
   const invalidValues = []
   for (const value of values) {
     for (const referenceValue of referenceValues) {
-      const c = compareNodes(value, referenceValue, context.ns)
+      const c = compareTerms(value, referenceValue, context.ns)
       if (c === null || c >= 0) {
         invalidValues.push({ value })
       }
@@ -183,7 +183,7 @@ function validateLessThanOrEqualsProperty (context, focusNode, valueNode, constr
   const invalidValues = []
   for (const value of values) {
     for (const referenceValue of referenceValues) {
-      const c = compareNodes(value, referenceValue, context.ns)
+      const c = compareTerms(value, referenceValue, context.ns)
       if (c === null || c > 0) {
         invalidValues.push({ value })
       }
@@ -443,48 +443,48 @@ function validateXone (context, focusNode, valueNode, constraint) {
 
 // Private helper functions
 
-function compareNodes (node1, node2, ns) {
-  // TODO: Does not handle the case where nodes cannot be compared
-  if (node1 && node1.termType === 'Literal' && node2 && node2.termType === 'Literal') {
-    if ((node1.datatype != null) !== (node2.datatype != null)) {
-      return null
-    } else if (node1.datatype && node2.datatype && node1.datatype.value !== node2.datatype.value) {
-      return null
-    }
-  }
-  return compareTerms(node1, node2, ns)
-}
-
-function compareTerms (t1, t2, ns) {
-  if (!t1) {
-    return !t2 ? 0 : 1
-  } else if (!t2) {
+function compareTerms (term1, term2, ns) {
+  if (!term1) {
+    return !term2 ? 0 : 1
+  } else if (!term2) {
     return -1
   }
 
-  const bt = t1.termType.localeCompare(t2.termType)
+  // TODO: Does not handle the case where nodes cannot be compared
+  const bothLiterals = term1.termType === 'Literal' && term2.termType === 'Literal'
+  const differentDatatypes = bothLiterals && (
+    (term1.datatype !== null) !== (term2.datatype !== null) ||
+    (term1.datatype && term2.datatype && !term1.datatype.equals(term2.datatype))
+  )
+  if (differentDatatypes) {
+    return null
+  }
+
+  const bt = term1.termType.localeCompare(term2.termType)
   if (bt !== 0) {
     return bt
-  } else {
-    // TODO: Does not handle numeric or date comparison
-    const bv = t1.value.localeCompare(t2.value)
-    if (bv !== 0) {
-      return bv
-    } else {
-      if (t1.termType === 'Literal') {
-        const bd = t1.datatype.value.localeCompare(t2.datatype.value)
-        if (bd !== 0) {
-          return bd
-        } else if (ns.rdf.langString.equals(t1.datatype)) {
-          return t1.language.localeCompare(t2.language)
-        } else {
-          return 0
-        }
-      } else {
-        return 0
-      }
-    }
   }
+
+  // TODO: Does not handle numeric or date comparison
+  const bv = term1.value.localeCompare(term2.value)
+  if (bv !== 0) {
+    return bv
+  }
+
+  if (term1.termType !== 'Literal') {
+    return 0
+  }
+
+  const bd = term1.datatype.value.localeCompare(term2.datatype.value)
+  if (bd !== 0) {
+    return bd
+  }
+
+  if (ns.rdf.langString.equals(term1.datatype)) {
+    return term1.language.localeCompare(term2.language)
+  }
+
+  return 0
 }
 
 module.exports = {
