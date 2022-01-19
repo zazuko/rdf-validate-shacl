@@ -1,6 +1,12 @@
 
 # Changelog
 
+## 0.4.1 (2022-01-19)
+
+* Fix comparison of non-string terms with `sh:lessThan`, `sh:lessThanOrEquals`, etc.
+  [[#84]](https://github.com/zazuko/rdf-validate-shacl/pull/84)
+  [[#83]](https://github.com/zazuko/rdf-validate-shacl/issues/83)
+
 ## 0.4.0 (2021-11-29)
 
 * Provide nested validation results of `sh:node` using `sh:detail`
