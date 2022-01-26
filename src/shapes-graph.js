@@ -247,10 +247,10 @@ class Shape {
    * Property path object
    */
   get pathObject () {
-    const { $shapes, ns } = this.context
+    const { $shapes, ns, allowNamedNodeInList } = this.context
 
     if (this._pathObject === undefined) {
-      this._pathObject = this.path ? extractPropertyPath($shapes.node(this.path), ns) : null
+      this._pathObject = this.path ? extractPropertyPath($shapes.node(this.path), ns, allowNamedNodeInList) : null
     }
 
     return this._pathObject

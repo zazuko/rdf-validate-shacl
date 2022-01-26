@@ -5,47 +5,50 @@ const NodeSet = require('./node-set')
  * property path object.
  *
  * @param {Clownface} pathNode - Pointer to the start node of the path
+ * @param {object} ns - Namespaces
+ * @param {boolean} allowNamedNodeInList - Allow named node in lists. By default, only blank nodes are allowed
  * @return Property path object
  */
-function extractPropertyPath (pathNode, ns) {
-  if (pathNode.term.termType === 'NamedNode') {
+function extractPropertyPath (pathNode, ns, allowNamedNodeInList) {
+  if (pathNode.term.termType === 'NamedNode' && !allowNamedNodeInList) {
     return pathNode.term
   }
 
-  if (pathNode.term.termType === 'BlankNode') {
+  if (pathNode.term.termType === 'BlankNode' || pathNode.term.termType === 'NamedNode') {
     const first = pathNode.out(ns.rdf.first).term
     if (first) {
       const paths = [...pathNode.list()]
-      return paths.map(path => extractPropertyPath(path, ns))
+      return paths.map(path => extractPropertyPath(path, ns, allowNamedNodeInList))
     }
 
     const alternativePath = pathNode.out(ns.sh.alternativePath)
     if (alternativePath.term) {
       const paths = [...alternativePath.list()]
-      return { or: paths.map(path => extractPropertyPath(path, ns)) }
+      return { or: paths.map(path => extractPropertyPath(path, ns, allowNamedNodeInList)) }
     }
 
     const zeroOrMorePath = pathNode.out(ns.sh.zeroOrMorePath)
     if (zeroOrMorePath.term) {
-      return { zeroOrMore: extractPropertyPath(zeroOrMorePath, ns) }
+      return { zeroOrMore: extractPropertyPath(zeroOrMorePath, ns, allowNamedNodeInList) }
     }
 
     const oneOrMorePath = pathNode.out(ns.sh.oneOrMorePath)
     if (oneOrMorePath.term) {
-      return { oneOrMore: extractPropertyPath(oneOrMorePath, ns) }
+      return { oneOrMore: extractPropertyPath(oneOrMorePath, ns, allowNamedNodeInList) }
     }
 
     const zeroOrOnePath = pathNode.out(ns.sh.zeroOrOnePath)
     if (zeroOrOnePath.term) {
-      return { zeroOrOne: extractPropertyPath(zeroOrOnePath, ns) }
+      return { zeroOrOne: extractPropertyPath(zeroOrOnePath, ns, allowNamedNodeInList) }
     }
 
     const inversePath = pathNode.out(ns.sh.inversePath)
     if (inversePath.term) {
-      return { inverse: extractPropertyPath(inversePath, ns) }
+      return { inverse: extractPropertyPath(inversePath, ns, allowNamedNodeInList) }
     }
-  }
 
+    return pathNode.term
+  }
   throw new Error(`Unsupported SHACL path: ${pathNode.term.value}`)
 }
 
