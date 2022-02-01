@@ -1,6 +1,12 @@
 
 # Changelog
 
+## 0.4.2 (2022-01-31)
+
+* Add `allowNamedNodeInList` option to allow named nodes in sequence property paths
+  [[#69]](https://github.com/zazuko/rdf-validate-shacl/issues/69)
+  [[#87]](https://github.com/zazuko/rdf-validate-shacl/pull/87)
+
 ## 0.4.1 (2022-01-19)
 
 * Fix comparison of non-string terms with `sh:lessThan`, `sh:lessThanOrEquals`, etc.
