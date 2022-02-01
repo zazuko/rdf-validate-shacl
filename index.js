@@ -19,6 +19,7 @@ class SHACLValidator {
 
     this.factory = options.factory || require('@rdfjs/dataset')
     this.ns = prepareNamespaces(this.factory)
+    this.allowNamedNodeInList = options.allowNamedNodeInList === undefined ? false : options.allowNamedNodeInList
     this.loadShapes(shapes)
     this.validationEngine = new ValidationEngine(this, options)
 

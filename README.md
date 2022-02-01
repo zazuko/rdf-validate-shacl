@@ -65,6 +65,7 @@ parameter. The available options are:
 - `factory`: RDF/JS data factory (must have a `.dataset()` method)
 - `maxErrors`: max number of errors after which the validation process should
   stop. By default, it only stops after all the errors are found.
+- `allowNamedNodeInList`: SHACL only allows blank nodes in property lists. To allow named nodes to occur in property lists, set this value to `true`.
 
 ## Running the tests
 
