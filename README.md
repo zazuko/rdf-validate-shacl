@@ -1,7 +1,8 @@
 
 # rdf-validate-shacl
 
-Validate RDF data purely in JavaScript. An implementation of the [W3C SHACL](https://www.w3.org/TR/shacl/) specification on top of the [RDFJS](https://www.w3.org/TR/shacl/) stack. 
+Validate RDF data purely in JavaScript. An implementation of the [W3C SHACL](https://www.w3.org/TR/shacl/)
+specification on top of the [RDFJS](https://www.w3.org/TR/shacl/) stack.
 
 [![npm version](https://badge.fury.io/js/rdf-validate-shacl.svg)](https://badge.fury.io/js/rdf-validate-shacl)
 
@@ -65,7 +66,8 @@ parameter. The available options are:
 - `factory`: RDF/JS data factory (must have a `.dataset()` method)
 - `maxErrors`: max number of errors after which the validation process should
   stop. By default, it only stops after all the errors are found.
-- `allowNamedNodeInList`: SHACL only allows blank nodes in property lists. To allow named nodes to occur in property lists, set this value to `true`.
+- `allowNamedNodeInList`: SHACL only allows blank nodes in property lists. To
+  allow named nodes to occur in property lists, set this value to `true`.
 
 ## Running the tests
 
