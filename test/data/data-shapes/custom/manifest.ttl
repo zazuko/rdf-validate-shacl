@@ -11,5 +11,4 @@
 	mf:include <multiLevelInheritanceWithImplicitTarget.ttl> ;
 	mf:include <targetNodeDoesNotExist.ttl> ;
 	mf:include <lessThan-moreTypes.ttl> ;
-	mf:include <namedNodeInPaths.ttl> ;
 	.

@@ -21,17 +21,19 @@ describe('configuration', () => {
     assert.strictEqual(report2.results.length, 1)
   })
 
-  it('allows named nodes in lists', async () => {
-    const dataFile = path.join(__dirname, '/data/data-shapes/custom/namedNodeInPaths.ttl')
+  it('allows named nodes in list paths', async () => {
+    const dataFile = path.join(__dirname, '/data/namedNodeInPaths.ttl')
     const data = await loadDataset(dataFile)
     const shapes = data
 
     const validator1 = new SHACLValidator(shapes, { allowNamedNodeInList: true })
     const report1 = validator1.validate(data)
     assert.strictEqual(report1.conforms, true)
+
     const validator2 = new SHACLValidator(shapes, { allowNamedNodeInList: false })
     const report2 = validator2.validate(data)
     assert.strictEqual(report2.conforms, false)
+
     const validator3 = new SHACLValidator(shapes)
     const report3 = validator3.validate(data)
     assert.strictEqual(report3.conforms, false)

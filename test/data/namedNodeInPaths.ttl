@@ -1,0 +1,29 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+<shape>
+  a sh:NodeShape ;
+  sh:targetClass <Person> ;
+  sh:property [
+    sh:minCount 1 ;
+    sh:path <list-path> ;
+  ] ;
+.
+
+<list-path>
+  a rdf:List ;
+  rdf:first <address> ;
+  rdf:rest <list-path-rest> ;
+.
+
+<list-path-rest>
+  a rdf:List ;
+  rdf:first <city> ;
+  rdf:rest rdf:nil ;
+.
+
+<bob> a <Person> ;
+  <address> [
+    <city> "Paris" ;
+  ] ;
+.
