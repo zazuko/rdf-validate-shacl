@@ -1,0 +1,41 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix schema: <http://schema.org/> .
+@prefix cc: <https://cube-creator.zazuko.com/vocab#> .
+@prefix md: <https://cube-creator.zazuko.com/shared-dimensions/vocab#> .
+@prefix meta: <https://cube.link/meta/> .
+
+_:NextLevelShape a sh:NodeShape ;
+    sh:property
+        [
+            sh:datatype xsd:string ;
+            sh:minCount 1 ;
+            sh:name "Name" ;
+            sh:path schema:name ;
+        ],
+        [
+            sh:name "Next level" ;
+            sh:node _:NextLevelShape ;
+            sh:path meta:nextInHierarchy ;
+        ] .
+
+_:HierarchyShape
+    sh:property
+        [
+            sh:name "Next level" ;
+            sh:node _:NextLevelShape ;
+            sh:path meta:nextInHierarchy ;
+        ] ;
+    sh:targetClass meta:Hierarchy .
+
+<hierarchy/ch-canton-station>
+    a meta:Hierarchy ;
+    meta:nextInHierarchy
+        [
+            sh:path
+                [
+                    sh:inversePath schema:containedInPlace ;
+                ] ;
+        ] .

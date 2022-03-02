@@ -9,7 +9,7 @@ const rootPath = path.join(__dirname, '.')
 
 describe('nested results', () => {
   it('provides nested validation results using `sh:detail`', async () => {
-    const dataPath = path.join(rootPath, 'nested-shape.ttl')
+    const dataPath = path.join(rootPath, 'data/nested-shape.ttl')
     const data = await loadDataset(dataPath)
     const shapes = data
 
@@ -28,5 +28,17 @@ describe('nested results', () => {
     const nestedResult1 = result.detail[1]
     assert.strictEqual(nestedResult1.path.value, 'http://example.org/shacl-test/address')
     assert.strictEqual(nestedResult1.message[0].value, 'Less than 1 values')
+  })
+})
+
+describe('recursive shapes', () => {
+  it('creates a report successfully', async () => {
+    const dataPath = path.join(rootPath, 'data/nested-blank-nodes.ttl')
+    const graph = await loadDataset(dataPath)
+
+    const validator = new SHACLValidator(graph, { factory: rdf })
+    const report = validator.validate(graph)
+
+    assert.strictEqual(report.conforms, false)
   })
 })

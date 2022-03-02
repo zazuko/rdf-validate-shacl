@@ -1,3 +1,4 @@
+const TermSet = require('@rdfjs/term-set')
 const NodeSet = require('./node-set')
 
 /**
@@ -8,15 +9,16 @@ const NodeSet = require('./node-set')
  * @param {Term} startNode
  * @returns Array of quads
  */
-function extractStructure (dataset, startNode) {
-  if (startNode.termType !== 'BlankNode') {
+function extractStructure (dataset, startNode, visited = new TermSet()) {
+  if (startNode.termType !== 'BlankNode' || visited.has(startNode)) {
     return []
   }
 
+  visited.add(startNode)
   const quads = [...dataset.match(startNode, null, null)]
 
   const children = quads.map((quad) => {
-    return extractStructure(dataset, quad.object)
+    return extractStructure(dataset, quad.object, visited)
   })
 
   return quads.concat(...children)
