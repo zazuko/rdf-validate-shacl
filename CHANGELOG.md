@@ -1,6 +1,11 @@
 
 # Changelog
 
+## 0.4.3 (2022-03-03)
+
+* Fix stack overflow caused by recursive shape when creating report
+  [[#91]](https://github.com/zazuko/rdf-validate-shacl/pull/91)
+
 ## 0.4.2 (2022-01-31)
 
 * Add `allowNamedNodeInList` option to allow named nodes in sequence property paths
