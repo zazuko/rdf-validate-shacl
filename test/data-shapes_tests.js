@@ -26,7 +26,7 @@ const SKIPPED = [
 before(async () => {
   const testCases = await loadTestCases(testDir)
 
-  function runTests() {
+  function runTests () {
     testCases.forEach((testCase) => it(testCase.label, async function () {
       this.timeout(3000)
 
@@ -106,7 +106,7 @@ class TestCase {
     }
   }
 
-  async execute ({  useRdfExt = false } = {}) {
+  async execute ({ useRdfExt = false } = {}) {
     let data = await this.getData()
     let shapes = await this.getShapes()
 
