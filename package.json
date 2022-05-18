@@ -7,7 +7,8 @@
     "lint": "standard",
     "test": "mocha",
     "test-ci": "npm run lint && nyc --reporter=lcov --reporter=text npm test",
-    "generate-vocabularies": "node scripts/generate-vocabularies.js"
+    "generate-vocabularies": "node scripts/generate-vocabularies.js",
+    "release": "changeset publish"
   },
   "author": "Zazuko (https://zazuko.com)",
   "repository": {
@@ -30,6 +31,7 @@
     "rdf-validate-datatype": "^0.1.4"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.22.0",
     "@rdfjs/parser-n3": "^1.1.4",
     "@zazuko/rdf-vocabularies": "^2021.9.22-3",
     "get-stream": "^6.0.0",
