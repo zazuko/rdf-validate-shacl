@@ -4,6 +4,7 @@
 const assert = require('assert')
 const path = require('path')
 const $rdf = require('rdf-ext')
+const rdfCore = require('@rdfjs/dataset')
 const clownface = require('clownface')
 const namespace = require('@rdfjs/namespace')
 const resource = require('rdf-utils-dataset/resource')
@@ -25,7 +26,7 @@ const SKIPPED = [
 before(async () => {
   const testCases = await loadTestCases(testDir)
 
-  describe('Official data-shapes test suite', () => {
+  function runTests () {
     testCases.forEach((testCase) => it(testCase.label, async function () {
       this.timeout(3000)
 
@@ -35,6 +36,14 @@ before(async () => {
         await testCase.execute()
       }
     }))
+  }
+
+  describe('Official data-shapes test suite', () => {
+    runTests()
+  })
+
+  describe('Official data-shapes test suite (rdf-ext)', () => {
+    runTests({ useRdfExt: true })
   })
 })
 
@@ -97,9 +106,15 @@ class TestCase {
     }
   }
 
-  async execute () {
-    const data = await this.getData()
-    const shapes = await this.getShapes()
+  async execute ({ useRdfExt = false } = {}) {
+    let data = await this.getData()
+    let shapes = await this.getShapes()
+
+    if (!useRdfExt) {
+      data = rdfCore.dataset([...data])
+      shapes = rdfCore.dataset([...shapes])
+    }
+
     const validator = new SHACLValidator(shapes, { factory: $rdf })
     const expectedReport = this.node.out(mf.result)
 
