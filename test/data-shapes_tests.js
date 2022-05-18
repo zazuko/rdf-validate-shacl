@@ -4,6 +4,7 @@
 const assert = require('assert')
 const path = require('path')
 const $rdf = require('rdf-ext')
+const rdfCore = require('@rdfjs/dataset')
 const clownface = require('clownface')
 const namespace = require('@rdfjs/namespace')
 const resource = require('rdf-utils-dataset/resource')
@@ -98,8 +99,8 @@ class TestCase {
   }
 
   async execute () {
-    const data = await this.getData()
-    const shapes = await this.getShapes()
+    const data = rdfCore.dataset([...await this.getData()])
+    const shapes = rdfCore.dataset([...await this.getShapes()])
     const validator = new SHACLValidator(shapes, { factory: $rdf })
     const expectedReport = this.node.out(mf.result)
 
