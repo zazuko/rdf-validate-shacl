@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.4.5
+
+### Patch Changes
+
+- 9047c2b: Update `rdf-validate-datatype` to v0.1.5 (fixes validation of `xsd:gYear`)
+
 ### Patch Changes
 
 - f4bcd30: When used with a dataset strictly implementing `DatasetCore` interface, `sh:targetNode` would not validate those nodes
