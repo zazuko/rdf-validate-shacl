@@ -1,0 +1,18 @@
+name: Add issues to shared backlog
+
+on:
+  issues:
+    types:
+      - opened
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v0.4.0
+        with:
+          project-url: https://github.com/orgs/zazuko/projects/23
+          github-token: ${{ secrets.BACKLOG_PAT }}
