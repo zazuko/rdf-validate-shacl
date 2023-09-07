@@ -1,10 +1,12 @@
 /* eslint-env mocha */
-const path = require('path')
-const assert = require('assert')
-const $rdf = require('rdf-ext')
-const { loadDataset } = require('./utils')
+import path from 'path'
+import assert from 'assert'
+import url from 'url'
+import $rdf from 'rdf-ext'
+import SHACLValidator from '../index.js'
+import { loadDataset } from './utils.js'
 
-const SHACLValidator = require('../index')
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 const rootPath = path.join(__dirname, '/data')
 
 describe('validate specific node with specific shape', () => {

@@ -1,12 +1,13 @@
-const { prepareNamespaces } = require('./namespaces')
+import factory from './defaultEnv.js'
+import { prepareNamespaces } from './namespaces.js'
 
 /**
  * Result of a SHACL validation.
  */
 class ValidationReport {
-  constructor (pointer, options) {
+  constructor(pointer, options) {
     options = options || {}
-    this.factory = options.factory || require('@rdfjs/dataset')
+    this.factory = options.factory || factory
     this.ns = options.ns || prepareNamespaces(this.factory)
 
     const { sh, xsd } = this.ns
@@ -34,45 +35,45 @@ class ValidationReport {
 }
 
 class ValidationResult {
-  constructor (pointer, ns) {
+  constructor(pointer, ns) {
     this.pointer = pointer
     this.term = pointer.term
     this.dataset = pointer.dataset
     this.ns = ns
   }
 
-  get message () {
+  get message() {
     return this.pointer.out(this.ns.sh.resultMessage).terms || []
   }
 
-  get path () {
+  get path() {
     return this.pointer.out(this.ns.sh.resultPath).term || null
   }
 
-  get focusNode () {
+  get focusNode() {
     return this.pointer.out(this.ns.sh.focusNode).term || null
   }
 
-  get severity () {
+  get severity() {
     return this.pointer.out(this.ns.sh.resultSeverity).term || null
   }
 
-  get sourceConstraintComponent () {
+  get sourceConstraintComponent() {
     return this.pointer.out(this.ns.sh.sourceConstraintComponent).term || null
   }
 
-  get sourceShape () {
+  get sourceShape() {
     return this.pointer.out(this.ns.sh.sourceShape).term || null
   }
 
-  get value () {
+  get value() {
     return this.pointer.out(this.ns.sh.value).term || null
   }
 
-  get detail () {
+  get detail() {
     return this.pointer.out(this.ns.sh.detail).map(detailResult =>
       new ValidationResult(detailResult, this.ns))
   }
 }
 
-module.exports = ValidationReport
+export default ValidationReport

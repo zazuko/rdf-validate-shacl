@@ -1,4 +1,4 @@
-const NodeSet = require('./node-set')
+import NodeSet from './node-set.js'
 
 /**
  * Extracts all the nodes of a property path from a graph and returns a
@@ -9,7 +9,7 @@ const NodeSet = require('./node-set')
  * @param {boolean} allowNamedNodeInList - Allow named node in lists. By default, only blank nodes are allowed
  * @return Property path object
  */
-function extractPropertyPath (pathNode, ns, allowNamedNodeInList) {
+export function extractPropertyPath(pathNode, ns, allowNamedNodeInList) {
   if (pathNode.term.termType === 'NamedNode' && !allowNamedNodeInList) {
     return pathNode.term
   }
@@ -61,11 +61,11 @@ function extractPropertyPath (pathNode, ns, allowNamedNodeInList) {
  * @param {object} path - Property path object
  * @return {Term[]} - Nodes that are reachable through the property path
  */
-function getPathObjects (graph, subject, path) {
+export function getPathObjects(graph, subject, path) {
   return [...getPathObjectsSet(graph, subject, path)]
 }
 
-function getPathObjectsSet (graph, subject, path) {
+function getPathObjectsSet(graph, subject, path) {
   if (path.termType === 'NamedNode') {
     return getNamedNodePathObjects(graph, subject, path)
   } else if (Array.isArray(path)) {
@@ -85,11 +85,11 @@ function getPathObjectsSet (graph, subject, path) {
   }
 }
 
-function getNamedNodePathObjects (graph, subject, path) {
+function getNamedNodePathObjects(graph, subject, path) {
   return new NodeSet(graph.node(subject).out(path).terms)
 }
 
-function getSequencePathObjects (graph, subject, path) {
+function getSequencePathObjects(graph, subject, path) {
   // TODO: This one is really unreadable
   let subjects = new NodeSet([subject])
   for (const pathItem of path) {
@@ -99,11 +99,11 @@ function getSequencePathObjects (graph, subject, path) {
   return subjects
 }
 
-function getOrPathObjects (graph, subject, path) {
+function getOrPathObjects(graph, subject, path) {
   return new NodeSet(flatMap(path.or, pathItem => getPathObjects(graph, subject, pathItem)))
 }
 
-function getInversePathObjects (graph, subject, path) {
+function getInversePathObjects(graph, subject, path) {
   if (path.inverse.termType !== 'NamedNode') {
     throw new Error('Unsupported: Inverse paths only work for named nodes')
   }
@@ -111,23 +111,23 @@ function getInversePathObjects (graph, subject, path) {
   return new NodeSet(graph.node(subject).in(path.inverse).terms)
 }
 
-function getZeroOrOnePathObjects (graph, subject, path) {
+function getZeroOrOnePathObjects(graph, subject, path) {
   const pathObjects = getPathObjectsSet(graph, subject, path.zeroOrOne)
   pathObjects.add(subject)
   return pathObjects
 }
 
-function getZeroOrMorePathObjects (graph, subject, path) {
+function getZeroOrMorePathObjects(graph, subject, path) {
   const pathObjects = walkPath(graph, subject, path.zeroOrMore)
   pathObjects.add(subject)
   return pathObjects
 }
 
-function getOneOrMorePathObjects (graph, subject, path) {
+function getOneOrMorePathObjects(graph, subject, path) {
   return walkPath(graph, subject, path.oneOrMore)
 }
 
-function walkPath (graph, subject, path, visited) {
+function walkPath(graph, subject, path, visited) {
   visited = visited || new NodeSet()
 
   visited.add(subject)
@@ -146,11 +146,6 @@ function walkPath (graph, subject, path, visited) {
   return pathValues
 }
 
-function flatMap (arr, func) {
+function flatMap(arr, func) {
   return [...arr].reduce((acc, x) => acc.concat(func(x)), [])
-}
-
-module.exports = {
-  extractPropertyPath,
-  getPathObjects
 }

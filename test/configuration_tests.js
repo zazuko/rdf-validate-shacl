@@ -1,8 +1,11 @@
 /* eslint-env mocha */
-const assert = require('assert')
-const path = require('path')
-const SHACLValidator = require('../index')
-const { loadDataset } = require('./utils')
+import assert from 'assert'
+import path from 'path'
+import url from 'url'
+import SHACLValidator from '../index.js'
+import { loadDataset } from './utils.js'
+
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 
 describe('configuration', () => {
   it('stops after `maxErrors` is reached', async () => {

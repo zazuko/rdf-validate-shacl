@@ -1,10 +1,13 @@
 /* eslint-env mocha */
-const assert = require('assert')
-const RDF = require('rdf-ext')
-const clownface = require('clownface')
+import assert from 'assert'
+import RDF from 'rdf-ext'
+import clownface from 'clownface'
+import Environment from '@rdfjs/environment'
+import NamespaceFactory from '@rdfjs/environment/NamespaceFactory.js'
+import ns from '../src/namespaces.js'
+import ValidationReport from '../src/validation-report.js'
 
-const { rdf, sh } = require('../src/namespaces')
-const ValidationReport = require('../src/validation-report')
+const { rdf, sh } = ns
 
 describe('ValidationReport', () => {
   it('returns a validation report', () => {
@@ -66,21 +69,27 @@ describe('ValidationReport', () => {
         return original
       }
     }
-    const factory = {
-      dataset: wrap('dataset'),
-      quad: wrap('quad'),
-      blankNode: wrap('blankNode'),
-      namedNode: wrap('namedNode'),
-      literal: wrap('literal')
+    class DataFactory {
+      init() {
+        this.dataset = wrap('dataset')
+        this.quad = wrap('quad')
+        this.blankNode = wrap('blankNode')
+        this.namedNode = wrap('namedNode')
+        this.literal = wrap('literal')
+      }
     }
+    const factory = new Environment([
+      NamespaceFactory,
+      DataFactory,
+    ])
     const pointer = clownface({ dataset: RDF.dataset(), factory }).blankNode()
     const report = new ValidationReport(pointer, { factory })
 
     report.dataset.forEach((quad) => {
-      assert.ok(quad._test === 'test')
-      assert.ok(quad.subject._test === 'test')
-      assert.ok(quad.predicate._test === 'test')
-      assert.ok(quad.object._test === 'test')
+      assert.equal(quad._test, 'test')
+      assert.equal(quad.subject._test, 'test')
+      assert.equal(quad.predicate._test, 'test')
+      assert.equal(quad.object._test, 'test')
     })
   })
 })
