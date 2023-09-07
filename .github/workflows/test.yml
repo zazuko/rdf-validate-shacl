@@ -15,5 +15,5 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: npm ci
-      - run: npm run test-ci
+      - run: npx c8 npm test
       - uses: codecov/codecov-action@v1
