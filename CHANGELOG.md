@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.5.0
+
+### Minor Changes
+
+- b8d1719: Update to ESM
+
 ## 0.4.5
 
 ### Patch Changes
