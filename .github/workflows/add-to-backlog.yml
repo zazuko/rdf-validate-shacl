@@ -5,6 +5,8 @@ on:
     types:
       - opened
   pull_request:
+    branches-ignore: 
+      - "dependabot/**/*"
     types:
       - opened
 
