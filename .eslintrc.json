@@ -1,0 +1,3 @@
+{
+  "extends": [ "@tpluscode/eslint-config/js" ]
+}

@@ -1,9 +1,11 @@
 /* eslint-env mocha */
-const path = require('path')
-const assert = require('assert')
-const { loadDataset } = require('./utils')
+import path from 'path'
+import assert from 'assert'
+import * as url from 'url'
+import SHACLValidator from '../index.js'
+import { loadDataset } from './utils.js'
 
-const SHACLValidator = require('../index')
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 const rootPath = path.join(__dirname, '/data/validation-message')
 
 describe('validation messages', () => {
@@ -84,7 +86,7 @@ describe('validation messages', () => {
     const messages = new Set(report.results[0].message.map(({ value, language }) => ({ value, language })))
     assert.deepStrictEqual(messages, new Set([
       { value: 'My custom validation message', language: 'en' },
-      { value: 'Mon message de validation', language: 'fr' }
+      { value: 'Mon message de validation', language: 'fr' },
     ]))
   })
 })

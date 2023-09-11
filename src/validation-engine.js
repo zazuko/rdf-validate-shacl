@@ -1,10 +1,12 @@
-const clownface = require('clownface')
-const ValidationReport = require('./validation-report')
-const { extractStructure } = require('./dataset-utils')
-const error = require('debug')('validation-enging::error')
+import clownface from 'clownface'
+import debug from 'debug'
+import ValidationReport from './validation-report.js'
+import { extractStructure } from './dataset-utils.js'
+
+const error = debug('validation-enging::error')
 
 class ValidationEngine {
-  constructor (context, options) {
+  constructor(context, options) {
     this.context = context
     this.factory = context.factory
     this.maxErrors = options.maxErrors
@@ -15,13 +17,13 @@ class ValidationEngine {
     this.nestedResults = {}
   }
 
-  initReport () {
+  initReport() {
     const { rdf, sh } = this.context.ns
 
     this.reportPointer = clownface({
       dataset: this.factory.dataset(),
       factory: this.factory,
-      term: this.factory.blankNode('report')
+      term: this.factory.blankNode('report'),
     }).addOut(rdf.type, sh.ValidationReport)
   }
 
@@ -30,7 +32,7 @@ class ValidationEngine {
    *
    * @param {Clownface} dataGraph
    */
-  validateAll (dataGraph) {
+  validateAll(dataGraph) {
     if (this.maxErrorsReached()) return true
 
     this.validationError = null
@@ -56,7 +58,7 @@ class ValidationEngine {
   /**
    * Returns true if any violation has been found
    */
-  validateNodeAgainstShape (focusNode, shape, dataGraph) {
+  validateNodeAgainstShape(focusNode, shape, dataGraph) {
     if (this.maxErrorsReached()) return true
 
     if (shape.deactivated) return false
@@ -71,7 +73,7 @@ class ValidationEngine {
     return errorFound
   }
 
-  validateNodeAgainstConstraint (focusNode, valueNodes, constraint, dataGraph) {
+  validateNodeAgainstConstraint(focusNode, valueNodes, constraint, dataGraph) {
     const { sh } = this.context.ns
 
     if (this.maxErrorsReached()) return true
@@ -114,7 +116,7 @@ class ValidationEngine {
     }
   }
 
-  validateValueNodeAgainstConstraint (focusNode, valueNode, constraint) {
+  validateValueNodeAgainstConstraint(focusNode, valueNode, constraint) {
     const { sh } = this.context.ns
 
     this.recordErrorsLevel++
@@ -139,7 +141,7 @@ class ValidationEngine {
     return results.length > 0
   }
 
-  maxErrorsReached () {
+  maxErrorsReached() {
     if (this.maxErrors) {
       return this.violationsCount >= this.maxErrors
     } else {
@@ -147,7 +149,7 @@ class ValidationEngine {
     }
   }
 
-  getReport () {
+  getReport() {
     if (this.validationError) {
       error('Validation Failure: ' + this.validationError)
       throw (this.validationError)
@@ -162,7 +164,7 @@ class ValidationEngine {
    * Result passed as the first argument can be false, a resultMessage or a validation result object.
    * If none of these values is passed no error result or error message will be created.
    */
-  createResultFromObject (validationResult, constraint, focusNode, valueNode) {
+  createResultFromObject(validationResult, constraint, focusNode, valueNode) {
     const { sh } = this.context.ns
 
     const validationResultObj = this.normalizeValidationResult(validationResult, valueNode)
@@ -204,7 +206,7 @@ class ValidationEngine {
    *
    * Returns null if validation was successful.
    */
-  normalizeValidationResult (validationResult, valueNode) {
+  normalizeValidationResult(validationResult, valueNode) {
     if (validationResult === false) {
       return { value: valueNode }
     } else if (typeof validationResult === 'string') {
@@ -220,7 +222,7 @@ class ValidationEngine {
    * Creates a new BlankNode holding the SHACL validation result, adding the default
    * properties for the constraint, focused node and value node
    */
-  createResult (constraint, focusNode) {
+  createResult(constraint, focusNode) {
     const { rdf, sh } = this.context.ns
     const severity = constraint.shape.severity
     const sourceConstraintComponent = constraint.component.node
@@ -253,7 +255,7 @@ class ValidationEngine {
     return result
   }
 
-  copyNestedStructure (subject, result) {
+  copyNestedStructure(subject, result) {
     const structureQuads = extractStructure(this.context.$shapes.dataset, subject)
     for (const quad of structureQuads) {
       result.dataset.add(quad)
@@ -263,7 +265,7 @@ class ValidationEngine {
   /**
    * Creates a result message from the validation result and the message pattern in the constraint
    */
-  createResultMessages (validationResult, constraint) {
+  createResultMessages(validationResult, constraint) {
     const { $shapes, ns } = this.context
     const { sh } = ns
 
@@ -300,7 +302,7 @@ class ValidationEngine {
 }
 
 // TODO: This is not the 100% correct local name algorithm
-function localName (uri) {
+function localName(uri) {
   let index = uri.lastIndexOf('#')
 
   if (index < 0) {
@@ -314,7 +316,7 @@ function localName (uri) {
   return uri.substring(index + 1)
 }
 
-function nodeLabel (node) {
+function nodeLabel(node) {
   if (!node) {
     return 'NULL'
   }
@@ -331,7 +333,7 @@ function nodeLabel (node) {
   return node.value
 }
 
-function withSubstitutions (messageTerm, constraint, factory) {
+function withSubstitutions(messageTerm, constraint, factory) {
   const message = constraint.component.parameters.reduce((message, param) => {
     const paramName = localName(param.value)
     const paramValue = nodeLabel(constraint.getParameterValue(param))
@@ -345,7 +347,7 @@ function withSubstitutions (messageTerm, constraint, factory) {
 
 // Copy a standalone result pointer/dataset into another pointer/dataset
 // and link it with the given predicate
-function copyResult (resultPointer, targetPointer, predicate) {
+function copyResult(resultPointer, targetPointer, predicate) {
   for (const quad of resultPointer.dataset) {
     targetPointer.dataset.add(quad)
   }
@@ -353,4 +355,4 @@ function copyResult (resultPointer, targetPointer, predicate) {
   targetPointer.addOut(predicate, resultPointer)
 }
 
-module.exports = ValidationEngine
+export default ValidationEngine

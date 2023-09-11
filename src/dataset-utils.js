@@ -1,5 +1,5 @@
-const TermSet = require('@rdfjs/term-set')
-const NodeSet = require('./node-set')
+import TermSet from '@rdfjs/term-set'
+import NodeSet from './node-set.js'
 
 /**
  * Extracts all the quads forming the structure under a blank node. Stops at
@@ -9,7 +9,7 @@ const NodeSet = require('./node-set')
  * @param {Term} startNode
  * @returns Array of quads
  */
-function extractStructure (dataset, startNode, visited = new TermSet()) {
+export function extractStructure(dataset, startNode, visited = new TermSet()) {
   if (startNode.termType !== 'BlankNode' || visited.has(startNode)) {
     return []
   }
@@ -31,7 +31,7 @@ function extractStructure (dataset, startNode, visited = new TermSet()) {
  * @param {Object} ns - namespace
  * @returns NodeSet
  */
-function getInstancesOf (cls, ns) {
+export function getInstancesOf(cls, ns) {
   const classes = getSubClassesOf(cls, ns)
   classes.add(cls.term)
 
@@ -52,7 +52,7 @@ function getInstancesOf (cls, ns) {
  *
  * @param {Clownface} cls - pointer to a class
  */
-function getSubClassesOf (cls, ns) {
+export function getSubClassesOf(cls, ns) {
   const subclasses = cls.in(ns.rdfs.subClassOf)
 
   const transubclasses = subclasses.toArray().reduce((acc, subclass) => {
@@ -74,7 +74,7 @@ function getSubClassesOf (cls, ns) {
  * @param {Object} ns - namespace
  * @returns boolean
  */
-function isInstanceOf (instance, cls, ns) {
+export function isInstanceOf(instance, cls, ns) {
   const classes = getSubClassesOf(cls, ns)
   classes.add(cls.term)
 
@@ -89,14 +89,6 @@ function isInstanceOf (instance, cls, ns) {
  * @param {Clownface} listNode - pointer to start of the list
  * @returns Array
  */
-function rdfListToArray (listNode) {
+export function rdfListToArray(listNode) {
   return [...listNode.list()].map(({ term }) => term)
-}
-
-module.exports = {
-  extractStructure,
-  getInstancesOf,
-  getSubClassesOf,
-  isInstanceOf,
-  rdfListToArray
 }

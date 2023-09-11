@@ -1,13 +1,9 @@
-const fs = require('fs')
-const ParserN3 = require('@rdfjs/parser-n3')
-const $rdf = require('rdf-ext')
+import fs from 'fs'
+import ParserN3 from '@rdfjs/parser-n3'
+import $rdf from 'rdf-ext'
 
-async function loadDataset (filePath) {
+export async function loadDataset(filePath) {
   const stream = fs.createReadStream(filePath)
   const parser = new ParserN3({ factory: $rdf })
   return $rdf.dataset().import(parser.import(stream))
-}
-
-module.exports = {
-  loadDataset
 }

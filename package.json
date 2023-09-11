@@ -3,11 +3,10 @@
   "version": "0.4.5",
   "description": "RDF SHACL validator",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "lint": "standard",
+    "lint": "eslint . --ignore-path .gitignore",
     "test": "mocha",
-    "test-ci": "npm run lint && nyc --reporter=lcov --reporter=text npm test",
-    "generate-vocabularies": "node scripts/generate-vocabularies.js",
     "release": "changeset publish"
   },
   "author": "Zazuko (https://zazuko.com)",
@@ -22,33 +21,28 @@
     "validation"
   ],
   "dependencies": {
-    "@rdfjs/dataset": "^1.1.1",
-    "@rdfjs/namespace": "^1.0.0",
-    "@rdfjs/term-set": "^1.1.0",
-    "clownface": "^1.4.0",
+    "@rdfjs/environment": "^0.1.2",
+    "@rdfjs/namespace": "^2.0.0",
+    "@rdfjs/term-set": "^2.0.1",
+    "@vocabulary/sh": "^1.0.1",
+    "clownface": "^2.0.0",
     "debug": "^4.3.2",
     "rdf-literal": "^1.3.0",
     "rdf-validate-datatype": "^0.1.5"
   },
   "devDependencies": {
     "@changesets/cli": "^2.22.0",
-    "@rdfjs/parser-n3": "^1.1.4",
-    "@zazuko/rdf-vocabularies": "^2021.9.22-3",
+    "@rdfjs/parser-n3": "^2.0.1",
+    "@tpluscode/eslint-config": "^0.4.4",
+    "c8": "^8.0.1",
     "get-stream": "^6.0.0",
-    "mocha": "^9.1.3",
-    "nanoid": "^3.1.30",
-    "nyc": "^15.0.1",
-    "rdf-ext": "^1.3.5",
-    "rdf-utils-dataset": "1.1.0",
-    "standard": "^16.0.4"
+    "mocha": "^10.2.0",
+    "nanoid": "^4.0.2",
+    "rdf-ext": "^2.2.0",
+    "rdf-utils-dataset": "^2.0.0"
   },
   "files": [
     "/src",
     "index.js"
-  ],
-  "standard": {
-    "ignore": [
-      "/src/vocabularies/*"
-    ]
-  }
+  ]
 }

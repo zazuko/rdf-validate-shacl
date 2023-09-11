@@ -1,179 +1,178 @@
-
-const validators = require('./validators')
-const { sh } = require('./namespaces')
+import validators from './validators.js'
+import ns from './namespaces.js'
 
 // Constraint to validator registry
-module.exports = {
-  [sh.AndConstraintComponent.value]: {
+export default {
+  [ns.sh.AndConstraintComponent.value]: {
     validator: {
-      func: validators.validateAnd
-    }
+      func: validators.validateAnd,
+    },
   },
-  [sh.ClassConstraintComponent.value]: {
+  [ns.sh.ClassConstraintComponent.value]: {
     validator: {
-      func: validators.validateClass
-    }
+      func: validators.validateClass,
+    },
   },
-  [sh.ClosedConstraintComponent.value]: {
+  [ns.sh.ClosedConstraintComponent.value]: {
     validator: {
       func: validators.validateClosed,
-      message: 'Predicate is not allowed (closed shape)'
-    }
+      message: 'Predicate is not allowed (closed shape)',
+    },
   },
-  [sh.DatatypeConstraintComponent.value]: {
+  [ns.sh.DatatypeConstraintComponent.value]: {
     validator: {
       func: validators.validateDatatype,
-      message: 'Value does not have datatype {$datatype}'
-    }
+      message: 'Value does not have datatype {$datatype}',
+    },
   },
-  [sh.DisjointConstraintComponent.value]: {
+  [ns.sh.DisjointConstraintComponent.value]: {
     validator: {
       func: validators.validateDisjoint,
-      message: 'Value node must not also be one of the values of {$disjoint}'
-    }
+      message: 'Value node must not also be one of the values of {$disjoint}',
+    },
   },
-  [sh.EqualsConstraintComponent.value]: {
+  [ns.sh.EqualsConstraintComponent.value]: {
     nodeValidator: {
       func: validators.validateEqualsNode,
-      message: 'Must have same values as {$equals}'
+      message: 'Must have same values as {$equals}',
     },
     propertyValidator: {
       func: validators.validateEqualsProperty,
-      message: 'Must have same values as {$equals}'
-    }
+      message: 'Must have same values as {$equals}',
+    },
   },
-  [sh.HasValueConstraintComponent.value]: {
+  [ns.sh.HasValueConstraintComponent.value]: {
     nodeValidator: {
       func: validators.validateHasValueNode,
-      message: 'Value must be {$hasValue}'
+      message: 'Value must be {$hasValue}',
     },
     propertyValidator: {
       func: validators.validateHasValueProperty,
-      message: 'Missing expected value {$hasValue}'
-    }
+      message: 'Missing expected value {$hasValue}',
+    },
   },
-  [sh.InConstraintComponent.value]: {
+  [ns.sh.InConstraintComponent.value]: {
     validator: {
       func: validators.validateIn,
-      message: 'Value is not in {$in}'
-    }
+      message: 'Value is not in {$in}',
+    },
   },
-  [sh.LanguageInConstraintComponent.value]: {
+  [ns.sh.LanguageInConstraintComponent.value]: {
     validator: {
       func: validators.validateLanguageIn,
-      message: 'Language does not match any of {$languageIn}'
-    }
+      message: 'Language does not match any of {$languageIn}',
+    },
   },
-  [sh.LessThanConstraintComponent.value]: {
+  [ns.sh.LessThanConstraintComponent.value]: {
     propertyValidator: {
       func: validators.validateLessThanProperty,
-      message: 'Value is not less than value of {$lessThan}'
-    }
+      message: 'Value is not less than value of {$lessThan}',
+    },
   },
-  [sh.LessThanOrEqualsConstraintComponent.value]: {
+  [ns.sh.LessThanOrEqualsConstraintComponent.value]: {
     propertyValidator: {
       func: validators.validateLessThanOrEqualsProperty,
-      message: 'Value is not less than or equal to value of {$lessThanOrEquals}'
-    }
+      message: 'Value is not less than or equal to value of {$lessThanOrEquals}',
+    },
   },
-  [sh.MaxCountConstraintComponent.value]: {
+  [ns.sh.MaxCountConstraintComponent.value]: {
     propertyValidator: {
       func: validators.validateMaxCountProperty,
-      message: 'More than {$maxCount} values'
-    }
+      message: 'More than {$maxCount} values',
+    },
   },
-  [sh.MaxExclusiveConstraintComponent.value]: {
+  [ns.sh.MaxExclusiveConstraintComponent.value]: {
     validator: {
       func: validators.validateMaxExclusive,
-      message: 'Value is not less than {$maxExclusive}'
-    }
+      message: 'Value is not less than {$maxExclusive}',
+    },
   },
-  [sh.MaxInclusiveConstraintComponent.value]: {
+  [ns.sh.MaxInclusiveConstraintComponent.value]: {
     validator: {
       func: validators.validateMaxInclusive,
-      message: 'Value is not less than or equal to {$maxInclusive}'
-    }
+      message: 'Value is not less than or equal to {$maxInclusive}',
+    },
   },
-  [sh.MaxLengthConstraintComponent.value]: {
+  [ns.sh.MaxLengthConstraintComponent.value]: {
     validator: {
       func: validators.validateMaxLength,
-      message: 'Value has more than {$maxLength} characters'
-    }
+      message: 'Value has more than {$maxLength} characters',
+    },
   },
-  [sh.MinCountConstraintComponent.value]: {
+  [ns.sh.MinCountConstraintComponent.value]: {
     propertyValidator: {
       func: validators.validateMinCountProperty,
-      message: 'Less than {$minCount} values'
-    }
+      message: 'Less than {$minCount} values',
+    },
   },
-  [sh.MinExclusiveConstraintComponent.value]: {
+  [ns.sh.MinExclusiveConstraintComponent.value]: {
     validator: {
       func: validators.validateMinExclusive,
-      message: 'Value is not greater than {$minExclusive}'
-    }
+      message: 'Value is not greater than {$minExclusive}',
+    },
   },
-  [sh.MinInclusiveConstraintComponent.value]: {
+  [ns.sh.MinInclusiveConstraintComponent.value]: {
     validator: {
       func: validators.validateMinInclusive,
-      message: 'Value is not greater than or equal to {$minInclusive}'
-    }
+      message: 'Value is not greater than or equal to {$minInclusive}',
+    },
   },
-  [sh.MinLengthConstraintComponent.value]: {
+  [ns.sh.MinLengthConstraintComponent.value]: {
     validator: {
       func: validators.validateMinLength,
-      message: 'Value has less than {$minLength} characters'
-    }
+      message: 'Value has less than {$minLength} characters',
+    },
   },
-  [sh.NodeConstraintComponent.value]: {
+  [ns.sh.NodeConstraintComponent.value]: {
     validator: {
       func: validators.validateNode,
-      message: 'Value does not have shape {$node}'
-    }
+      message: 'Value does not have shape {$node}',
+    },
   },
-  [sh.NodeKindConstraintComponent.value]: {
+  [ns.sh.NodeKindConstraintComponent.value]: {
     validator: {
       func: validators.validateNodeKind,
-      message: 'Value does not have node kind {$nodeKind}'
-    }
+      message: 'Value does not have node kind {$nodeKind}',
+    },
   },
-  [sh.NotConstraintComponent.value]: {
+  [ns.sh.NotConstraintComponent.value]: {
     validator: {
       func: validators.validateNot,
-      message: 'Value does have shape {$not}'
-    }
+      message: 'Value does have shape {$not}',
+    },
   },
-  [sh.OrConstraintComponent.value]: {
+  [ns.sh.OrConstraintComponent.value]: {
     validator: {
-      func: validators.validateOr
-    }
+      func: validators.validateOr,
+    },
   },
-  [sh.PatternConstraintComponent.value]: {
+  [ns.sh.PatternConstraintComponent.value]: {
     validator: {
       func: validators.validatePattern,
-      message: 'Value does not match pattern "{$pattern}"'
-    }
+      message: 'Value does not match pattern "{$pattern}"',
+    },
   },
-  [sh.QualifiedMaxCountConstraintComponent.value]: {
+  [ns.sh.QualifiedMaxCountConstraintComponent.value]: {
     propertyValidator: {
       func: validators.validateQualifiedMaxCountProperty,
-      message: 'More than {$qualifiedMaxCount} values have shape {$qualifiedValueShape}'
-    }
+      message: 'More than {$qualifiedMaxCount} values have shape {$qualifiedValueShape}',
+    },
   },
-  [sh.QualifiedMinCountConstraintComponent.value]: {
+  [ns.sh.QualifiedMinCountConstraintComponent.value]: {
     propertyValidator: {
       func: validators.validateQualifiedMinCountProperty,
-      message: 'Less than {$qualifiedMinCount} values have shape {$qualifiedValueShape}'
-    }
+      message: 'Less than {$qualifiedMinCount} values have shape {$qualifiedValueShape}',
+    },
   },
-  [sh.UniqueLangConstraintComponent.value]: {
+  [ns.sh.UniqueLangConstraintComponent.value]: {
     propertyValidator: {
       func: validators.validateUniqueLangProperty,
-      message: 'Language "{?lang}" used more than once'
-    }
+      message: 'Language "{?lang}" used more than once',
+    },
   },
-  [sh.XoneConstraintComponent.value]: {
+  [ns.sh.XoneConstraintComponent.value]: {
     validator: {
-      func: validators.validateXone
-    }
-  }
+      func: validators.validateXone,
+    },
+  },
 }

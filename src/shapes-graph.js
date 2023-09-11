@@ -16,14 +16,14 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
-const NodeSet = require('./node-set')
-const ValidationFunction = require('./validation-function')
-const validatorsRegistry = require('./validators-registry')
-const { extractPropertyPath, getPathObjects } = require('./property-path')
-const { getInstancesOf, isInstanceOf } = require('./dataset-utils')
+import NodeSet from './node-set.js'
+import ValidationFunction from './validation-function.js'
+import validatorsRegistry from './validators-registry.js'
+import { extractPropertyPath, getPathObjects } from './property-path.js'
+import { getInstancesOf, isInstanceOf } from './dataset-utils.js'
 
 class ShapesGraph {
-  constructor (context) {
+  constructor(context) {
     this.context = context
 
     // Collect all defined constraint components
@@ -43,11 +43,11 @@ class ShapesGraph {
     this._shapes = new Map()
   }
 
-  getComponentWithParameter (parameter) {
+  getComponentWithParameter(parameter) {
     return this._parametersMap.get(parameter.value)
   }
 
-  getShape (shapeNode) {
+  getShape(shapeNode) {
     if (!this._shapes.has(shapeNode.value)) {
       const shape = new Shape(this.context, shapeNode)
       this._shapes.set(shapeNode.value, shape)
@@ -56,7 +56,7 @@ class ShapesGraph {
     return this._shapes.get(shapeNode.value)
   }
 
-  get shapeNodesWithConstraints () {
+  get shapeNodesWithConstraints() {
     if (!this._shapeNodesWithConstraints) {
       const set = new NodeSet()
       for (const component of this._components) {
@@ -74,7 +74,7 @@ class ShapesGraph {
     return this._shapeNodesWithConstraints
   }
 
-  get shapesWithTarget () {
+  get shapesWithTarget() {
     const { $shapes, ns } = this.context
     const { rdfs, sh } = ns
 
@@ -87,7 +87,7 @@ class ShapesGraph {
             sh.targetNode,
             sh.targetSubjectsOf,
             sh.targetObjectsOf,
-            sh.target
+            sh.target,
           ]).terms.length > 0
         ))
         .map((shapeNode) => this.getShape(shapeNode))
@@ -98,36 +98,36 @@ class ShapesGraph {
 }
 
 class Constraint {
-  constructor (shape, component, paramValue, shapesGraph) {
+  constructor(shape, component, paramValue, shapesGraph) {
     this.shape = shape
     this.component = component
     this.paramValue = paramValue
     this.shapeNodePointer = shapesGraph.node(shape.shapeNode)
   }
 
-  getParameterValue (param) {
+  getParameterValue(param) {
     return this.paramValue || this.shapeNodePointer.out(param).term
   }
 
-  get validationFunction () {
+  get validationFunction() {
     return this.shape.isPropertyShape
       ? this.component.propertyValidationFunction
       : this.component.nodeValidationFunction
   }
 
-  get isValidationFunctionGeneric () {
+  get isValidationFunctionGeneric() {
     return this.shape.isPropertyShape
       ? this.component.propertyValidationFunctionGeneric
       : this.component.nodeValidationFunctionGeneric
   }
 
-  get componentMessages () {
+  get componentMessages() {
     return this.component.getMessages(this.shape)
   }
 }
 
 class ConstraintComponent {
-  constructor (node, context) {
+  constructor(node, context) {
     const { $shapes, factory, ns } = context
     const { sh, xsd } = ns
 
@@ -168,7 +168,7 @@ class ConstraintComponent {
     }
   }
 
-  findValidationFunction (predicate) {
+  findValidationFunction(predicate) {
     const validatorType = predicate.value.split('#').slice(-1)[0]
     const validator = this.findValidator(validatorType)
 
@@ -177,7 +177,7 @@ class ConstraintComponent {
     return new ValidationFunction(this.context, validator.func.name, validator.func)
   }
 
-  getMessages (shape) {
+  getMessages(shape) {
     const generic = shape.isPropertyShape ? this.propertyValidationFunctionGeneric : this.nodeValidationFunctionGeneric
     const validatorType = generic ? 'validator' : (shape.isPropertyShape ? 'propertyValidator' : 'nodeValidator')
     const validator = this.findValidator(validatorType)
@@ -189,7 +189,7 @@ class ConstraintComponent {
     return message ? [message] : []
   }
 
-  findValidator (validatorType) {
+  findValidator(validatorType) {
     const constraintValidators = validatorsRegistry[this.node.value]
 
     if (!constraintValidators) return null
@@ -199,20 +199,20 @@ class ConstraintComponent {
     return validator || null
   }
 
-  isComplete (shapeNode) {
+  isComplete(shapeNode) {
     return !this.parameters.some((parameter) => (
       this.isRequired(parameter.value) &&
       this.context.$shapes.dataset.match(shapeNode, parameter, null).size === 0
     ))
   }
 
-  isRequired (parameterURI) {
+  isRequired(parameterURI) {
     return !this.optionals[parameterURI]
   }
 }
 
 class Shape {
-  constructor (context, shapeNode) {
+  constructor(context, shapeNode) {
     const { $shapes, ns, shapesGraph } = context
     const { sh } = ns
 
@@ -246,7 +246,7 @@ class Shape {
   /**
    * Property path object
    */
-  get pathObject () {
+  get pathObject() {
     const { $shapes, ns, allowNamedNodeInList } = this.context
 
     if (this._pathObject === undefined) {
@@ -259,7 +259,7 @@ class Shape {
   /**
    * @param {Clownface} dataGraph
    */
-  getTargetNodes (dataGraph) {
+  getTargetNodes(dataGraph) {
     const { $shapes, ns } = this.context
     const { rdfs, sh } = ns
     const results = new NodeSet()
@@ -301,7 +301,7 @@ class Shape {
     return [...results]
   }
 
-  getValueNodes (focusNode, dataGraph) {
+  getValueNodes(focusNode, dataGraph) {
     if (this.path) {
       return getPathObjects(dataGraph, focusNode, this.pathObject)
     } else {
@@ -310,4 +310,4 @@ class Shape {
   }
 }
 
-module.exports = ShapesGraph
+export default ShapesGraph

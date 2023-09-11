@@ -1,11 +1,11 @@
-const TermSet = require('@rdfjs/term-set')
+import TermSet from '@rdfjs/term-set'
 
 class NodeSet extends TermSet {
-  addAll (nodes) {
+  addAll(nodes) {
     for (const node of nodes) {
       this.add(node)
     }
   }
 }
 
-module.exports = NodeSet
+export default NodeSet

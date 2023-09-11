@@ -1,10 +1,12 @@
 /* eslint-env mocha */
-const path = require('path')
-const assert = require('assert')
-const { loadDataset } = require('./utils')
-const rdf = require('rdf-ext')
+import path from 'path'
+import assert from 'assert'
+import url from 'url'
+import rdf from 'rdf-ext'
+import SHACLValidator from '../index.js'
+import { loadDataset } from './utils.js'
 
-const SHACLValidator = require('../index')
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 const rootPath = path.join(__dirname, '.')
 
 describe('nested results', () => {

@@ -1,10 +1,12 @@
 /* eslint-env mocha */
-const path = require('path')
-const assert = require('assert')
-const { loadDataset } = require('./utils')
-const { sh } = require('../src/namespaces')
+import path from 'path'
+import assert from 'assert'
+import url from 'url'
+import ns from '../src/namespaces.js'
+import SHACLValidator from '../index.js'
+import { loadDataset } from './utils.js'
 
-const SHACLValidator = require('../index')
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 const rootPath = path.join(__dirname, '/data/validation-severity')
 
 describe('validation severity', () => {
@@ -16,7 +18,7 @@ describe('validation severity', () => {
     const validator = new SHACLValidator(shapes)
     const report = validator.validate(data)
 
-    assert.ok(report.results[0].severity.equals(sh.Violation))
+    assert.ok(report.results[0].severity.equals(ns.sh.Violation))
   })
 
   it('Returns shape severity when specified', async () => {
@@ -27,6 +29,6 @@ describe('validation severity', () => {
     const validator = new SHACLValidator(shapes)
     const report = validator.validate(data)
 
-    assert.ok(report.results[0].severity.equals(sh.Warning))
+    assert.ok(report.results[0].severity.equals(ns.sh.Warning))
   })
 })

@@ -1,8 +1,9 @@
-const clownface = require('clownface')
-const { prepareNamespaces } = require('./src/namespaces')
-const ShapesGraph = require('./src/shapes-graph')
-const ValidationEngine = require('./src/validation-engine')
-const shaclVocabularyFactory = require('./src/vocabularies/shacl')
+import clownface from 'clownface'
+import shaclVocabularyFactory from '@vocabulary/sh'
+import factory from './src/defaultEnv.js'
+import { prepareNamespaces } from './src/namespaces.js'
+import ShapesGraph from './src/shapes-graph.js'
+import ValidationEngine from './src/validation-engine.js'
 
 /**
  * Validates RDF data based on a set of RDF shapes.
@@ -14,10 +15,10 @@ const shaclVocabularyFactory = require('./src/vocabularies/shacl')
  *   stops. Defaults to finding all the errors.
  */
 class SHACLValidator {
-  constructor (shapes, options) {
+  constructor(shapes, options) {
     options = options || {}
 
-    this.factory = options.factory || require('@rdfjs/dataset')
+    this.factory = options.factory || factory
     this.ns = prepareNamespaces(this.factory)
     this.allowNamedNodeInList = options.allowNamedNodeInList === undefined ? false : options.allowNamedNodeInList
     this.loadShapes(shapes)
@@ -32,7 +33,7 @@ class SHACLValidator {
    * @param {DatasetCore} data - Dataset containing the data to validate
    * @return {ValidationReport} - Result of the validation
    */
-  validate (data) {
+  validate(data) {
     this.$data = clownface({ dataset: data, factory: this.factory })
     this.validationEngine.validateAll(this.$data)
     return this.validationEngine.getReport()
@@ -46,7 +47,7 @@ class SHACLValidator {
    * @param {Term} shapeNode - Shape used to validate the node. It must be present in the shapes graph.
    * @returns {ValidationReport} - Result of the validation
    */
-  validateNode (data, focusNode, shapeNode) {
+  validateNode(data, focusNode, shapeNode) {
     this.$data = clownface({ dataset: data, factory: this.factory })
     this.nodeConformsToShape(focusNode, shapeNode)
     return this.validationEngine.getReport()
@@ -57,8 +58,8 @@ class SHACLValidator {
    *
    * @param {DatasetCore} shapes - Dataset containing the shapes for validation
    */
-  loadShapes (shapes) {
-    const shaclQuads = shaclVocabularyFactory(this.factory)
+  loadShapes(shapes) {
+    const shaclQuads = shaclVocabularyFactory({ factory: this.factory })
     const dataset = this.factory.dataset(shaclQuads.concat([...shapes]))
     this.$shapes = clownface({ dataset, factory: this.factory })
 
@@ -66,7 +67,7 @@ class SHACLValidator {
   }
 
   // Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
-  nodeConformsToShape (focusNode, shapeNode) {
+  nodeConformsToShape(focusNode, shapeNode) {
     const shape = this.shapesGraph.getShape(shapeNode)
     try {
       this.depth++
@@ -78,4 +79,4 @@ class SHACLValidator {
   }
 }
 
-module.exports = SHACLValidator
+export default SHACLValidator
