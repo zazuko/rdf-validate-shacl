@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.5.1
+
+### Patch Changes
+
+- 2da8dae: Update rdf-validate-datatype
+
 ## 0.5.0
 
 ### Minor Changes
