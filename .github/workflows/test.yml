@@ -7,13 +7,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['14', '16', '18']
+        node:
+          - "16"
+          - "18"
+          - "20"
     name: Node ${{ matrix.node }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
       - run: npm ci
       - run: npx c8 --reporter lcovonly npm test
-      - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v3
