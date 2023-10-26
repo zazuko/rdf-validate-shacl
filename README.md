@@ -67,15 +67,6 @@ parameter. The available options are:
 $ npm test
 ```
 
-## Regenerating vocabularies
-
-The SHACL vocabulary is imported from `@zazuko/rdf-vocabularies` and
-pre-parsed in `src/vocabularies/shacl.js`.
-
-After updating the `@zazuko/rdf-vocabularies` dependency, run
-`npm run generate-vocabularies` to regenerate the pre-parsed vocabulary.
-
-
 ## Limitations
 
 *rdf-validate-shacl* does not support [SHACL-SPARQL constraints](https://www.w3.org/TR/shacl/#sparql-constraints)
