@@ -20,22 +20,14 @@ to inspect conformance and results. The `ValidationReport` also has a
 `.dataset` property, which provides the report as RDF data.
 
 ```javascript
-const fs = require('fs')
-const factory = require('rdf-ext')
-const ParserN3 = require('@rdfjs/parser-n3')
-const SHACLValidator = require('rdf-validate-shacl')
-
-async function loadDataset (filePath) {
-  const stream = fs.createReadStream(filePath)
-  const parser = new ParserN3({ factory })
-  return factory.dataset().import(parser.import(stream))
-}
+import rdf from '@zazuko/env-node'
+import SHACLValidator from 'rdf-validate-shacl'
 
 async function main() {
-  const shapes = await loadDataset('my-shapes.ttl')
-  const data = await loadDataset('my-data.ttl')
+  const shapes = await rdf.dataset().import(rdf.fromFile('my-shapes.ttl'))
+  const data = await rdf.dataset().import(rdf.fromFile('my-data.ttl'))
 
-  const validator = new SHACLValidator(shapes, { factory })
+  const validator = new SHACLValidator(shapes, { factory: rdf })
   const report = await validator.validate(data)
 
   // Check conformance: `true` or `false`
@@ -53,7 +45,7 @@ async function main() {
   }
 
   // Validation report as RDF dataset
-  console.log(report.dataset)
+  console.log(await report.dataset.serialize({ format: 'text/n3' }))
 }
 
 main();
@@ -74,15 +66,6 @@ parameter. The available options are:
 ```
 $ npm test
 ```
-
-## Regenerating vocabularies
-
-The SHACL vocabulary is imported from `@zazuko/rdf-vocabularies` and
-pre-parsed in `src/vocabularies/shacl.js`.
-
-After updating the `@zazuko/rdf-vocabularies` dependency, run
-`npm run generate-vocabularies` to regenerate the pre-parsed vocabulary.
-
 
 ## Limitations
 
