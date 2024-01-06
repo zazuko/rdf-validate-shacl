@@ -8,10 +8,10 @@ import ValidationEngine from './src/validation-engine.js'
 /**
  * Validates RDF data based on a set of RDF shapes.
  *
- * @param {DatasetCore} shapes - Dataset containing the SHACL shapes for validation
+ * @param {import('@rdfjs/types').DatasetCore} shapes - Dataset containing the SHACL shapes for validation
  * @param {object} options - Validator options
- * @param {DataFactory} options.factory - Optional RDFJS data factory
- * @param {Number} options.maxErrors - Max number of errors before the engine
+ * @param {import('./src/defaultEnv.js').Environment} options.factory - Optional RDFJS data factory
+ * @param {number} options.maxErrors - Max number of errors before the engine
  *   stops. Defaults to finding all the errors.
  */
 class SHACLValidator {
@@ -30,8 +30,8 @@ class SHACLValidator {
   /**
    * Validates the provided data graph against the provided shapes graph
    *
-   * @param {DatasetCore} data - Dataset containing the data to validate
-   * @return {ValidationReport} - Result of the validation
+   * @param {import('@rdfjs/types').DatasetCore} data - Dataset containing the data to validate
+   * @return {import('./src/validation-report.js').default} - Result of the validation
    */
   validate(data) {
     this.$data = clownface({ dataset: data, factory: this.factory })
@@ -42,10 +42,10 @@ class SHACLValidator {
   /**
    * Validates the provided focus node against the provided shape
    *
-   * @param {DatasetCore} data - Dataset containing the data to validate
-   * @param {Term} focusNode - Node to validate
-   * @param {Term} shapeNode - Shape used to validate the node. It must be present in the shapes graph.
-   * @returns {ValidationReport} - Result of the validation
+   * @param {import('@rdfjs/types').DatasetCore} data - Dataset containing the data to validate
+   * @param {import('@rdfjs/types').Term} focusNode - Node to validate
+   * @param {import('@rdfjs/types').Term} shapeNode - Shape used to validate the node. It must be present in the shapes graph.
+   * @returns {import('./src/validation-report.js').default} - Result of the validation
    */
   validateNode(data, focusNode, shapeNode) {
     this.$data = clownface({ dataset: data, factory: this.factory })
@@ -56,7 +56,7 @@ class SHACLValidator {
   /**
    * Load SHACL shapes constraints from dataset.
    *
-   * @param {DatasetCore} shapes - Dataset containing the shapes for validation
+   * @param {import('@rdfjs/types').DatasetCore} shapes - Dataset containing the shapes for validation
    */
   loadShapes(shapes) {
     const shaclQuads = shaclVocabularyFactory({ factory: this.factory })

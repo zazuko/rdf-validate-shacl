@@ -382,8 +382,8 @@ function validateUniqueLangProperty(context, focusNode, valueNode, constraint) {
   const path = constraint.shape.pathObject
   const map = {}
   getPathObjects(context.$data, focusNode, path).forEach(value => {
-    const lang = value.language
-    if (lang && lang !== '') {
+    if (value.termType === 'Literal' && value.language !== '') {
+      const lang = value.language
       const old = map[lang]
       if (!old) {
         map[lang] = 1
