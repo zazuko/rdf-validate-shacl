@@ -3,7 +3,7 @@ import debug from 'debug'
 import ValidationReport from './validation-report.js'
 import { extractStructure } from './dataset-utils.js'
 
-const error = debug('validation-enging::error')
+const error = debug('validation-engine::error')
 
 class ValidationEngine {
   constructor(context, options) {
@@ -30,7 +30,7 @@ class ValidationEngine {
   /**
    * Validates the data graph against the shapes graph
    *
-   * @param {Clownface} dataGraph
+   * @param {import('clownface').AnyPointer} dataGraph
    */
   validateAll(dataGraph) {
     if (this.maxErrorsReached()) return true

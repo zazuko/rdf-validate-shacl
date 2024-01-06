@@ -245,6 +245,7 @@ class Shape {
 
   /**
    * Property path object
+   * @returns {import('./property-path.js').Path}
    */
   get pathObject() {
     const { $shapes, ns, allowNamedNodeInList } = this.context
@@ -257,7 +258,7 @@ class Shape {
   }
 
   /**
-   * @param {Clownface} dataGraph
+   * @param {import('clownface').AnyPointer} dataGraph
    */
   getTargetNodes(dataGraph) {
     const { $shapes, ns } = this.context

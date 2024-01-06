@@ -1,13 +1,24 @@
 import NodeSet from './node-set.js'
 
 /**
+ * @typedef {{ zeroOrMore: Path }} ZeroOrMorePath
+ * @typedef {{ zeroOrOne: Path }} ZeroOrOnePath
+ * @typedef {{ oneOrMore: Path }} OneOrMorePath
+ * @typedef {{ or: Path[] }} AlternativePath
+ * @typedef {Path[]} SequencePath
+ * @typedef {{ inverse: Path }} InversePath
+ * @typedef {import('@rdfjs/types').Term} PropertyPath
+ * @typedef {PropertyPath | SequencePath | AlternativePath | ZeroOrMorePath | OneOrMorePath | ZeroOrOnePath | InversePath} Path
+ */
+
+/**
  * Extracts all the nodes of a property path from a graph and returns a
  * property path object.
  *
- * @param {Clownface} pathNode - Pointer to the start node of the path
+ * @param {import('clownface').MultiPointer} pathNode - Pointer to the start node of the path
  * @param {object} ns - Namespaces
  * @param {boolean} allowNamedNodeInList - Allow named node in lists. By default, only blank nodes are allowed
- * @return Property path object
+ * @return {Path}
  */
 export function extractPropertyPath(pathNode, ns, allowNamedNodeInList) {
   if (pathNode.term.termType === 'NamedNode' && !allowNamedNodeInList) {
@@ -56,39 +67,57 @@ export function extractPropertyPath(pathNode, ns, allowNamedNodeInList) {
  * Follows a property path in a graph, starting from a given node, and returns
  * all the nodes it points to.
  *
- * @param {Clownface} graph
- * @param {Term} subject - Start node
- * @param {object} path - Property path object
- * @return {Term[]} - Nodes that are reachable through the property path
+ * @param {import('clownface').AnyPointer} graph
+ * @param {import('@rdfjs/types').Term} subject - Start node
+ * @param {Path} path - Property path object
+ * @return {import('@rdfjs/types').Term[]} - Nodes that are reachable through the property path
  */
 export function getPathObjects(graph, subject, path) {
   return [...getPathObjectsSet(graph, subject, path)]
 }
 
+/**
+ * @param {import('clownface').AnyPointer} graph
+ * @param {import('@rdfjs/types').Term} subject
+ * @param {Path} path
+ * @return {NodeSet}
+ */
 function getPathObjectsSet(graph, subject, path) {
-  if (path.termType === 'NamedNode') {
+  if ('termType' in path && path.termType === 'NamedNode') {
     return getNamedNodePathObjects(graph, subject, path)
   } else if (Array.isArray(path)) {
     return getSequencePathObjects(graph, subject, path)
-  } else if (path.or) {
+  } else if ('or' in path) {
     return getOrPathObjects(graph, subject, path)
-  } else if (path.inverse) {
+  } else if ('inverse' in path) {
     return getInversePathObjects(graph, subject, path)
-  } else if (path.zeroOrOne) {
+  } else if ('zeroOrOne' in path) {
     return getZeroOrOnePathObjects(graph, subject, path)
-  } else if (path.zeroOrMore) {
+  } else if ('zeroOrMore' in path) {
     return getZeroOrMorePathObjects(graph, subject, path)
-  } else if (path.oneOrMore) {
+  } else if ('oneOrMore' in path) {
     return getOneOrMorePathObjects(graph, subject, path)
   } else {
     throw new Error(`Unsupported path object: ${path}`)
   }
 }
 
+/**
+ * @param {import('clownface').AnyPointer} graph
+ * @param {import('@rdfjs/types').Term} subject
+ * @param {import('@rdfjs/types').Term} path
+ * @return {NodeSet}
+ */
 function getNamedNodePathObjects(graph, subject, path) {
   return new NodeSet(graph.node(subject).out(path).terms)
 }
 
+/**
+ * @param {import('clownface').AnyPointer} graph
+ * @param {import('@rdfjs/types').Term} subject
+ * @param {Path[]} path
+ * @return {NodeSet}
+ */
 function getSequencePathObjects(graph, subject, path) {
   // TODO: This one is really unreadable
   let subjects = new NodeSet([subject])
@@ -99,34 +128,70 @@ function getSequencePathObjects(graph, subject, path) {
   return subjects
 }
 
+/**
+ * @param {import('clownface').AnyPointer} graph
+ * @param {import('@rdfjs/types').Term} subject
+ * @param {AlternativePath} path
+ * @return {NodeSet}
+ */
 function getOrPathObjects(graph, subject, path) {
   return new NodeSet(flatMap(path.or, pathItem => getPathObjects(graph, subject, pathItem)))
 }
 
+/**
+ * @param {import('clownface').AnyPointer} graph
+ * @param {import('@rdfjs/types').Term} subject
+ * @param {InversePath} path
+ * @return {NodeSet}
+ */
 function getInversePathObjects(graph, subject, path) {
-  if (path.inverse.termType !== 'NamedNode') {
+  if (!('termType' in path.inverse) || path.inverse.termType !== 'NamedNode') {
     throw new Error('Unsupported: Inverse paths only work for named nodes')
   }
 
   return new NodeSet(graph.node(subject).in(path.inverse).terms)
 }
 
+/**
+ * @param {import('clownface').AnyPointer} graph
+ * @param {import('@rdfjs/types').Term} subject
+ * @param {ZeroOrOnePath} path
+ * @return {NodeSet}
+ */
 function getZeroOrOnePathObjects(graph, subject, path) {
   const pathObjects = getPathObjectsSet(graph, subject, path.zeroOrOne)
   pathObjects.add(subject)
   return pathObjects
 }
 
+/**
+ * @param {import('clownface').AnyPointer} graph
+ * @param {import('@rdfjs/types').Term} subject
+ * @param {ZeroOrMorePath} path
+ * @return {NodeSet}
+ */
 function getZeroOrMorePathObjects(graph, subject, path) {
   const pathObjects = walkPath(graph, subject, path.zeroOrMore)
   pathObjects.add(subject)
   return pathObjects
 }
 
+/**
+ * @param {import('clownface').AnyPointer} graph
+ * @param {import('@rdfjs/types').Term} subject
+ * @param {OneOrMorePath} path
+ * @return {NodeSet}
+ */
 function getOneOrMorePathObjects(graph, subject, path) {
   return walkPath(graph, subject, path.oneOrMore)
 }
 
+/**
+ * @param {import('clownface').AnyPointer} graph
+ * @param {import('@rdfjs/types').Term} subject
+ * @param {Path} path
+ * @param {NodeSet} [visited]
+ */
 function walkPath(graph, subject, path, visited) {
   visited = visited || new NodeSet()
 
@@ -146,6 +211,12 @@ function walkPath(graph, subject, path, visited) {
   return pathValues
 }
 
+/**
+ * @template T, R
+ * @param {Iterable<T>} arr
+ * @param {(item: T) => R} [func]
+ * @return {R[]}
+ */
 function flatMap(arr, func) {
   return [...arr].reduce((acc, x) => acc.concat(func(x)), [])
 }

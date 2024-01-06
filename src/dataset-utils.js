@@ -5,9 +5,9 @@ import NodeSet from './node-set.js'
  * Extracts all the quads forming the structure under a blank node. Stops at
  * non-blank nodes.
  *
- * @param {DatasetCore} dataset
- * @param {Term} startNode
- * @returns Array of quads
+ * @param {import('@rdfjs/types').DatasetCore} dataset
+ * @param {import('@rdfjs/types').Term} startNode
+ * @returns {import('@rdfjs/types').Quad[]}
  */
 export function extractStructure(dataset, startNode, visited = new TermSet()) {
   if (startNode.termType !== 'BlankNode' || visited.has(startNode)) {
@@ -27,7 +27,7 @@ export function extractStructure(dataset, startNode, visited = new TermSet()) {
 /**
  * Get instances of a class.
  *
- * @param {Clownface} cls - pointer to a class
+ * @param {import('clownface').GraphPointer} cls - pointer to a class
  * @param {Object} ns - namespace
  * @returns NodeSet
  */
@@ -50,7 +50,7 @@ export function getInstancesOf(cls, ns) {
 /**
  * Get subclasses of a class.
  *
- * @param {Clownface} cls - pointer to a class
+ * @param {import('clownface').GraphPointer} cls - pointer to a class
  */
 export function getSubClassesOf(cls, ns) {
   const subclasses = cls.in(ns.rdfs.subClassOf)
@@ -69,10 +69,10 @@ export function getSubClassesOf(cls, ns) {
 /**
  * Check if a node is an instance of a class.
  *
- * @param {Clownface} instance - pointer to a term
- * @param {Clownface} cls - pointer to a class
+ * @param {import('clownface').GraphPointer} instance - pointer to a term
+ * @param {import('clownface').GraphPointer} cls - pointer to a class
  * @param {Object} ns - namespace
- * @returns boolean
+ * @returns {boolean}
  */
 export function isInstanceOf(instance, cls, ns) {
   const classes = getSubClassesOf(cls, ns)
@@ -86,8 +86,8 @@ export function isInstanceOf(instance, cls, ns) {
 /**
  * Extract all the terms of an RDF-list and return then as an array.
  *
- * @param {Clownface} listNode - pointer to start of the list
- * @returns Array
+ * @param {import('clownface').GraphPointer} listNode - pointer to start of the list
+ * @returns {import('@rdfjs/types').Term[]}
  */
 export function rdfListToArray(listNode) {
   return [...listNode.list()].map(({ term }) => term)

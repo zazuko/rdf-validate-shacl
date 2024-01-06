@@ -7,6 +7,9 @@
   "scripts": {
     "lint": "eslint . --ignore-path .gitignore",
     "test": "mocha",
+    "prebuild": "rimraf index.d.ts src/*.d.ts",
+    "build": "tsc",
+    "prepack": "npm run build",
     "release": "changeset publish"
   },
   "author": "Zazuko (https://zazuko.com)",
@@ -24,6 +27,7 @@
     "@rdfjs/environment": "^0.1.2",
     "@rdfjs/namespace": "^2.0.0",
     "@rdfjs/term-set": "^2.0.1",
+    "@rdfjs/types": "^1.1.0",
     "@vocabulary/sh": "^1.0.1",
     "clownface": "^2.0.0",
     "debug": "^4.3.2",
@@ -34,15 +38,21 @@
     "@changesets/cli": "^2.22.0",
     "@rdfjs/parser-n3": "^2.0.1",
     "@tpluscode/eslint-config": "^0.4.4",
+    "@types/clownface": "^2.0.5",
+    "@types/node": "^20.10.6",
+    "@types/rdfjs__environment": "^0.1.10",
     "c8": "^8.0.1",
     "get-stream": "^6.0.0",
     "mocha": "^10.2.0",
     "nanoid": "^4.0.2",
     "rdf-ext": "^2.2.0",
-    "rdf-utils-dataset": "^2.0.0"
+    "rdf-utils-dataset": "^2.0.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
   },
   "files": [
     "/src",
-    "index.js"
+    "index.js",
+    "index.d.ts"
   ]
 }
