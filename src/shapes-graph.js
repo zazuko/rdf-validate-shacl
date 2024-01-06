@@ -16,10 +16,11 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
+import { fromNode } from 'clownface-shacl-path'
 import NodeSet from './node-set.js'
 import ValidationFunction from './validation-function.js'
 import validatorsRegistry from './validators-registry.js'
-import { extractPropertyPath, getPathObjects } from './property-path.js'
+import { getPathObjects } from './property-path.js'
 import { getInstancesOf, isInstanceOf } from './dataset-utils.js'
 
 class ShapesGraph {
@@ -245,13 +246,13 @@ class Shape {
 
   /**
    * Property path object
-   * @returns {import('./property-path.js').Path}
+   * @returns {import('clownface-shacl-path').ShaclPropertyPath | null}
    */
   get pathObject() {
-    const { $shapes, ns, allowNamedNodeInList } = this.context
+    const { $shapes, allowNamedNodeInList: allowNamedNodeSequencePaths } = this.context
 
     if (this._pathObject === undefined) {
-      this._pathObject = this.path ? extractPropertyPath($shapes.node(this.path), ns, allowNamedNodeInList) : null
+      this._pathObject = this.path ? fromNode($shapes.node(this.path), { allowNamedNodeSequencePaths }) : null
     }
 
     return this._pathObject
