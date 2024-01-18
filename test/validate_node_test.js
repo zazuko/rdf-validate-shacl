@@ -2,7 +2,7 @@
 import path from 'path'
 import assert from 'assert'
 import url from 'url'
-import $rdf from 'rdf-ext'
+import $rdf from '@zazuko/env-node'
 import SHACLValidator from '../index.js'
 import { loadDataset } from './utils.js'
 

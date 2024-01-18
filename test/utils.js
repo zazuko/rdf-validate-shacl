@@ -1,6 +1,6 @@
 import fs from 'fs'
 import ParserN3 from '@rdfjs/parser-n3'
-import $rdf from 'rdf-ext'
+import $rdf from '@zazuko/env-node'
 
 export async function loadDataset(filePath) {
   const stream = fs.createReadStream(filePath)
