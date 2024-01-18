@@ -3,7 +3,7 @@ import assert from 'assert'
 import RDF from '@zazuko/env-node'
 import clownface from 'clownface'
 import Environment from '@rdfjs/environment'
-import NamespaceFactory from '@rdfjs/environment/NamespaceFactory.js'
+import NamespaceFactory from '@rdfjs/namespace/Factory.js'
 import ns from '../src/namespaces.js'
 import ValidationReport from '../src/validation-report.js'
 

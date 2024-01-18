@@ -41,6 +41,7 @@
     "mocha": "^10.2.0",
     "nanoid": "^4.0.2",
     "@zazuko/env-node": "^2",
+    "rdf-ext": "^2.5.1",
     "rdf-utils-dataset": "^2.0.0"
   },
   "files": [
