@@ -21,6 +21,8 @@
     "validation"
   ],
   "dependencies": {
+    "@rdfjs/data-model": "^2",
+    "@rdfjs/dataset": "^2",
     "@rdfjs/environment": "0 - 1",
     "@rdfjs/namespace": "^2.0.0",
     "@rdfjs/term-set": "^2.0.1",
