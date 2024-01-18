@@ -1,5 +1,12 @@
 ## 0.4.4
 
+## 0.5.2
+
+### Patch Changes
+
+- 4233170: Update example in readme
+- 7bae4cc: Update `@rdfjs/environment` to v1 (keep support for v0)
+
 ## 0.5.1
 
 ### Patch Changes
