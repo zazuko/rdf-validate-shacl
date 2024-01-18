@@ -42,10 +42,6 @@ before(async () => {
   describe('Official data-shapes test suite', () => {
     runTests()
   })
-
-  describe('Official data-shapes test suite (rdf-ext)', () => {
-    runTests({ useRdfExt: true })
-  })
 })
 
 it.skip('Dummy test to fetch test configurations', () => {})

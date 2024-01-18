@@ -1,6 +1,6 @@
 /* eslint-env mocha */
 import assert from 'assert'
-import RDF from 'rdf-ext'
+import RDF from '@zazuko/env-node'
 import clownface from 'clownface'
 import Environment from '@rdfjs/environment'
 import NamespaceFactory from '@rdfjs/environment/NamespaceFactory.js'
