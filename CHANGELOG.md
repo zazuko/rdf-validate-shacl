@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.5.3
+
+### Patch Changes
+
+- dcad72a: More strict dependency on `@rdfjs/environment`
+
 ## 0.5.2
 
 ### Patch Changes
