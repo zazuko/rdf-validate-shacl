@@ -17,6 +17,10 @@ class ValidationEngine {
     this.nestedResults = {}
   }
 
+  clone () {
+    return new ValidationEngine(this.context, { maxErrors: this.maxErrors })
+  }
+  
   initReport() {
     const { rdf, sh } = this.context.ns
 
