@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.5.4
+
+### Patch Changes
+
+- 5257789: fix #125 (phantom result details)
+
 ## 0.5.3
 
 ### Patch Changes
