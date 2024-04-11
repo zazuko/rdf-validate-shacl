@@ -284,7 +284,7 @@ function validateNodeKind(context, focusNode, valueNode, constraint) {
 function validateNode(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const nodeNode = constraint.getParameterValue(sh.node)
-  return context.nodeConformsToShape(valueNode, nodeNode)
+  return context.validateNodeAgainstShape(valueNode, nodeNode)
 }
 
 function validateNot(context, focusNode, valueNode, constraint) {

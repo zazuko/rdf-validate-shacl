@@ -1,0 +1,7 @@
+@prefix ex: <https://example.org/> .
+
+ex:person1 a ex:Person ; ex:address ex:address1 .
+
+ex:address1 ex:city "London" .
+
+ex:tv ex:size ex:big .
