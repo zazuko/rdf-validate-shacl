@@ -89,4 +89,17 @@ describe('validation messages', () => {
       { value: 'Mon message de validation', language: 'fr' },
     ]))
   })
+
+  it('Lists first items in message', async () => {
+    const dataPath = path.join(rootPath, 'message-with-list.ttl')
+    const data = await loadDataset(dataPath)
+    const shapes = data
+
+    const validator = new SHACLValidator(shapes)
+    const report = validator.validate(data)
+
+    assert.strictEqual(report.results.length, 1)
+    assert.strictEqual(report.results[0].message.length, 1)
+    assert.strictEqual(report.results[0].message[0].value, 'Value is not one of the allowed values: a, b, c ...')
+  })
 })

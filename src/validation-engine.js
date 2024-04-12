@@ -320,7 +320,16 @@ function localName(uri) {
   return uri.substring(index + 1)
 }
 
-function nodeLabel(node) {
+function * take(n, iterable) {
+  let i = 0
+  for (const item of iterable) {
+    if (i++ === n) break
+    yield item
+  }
+}
+
+function nodeLabel(constraint, param) {
+  const node = constraint.getParameterValue(param)
   if (!node) {
     return 'NULL'
   }
@@ -331,6 +340,13 @@ function nodeLabel(node) {
   }
 
   if (node.termType === 'BlankNode') {
+    const pointer = constraint.shapeNodePointer.out(param)
+    const list = pointer.list()
+    if (list) {
+      const items = Array.from(take(3, list))
+      return items.join(', ') + (items.length === 3 ? ' ...' : '')
+    }
+
     return 'Blank node ' + node.value
   }
 
@@ -340,7 +356,7 @@ function nodeLabel(node) {
 function withSubstitutions(messageTerm, constraint, factory) {
   const message = constraint.component.parameters.reduce((message, param) => {
     const paramName = localName(param.value)
-    const paramValue = nodeLabel(constraint.getParameterValue(param))
+    const paramValue = nodeLabel(constraint, param)
     return message
       .replace(`{$${paramName}}`, paramValue)
       .replace(`{?${paramName}}`, paramValue)
