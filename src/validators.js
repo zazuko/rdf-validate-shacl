@@ -1,5 +1,6 @@
 import { validateTerm } from 'rdf-validate-datatype'
 import { fromRdf } from 'rdf-literal'
+import TermMap from '@rdfjs/term-map'
 import NodeSet from './node-set.js'
 import { getPathObjects } from './property-path.js'
 import { isInstanceOf, rdfListToArray } from './dataset-utils.js'
@@ -133,8 +134,16 @@ function validateHasValueProperty(context, focusNode, valueNode, constraint) {
 function validateIn(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const inNode = constraint.getParameterValue(sh.in)
+  if (!constraint.nodeSets) {
+    constraint.nodeSets = new TermMap()
+  }
+  let nodeSet = constraint.nodeSets.get(inNode)
+  if (!nodeSet) {
+    nodeSet = new NodeSet(rdfListToArray(context.$shapes.node(inNode)))
+    constraint.nodeSets.set(inNode, nodeSet)
+  }
 
-  return new NodeSet(rdfListToArray(context.$shapes.node(inNode))).has(valueNode)
+  return nodeSet.has(valueNode)
 }
 
 function validateLanguageIn(context, focusNode, valueNode, constraint) {
