@@ -1,6 +1,5 @@
 import { validateTerm } from 'rdf-validate-datatype'
 import { fromRdf } from 'rdf-literal'
-import TermMap from '@rdfjs/term-map'
 import NodeSet from './node-set.js'
 import { getPathObjects } from './property-path.js'
 import { isInstanceOf, rdfListToArray } from './dataset-utils.js'
