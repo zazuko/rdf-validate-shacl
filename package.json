@@ -36,11 +36,11 @@
     "@changesets/cli": "^2.22.0",
     "@rdfjs/parser-n3": "^2.0.1",
     "@tpluscode/eslint-config": "^0.4.4",
+    "@zazuko/env-node": "^2",
     "c8": "^8.0.1",
     "get-stream": "^6.0.0",
     "mocha": "^10.2.0",
     "nanoid": "^4.0.2",
-    "@zazuko/env-node": "^2",
     "rdf-ext": "^2.5.1",
     "rdf-utils-dataset": "^2.0.0"
   },
