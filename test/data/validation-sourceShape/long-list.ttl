@@ -1,0 +1,12 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <http://example.com/> .
+
+ex:p1 a ex:Person ; ex:category 3 .
+ex:p2 a ex:Person ; ex:category 30, 40 .
+
+ex:shape sh:targetClass ex:Person ;
+  sh:property [
+    sh:path ex:category ;
+    sh:minCount 2 ;
+    sh:in (1 2 3 4 5) ;
+  ] .

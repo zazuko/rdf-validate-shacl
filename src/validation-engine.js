@@ -1,7 +1,7 @@
 import clownface from 'clownface'
 import debug from 'debug'
 import ValidationReport from './validation-report.js'
-import { extractStructure } from './dataset-utils.js'
+import { extractStructure, extractSourceShapeStructure } from './dataset-utils.js'
 
 const error = debug('validation-enging::error')
 
@@ -17,10 +17,10 @@ class ValidationEngine {
     this.nestedResults = {}
   }
 
-  clone () {
+  clone() {
     return new ValidationEngine(this.context, { maxErrors: this.maxErrors })
   }
-  
+
   initReport() {
     const { rdf, sh } = this.context.ns
 
@@ -241,7 +241,7 @@ class ValidationEngine {
       .addOut(sh.sourceShape, sourceShape)
       .addOut(sh.focusNode, focusNode)
 
-    this.copyNestedStructure(sourceShape, result)
+    this.copySourceShapeStructure(constraint.shape, result)
     this.copyNestedStructure(focusNode, result)
 
     const children = this.nestedResults[this.recordErrorsLevel + 1]
@@ -261,6 +261,13 @@ class ValidationEngine {
 
   copyNestedStructure(subject, result) {
     const structureQuads = extractStructure(this.context.$shapes.dataset, subject)
+    for (const quad of structureQuads) {
+      result.dataset.add(quad)
+    }
+  }
+
+  copySourceShapeStructure(shape, result) {
+    const structureQuads = extractSourceShapeStructure(shape, this.context.$shapes.dataset, shape.shapeNode)
     for (const quad of structureQuads) {
       result.dataset.add(quad)
     }

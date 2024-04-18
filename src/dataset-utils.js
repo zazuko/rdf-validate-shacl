@@ -7,21 +7,52 @@ import NodeSet from './node-set.js'
  *
  * @param {DatasetCore} dataset
  * @param {Term} startNode
- * @returns Array of quads
+ * @yields {Quad}
  */
-export function extractStructure(dataset, startNode, visited = new TermSet()) {
+export function * extractStructure(dataset, startNode, visited = new TermSet()) {
   if (startNode.termType !== 'BlankNode' || visited.has(startNode)) {
-    return []
+    return
   }
 
   visited.add(startNode)
-  const quads = [...dataset.match(startNode, null, null)]
+  for (const quad of dataset.match(startNode, null, null)) {
+    yield quad
+    yield * extractStructure(dataset, quad.object, visited)
+  }
+}
 
-  const children = quads.map((quad) => {
-    return extractStructure(dataset, quad.object, visited)
-  })
+/**
+ * Extracts all the quads forming the structure under a blank shape node. Stops at
+ * non-blank nodes. Replaces sh:in with a comment if the list is too long.
+ *
+ * @param {Shape} shape
+ * @param {DatasetCore} dataset
+ * @param {Term} startNode
+ * @yields {Quad}
+ */
+export function * extractSourceShapeStructure(shape, dataset, startNode, visited = new TermSet()) {
+  if (startNode.termType !== 'BlankNode' || visited.has(startNode)) {
+    return
+  }
 
-  return quads.concat(...children)
+  const { factory } = shape.context
+  const { sh, rdfs } = shape.context.ns
+
+  const inListSize = term => {
+    const inConstraint = shape.constraints.find(x => x.paramValue.equals(term))
+    return inConstraint?.nodeSet.size
+  }
+
+  visited.add(startNode)
+  for (const quad of dataset.match(startNode, null, null)) {
+    if (quad.predicate.equals(sh.in) && inListSize(quad.object) > 3) {
+      const msg = `sh:in has ${inListSize(quad.object)} elements and has been removed from the report for brevity. Please refer the original shape`
+      yield factory.quad(quad.subject, rdfs.comment, factory.literal(msg))
+    } else {
+      yield quad
+      yield * extractSourceShapeStructure(shape, dataset, quad.object, visited)
+    }
+  }
 }
 
 /**
