@@ -347,11 +347,14 @@ function nodeLabel(constraint, param) {
   }
 
   if (node.termType === 'BlankNode') {
-    const pointer = constraint.shapeNodePointer.out(param)
-    const list = pointer.list()
-    if (list) {
-      const items = Array.from(take(3, list))
-      return items.join(', ') + (items.length === 3 ? ' ...' : '')
+    if (constraint.nodeSet) {
+      const limit = 3
+      if (constraint.nodeSet.size > limit) {
+        const prefix = Array.from(take(limit, constraint.nodeSet)).map(x => x.value)
+        return prefix.join(', ') + ` ... (and ${constraint.nodeSet.size - limit} more)`
+      } else {
+        return Array.from(constraint.nodeSet).map(x => x.value).join(', ')
+      }
     }
 
     return 'Blank node ' + node.value

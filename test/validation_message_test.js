@@ -100,6 +100,6 @@ describe('validation messages', () => {
 
     assert.strictEqual(report.results.length, 1)
     assert.strictEqual(report.results[0].message.length, 1)
-    assert.strictEqual(report.results[0].message[0].value, 'Value is not one of the allowed values: a, b, c ...')
+    assert.strictEqual(report.results[0].message[0].value, 'Value is not one of the allowed values: a, b, c ... (and 2 more)')
   })
 })
