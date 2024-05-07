@@ -1,5 +1,12 @@
 ## 0.4.4
 
+## 0.5.5
+
+### Patch Changes
+
+- e2f77f9: Improved result messages with lists
+- 1329680: Improve performance of validating `sh:in` constraints
+
 ## 0.5.4
 
 ### Patch Changes
