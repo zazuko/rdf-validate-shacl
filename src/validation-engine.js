@@ -1,7 +1,7 @@
 import clownface from 'clownface'
 import debug from 'debug'
 import ValidationReport from './validation-report.js'
-import { extractStructure } from './dataset-utils.js'
+import { extractStructure, extractSourceShapeStructure } from './dataset-utils.js'
 
 const error = debug('validation-enging::error')
 
@@ -17,10 +17,10 @@ class ValidationEngine {
     this.nestedResults = {}
   }
 
-  clone () {
+  clone() {
     return new ValidationEngine(this.context, { maxErrors: this.maxErrors })
   }
-  
+
   initReport() {
     const { rdf, sh } = this.context.ns
 
@@ -241,7 +241,7 @@ class ValidationEngine {
       .addOut(sh.sourceShape, sourceShape)
       .addOut(sh.focusNode, focusNode)
 
-    this.copyNestedStructure(sourceShape, result)
+    this.copySourceShapeStructure(constraint.shape, result)
     this.copyNestedStructure(focusNode, result)
 
     const children = this.nestedResults[this.recordErrorsLevel + 1]
@@ -261,6 +261,13 @@ class ValidationEngine {
 
   copyNestedStructure(subject, result) {
     const structureQuads = extractStructure(this.context.$shapes.dataset, subject)
+    for (const quad of structureQuads) {
+      result.dataset.add(quad)
+    }
+  }
+
+  copySourceShapeStructure(shape, result) {
+    const structureQuads = extractSourceShapeStructure(shape, this.context.$shapes.dataset, shape.shapeNode)
     for (const quad of structureQuads) {
       result.dataset.add(quad)
     }
@@ -320,7 +327,16 @@ function localName(uri) {
   return uri.substring(index + 1)
 }
 
-function nodeLabel(node) {
+function * take(n, iterable) {
+  let i = 0
+  for (const item of iterable) {
+    if (i++ === n) break
+    yield item
+  }
+}
+
+function nodeLabel(constraint, param) {
+  const node = constraint.getParameterValue(param)
   if (!node) {
     return 'NULL'
   }
@@ -331,6 +347,16 @@ function nodeLabel(node) {
   }
 
   if (node.termType === 'BlankNode') {
+    if (constraint.nodeSet) {
+      const limit = 3
+      if (constraint.nodeSet.size > limit) {
+        const prefix = Array.from(take(limit, constraint.nodeSet)).map(x => x.value)
+        return prefix.join(', ') + ` ... (and ${constraint.nodeSet.size - limit} more)`
+      } else {
+        return Array.from(constraint.nodeSet).map(x => x.value).join(', ')
+      }
+    }
+
     return 'Blank node ' + node.value
   }
 
@@ -340,7 +366,7 @@ function nodeLabel(node) {
 function withSubstitutions(messageTerm, constraint, factory) {
   const message = constraint.component.parameters.reduce((message, param) => {
     const paramName = localName(param.value)
-    const paramValue = nodeLabel(constraint.getParameterValue(param))
+    const paramValue = nodeLabel(constraint, param)
     return message
       .replace(`{$${paramName}}`, paramValue)
       .replace(`{?${paramName}}`, paramValue)
