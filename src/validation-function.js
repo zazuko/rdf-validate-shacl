@@ -8,7 +8,8 @@ class ValidationFunction {
   }
 
   execute(focusNode, valueNode, constraint) {
-    return this.func.apply(globalObject, [this.context, focusNode, valueNode, constraint])
+    const compiled = this.func.apply(globalObject, [this.context, constraint])
+    return compiled.apply(globalObject, [this.context, focusNode, valueNode])
   }
 }
 
