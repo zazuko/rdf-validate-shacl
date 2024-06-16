@@ -124,7 +124,7 @@ class ValidationEngine {
     const { sh } = this.context.ns
 
     this.recordErrorsLevel++
-    const validationOutput = constraint.validationFunction.execute(focusNode, valueNode, constraint)
+    const validationOutput = constraint.validationFunction.execute(focusNode, valueNode)
 
     const validationResults = Array.isArray(validationOutput) ? validationOutput : [validationOutput]
     const results = validationResults

@@ -110,9 +110,12 @@ class Constraint {
   }
 
   get validationFunction() {
-    return this.shape.isPropertyShape
+    if (this.compiledFunction) return this.compiledFunction
+    const func = this.shape.isPropertyShape
       ? this.component.propertyValidationFunction
       : this.component.nodeValidationFunction
+    this.compiledFunction = func.compile(this)
+    return this.compiledFunction
   }
 
   get isValidationFunctionGeneric() {
