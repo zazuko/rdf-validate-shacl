@@ -5,47 +5,47 @@ import { getPathObjects } from './property-path.js'
 import { isInstanceOf, rdfListToArray } from './dataset-utils.js'
 
 function validateAnd(context, constraint) {
-  return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const andNode = constraint.getParameterValue(sh.and)
-    const shapes = rdfListToArray(context.$shapes.node(andNode))
+  const { sh } = context.ns
+  const andNode = constraint.getParameterValue(sh.and)
+  const shapes = rdfListToArray(context.$shapes.node(andNode))
 
+  return function (context, focusNode, valueNode) {
     return shapes.every((shape) => context.nodeConformsToShape(valueNode, shape))
   }
 }
 
 function validateClass(context, constraint) {
-  return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const classNode = constraint.getParameterValue(sh.class)
+  const { sh } = context.ns
+  const classNode = constraint.getParameterValue(sh.class)
 
+  return function (context, focusNode, valueNode) {
     return isInstanceOf(context.$data.node(valueNode), context.$data.node(classNode), context.ns)
   }
 }
 
 function validateClosed(context, constraint) {
-  return function (context, focusNode, valueNode) {
-    const { sh, xsd } = context.ns
-    const closedNode = constraint.getParameterValue(sh.closed)
-    const ignoredPropertiesNode = constraint.getParameterValue(sh.ignoredProperties)
-    const currentShape = constraint.shape.shapeNode
-    const trueTerm = context.factory.literal('true', xsd.boolean)
+  const { sh, xsd } = context.ns
+  const closedNode = constraint.getParameterValue(sh.closed)
+  const ignoredPropertiesNode = constraint.getParameterValue(sh.ignoredProperties)
+  const currentShape = constraint.shape.shapeNode
+  const trueTerm = context.factory.literal('true', xsd.boolean)
 
+  const allowed = new NodeSet(
+    context.$shapes
+      .node(currentShape)
+      .out(sh.property)
+      .out(sh.path)
+      .terms
+      .filter((term) => term.termType === 'NamedNode'),
+  )
+
+  if (ignoredPropertiesNode) {
+    allowed.addAll(rdfListToArray(context.$shapes.node(ignoredPropertiesNode)))
+  }
+
+  return function (context, focusNode, valueNode) {
     if (!trueTerm.equals(closedNode)) {
       return
-    }
-
-    const allowed = new NodeSet(
-      context.$shapes
-        .node(currentShape)
-        .out(sh.property)
-        .out(sh.path)
-        .terms
-        .filter((term) => term.termType === 'NamedNode'),
-    )
-
-    if (ignoredPropertiesNode) {
-      allowed.addAll(rdfListToArray(context.$shapes.node(ignoredPropertiesNode)))
     }
 
     const results = []
@@ -61,10 +61,10 @@ function validateClosed(context, constraint) {
 }
 
 function validateDatatype(context, constraint) {
-  return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const datatypeNode = constraint.getParameterValue(sh.datatype)
+  const { sh } = context.ns
+  const datatypeNode = constraint.getParameterValue(sh.datatype)
 
+  return function (context, focusNode, valueNode) {
     if (valueNode.termType === 'Literal') {
       return datatypeNode.equals(valueNode.datatype) && validateTerm(valueNode)
     } else {
@@ -74,20 +74,20 @@ function validateDatatype(context, constraint) {
 }
 
 function validateDisjoint(context, constraint) {
-  return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const disjointNode = constraint.getParameterValue(sh.disjoint)
+  const { sh } = context.ns
+  const disjointNode = constraint.getParameterValue(sh.disjoint)
 
+  return function (context, focusNode, valueNode) {
     return context.$data.dataset.match(focusNode, disjointNode, valueNode).size === 0
   }
 }
 
 function validateEqualsProperty(context, constraint) {
-  return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const path = constraint.shape.pathObject
-    const equalsNode = constraint.getParameterValue(sh.equals)
+  const { sh } = context.ns
+  const path = constraint.shape.pathObject
+  const equalsNode = constraint.getParameterValue(sh.equals)
 
+  return function (context, focusNode, valueNode) {
     const results = []
     getPathObjects(context.$data, focusNode, path).forEach(value => {
       if (context.$data.dataset.match(focusNode, equalsNode, value).size === 0) {
@@ -107,9 +107,10 @@ function validateEqualsProperty(context, constraint) {
 }
 
 function validateEqualsNode(context, constraint) {
+  const { sh } = context.ns
+  const equalsNode = constraint.getParameterValue(sh.equals)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const equalsNode = constraint.getParameterValue(sh.equals)
     const results = []
 
     let solutions = 0
@@ -129,26 +130,27 @@ function validateEqualsNode(context, constraint) {
 }
 
 function validateHasValueNode(context, constraint) {
-  return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const hasValueNode = constraint.getParameterValue(sh.hasValue)
+  const { sh } = context.ns
+  const hasValueNode = constraint.getParameterValue(sh.hasValue)
 
+  return function (context, focusNode, valueNode) {
     return focusNode.equals(hasValueNode)
   }
 }
 
 function validateHasValueProperty(context, constraint) {
-  return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const path = constraint.shape.pathObject
-    const hasValueNode = constraint.getParameterValue(sh.hasValue)
+  const { sh } = context.ns
+  const path = constraint.shape.pathObject
+  const hasValueNode = constraint.getParameterValue(sh.hasValue)
 
+  return function (context, focusNode, valueNode) {
     return getPathObjects(context.$data, focusNode, path)
       .some(value => value.equals(hasValueNode))
   }
 }
 
 function validateIn(context, constraint) {
+  // todo: refactor from previous implementation
   return function (context, focusNode, valueNode) {
     const { sh } = context.ns
     return constraint.nodeSet.has(valueNode)
@@ -156,8 +158,11 @@ function validateIn(context, constraint) {
 }
 
 function validateLanguageIn(context, constraint) {
+  const { sh } = context.ns
+  const languageInNode = constraint.getParameterValue(sh.languageIn)
+  const allowedLanguages = rdfListToArray(context.$shapes.node(languageInNode))
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
     if (valueNode.termType !== 'Literal') {
       return false
     }
@@ -167,19 +172,17 @@ function validateLanguageIn(context, constraint) {
       return false
     }
 
-    const languageInNode = constraint.getParameterValue(sh.languageIn)
-    const allowedLanguages = rdfListToArray(context.$shapes.node(languageInNode))
-
     return allowedLanguages.some(allowedLanguage => valueLanguage.startsWith(allowedLanguage.value))
   }
 }
 
 function validateLessThanProperty(context, constraint) {
+  const { sh } = context.ns
+  const valuePath = constraint.shape.pathObject
+  const lessThanNode = constraint.getParameterValue(sh.lessThan)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const valuePath = constraint.shape.pathObject
     const values = getPathObjects(context.$data, focusNode, valuePath)
-    const lessThanNode = constraint.getParameterValue(sh.lessThan)
     const referenceValues = context.$data.node(focusNode).out(lessThanNode).terms
 
     const invalidValues = []
@@ -196,11 +199,12 @@ function validateLessThanProperty(context, constraint) {
 }
 
 function validateLessThanOrEqualsProperty(context, constraint) {
+  const { sh } = context.ns
+  const valuePath = constraint.shape.pathObject
+  const lessThanOrEqualsNode = constraint.getParameterValue(sh.lessThanOrEquals)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const valuePath = constraint.shape.pathObject
     const values = getPathObjects(context.$data, focusNode, valuePath)
-    const lessThanOrEqualsNode = constraint.getParameterValue(sh.lessThanOrEquals)
     const referenceValues = context.$data.node(focusNode).out(lessThanOrEqualsNode).terms
 
     const invalidValues = []
@@ -217,20 +221,22 @@ function validateLessThanOrEqualsProperty(context, constraint) {
 }
 
 function validateMaxCountProperty(context, constraint) {
+  const { sh } = context.ns
+  const path = constraint.shape.pathObject
+  const maxCountNode = constraint.getParameterValue(sh.maxCount)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const path = constraint.shape.pathObject
     const count = getPathObjects(context.$data, focusNode, path).length
-    const maxCountNode = constraint.getParameterValue(sh.maxCount)
 
     return count <= Number(maxCountNode.value)
   }
 }
 
 function validateMaxExclusive(context, constraint) {
+  const { sh } = context.ns
+  const maxExclusiveNode = constraint.getParameterValue(sh.maxExclusive)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const maxExclusiveNode = constraint.getParameterValue(sh.maxExclusive)
     const comp = compareTerms(valueNode, maxExclusiveNode, context.ns)
 
     return (comp !== null && comp < 0)
@@ -238,9 +244,10 @@ function validateMaxExclusive(context, constraint) {
 }
 
 function validateMaxInclusive(context, constraint) {
+  const { sh } = context.ns
+  const maxInclusiveNode = constraint.getParameterValue(sh.maxInclusive)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const maxInclusiveNode = constraint.getParameterValue(sh.maxInclusive)
     const comp = compareTerms(valueNode, maxInclusiveNode, context.ns)
 
     return (comp !== null && comp <= 0)
@@ -248,32 +255,35 @@ function validateMaxInclusive(context, constraint) {
 }
 
 function validateMaxLength(context, constraint) {
+  const { sh } = context.ns
+  const maxLengthNode = constraint.getParameterValue(sh.maxLength)
+
   return function (context, focusNode, valueNode) {
     if (valueNode.termType === 'BlankNode') {
       return false
     }
 
-    const { sh } = context.ns
-    const maxLengthNode = constraint.getParameterValue(sh.maxLength)
     return valueNode.value.length <= Number(maxLengthNode.value)
   }
 }
 
 function validateMinCountProperty(context, constraint) {
+  const { sh } = context.ns
+  const path = constraint.shape.pathObject
+  const minCountNode = constraint.getParameterValue(sh.minCount)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const path = constraint.shape.pathObject
     const count = getPathObjects(context.$data, focusNode, path).length
-    const minCountNode = constraint.getParameterValue(sh.minCount)
 
     return count >= Number(minCountNode.value)
   }
 }
 
 function validateMinExclusive(context, constraint) {
+  const { sh } = context.ns
+  const minExclusiveNode = constraint.getParameterValue(sh.minExclusive)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const minExclusiveNode = constraint.getParameterValue(sh.minExclusive)
     const comp = compareTerms(valueNode, minExclusiveNode, context.ns)
 
     return (comp !== null && comp > 0)
@@ -281,9 +291,10 @@ function validateMinExclusive(context, constraint) {
 }
 
 function validateMinInclusive(context, constraint) {
+  const { sh } = context.ns
+  const minInclusiveNode = constraint.getParameterValue(sh.minInclusive)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const minInclusiveNode = constraint.getParameterValue(sh.minInclusive)
     const comp = compareTerms(valueNode, minInclusiveNode, context.ns)
 
     return (comp !== null && comp >= 0)
@@ -291,22 +302,23 @@ function validateMinInclusive(context, constraint) {
 }
 
 function validateMinLength(context, constraint) {
+  const { sh } = context.ns
+  const minLengthNode = constraint.getParameterValue(sh.minLength)
+
   return function (context, focusNode, valueNode) {
     if (valueNode.termType === 'BlankNode') {
       return false
     }
 
-    const { sh } = context.ns
-    const minLengthNode = constraint.getParameterValue(sh.minLength)
     return valueNode.value.length >= Number(minLengthNode.value)
   }
 }
 
 function validateNodeKind(context, constraint) {
-  return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const nodeKindNode = constraint.getParameterValue(sh.nodeKind)
+  const { sh } = context.ns
+  const nodeKindNode = constraint.getParameterValue(sh.nodeKind)
 
+  return function (context, focusNode, valueNode) {
     if (valueNode.termType === 'BlankNode') {
       return sh.BlankNode.equals(nodeKindNode) ||
         sh.BlankNodeOrIRI.equals(nodeKindNode) ||
@@ -324,59 +336,65 @@ function validateNodeKind(context, constraint) {
 }
 
 function validateNode(context, constraint) {
+  const { sh } = context.ns
+  const nodeNode = constraint.getParameterValue(sh.node)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const nodeNode = constraint.getParameterValue(sh.node)
     return context.validateNodeAgainstShape(valueNode, nodeNode)
   }
 }
 
 function validateNot(context, constraint) {
+  const { sh } = context.ns
+  const notNode = constraint.getParameterValue(sh.not)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const notNode = constraint.getParameterValue(sh.not)
     return !context.nodeConformsToShape(valueNode, notNode)
   }
 }
 
 function validateOr(context, constraint) {
+  const { sh } = context.ns
+  const orNode = constraint.getParameterValue(sh.or)
+  const shapes = rdfListToArray(context.$shapes.node(orNode))
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const orNode = constraint.getParameterValue(sh.or)
-    const shapes = rdfListToArray(context.$shapes.node(orNode))
     return shapes.some(shape => context.nodeConformsToShape(valueNode, shape))
   }
 }
 
 function validatePattern(context, constraint) {
+  const { sh } = context.ns
+  const flagsNode = constraint.getParameterValue(sh.flags)
+  const patternNode = constraint.getParameterValue(sh.pattern)
+  const re = flagsNode ? new RegExp(patternNode.value, flagsNode.value) : new RegExp(patternNode.value)
+
   return function (context, focusNode, valueNode) {
     if (valueNode.termType === 'BlankNode') {
       return false
     }
 
-    const { sh } = context.ns
-    const flagsNode = constraint.getParameterValue(sh.flags)
-    const patternNode = constraint.getParameterValue(sh.pattern)
-    const re = flagsNode ? new RegExp(patternNode.value, flagsNode.value) : new RegExp(patternNode.value)
     return re.test(valueNode.value)
   }
 }
 
 function validateQualifiedMaxCountProperty(context, constraint) {
+  const { sh } = context.ns
+  const qualifiedMaxCountNode = constraint.getParameterValue(sh.qualifiedMaxCount)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
     const count = validateQualifiedHelper(context, focusNode, constraint)
-    const qualifiedMaxCountNode = constraint.getParameterValue(sh.qualifiedMaxCount)
 
     return qualifiedMaxCountNode.termType === 'Literal' && count <= Number(qualifiedMaxCountNode.value)
   }
 }
 
 function validateQualifiedMinCountProperty(context, constraint) {
+  const { sh } = context.ns
+  const qualifiedMinCountNode = constraint.getParameterValue(sh.qualifiedMinCount)
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
     const count = validateQualifiedHelper(context, focusNode, constraint)
-    const qualifiedMinCountNode = constraint.getParameterValue(sh.qualifiedMinCount)
 
     return qualifiedMinCountNode.termType === 'Literal' && count >= Number(qualifiedMinCountNode.value)
   }
@@ -425,16 +443,16 @@ function validateQualifiedConformsToASibling(context, value, siblingShapes) {
 }
 
 function validateUniqueLangProperty(context, constraint) {
-  return function (context, focusNode, valueNode) {
-    const { sh, xsd } = context.ns
-    const uniqueLangNode = constraint.getParameterValue(sh.uniqueLang)
-    const trueTerm = context.factory.literal('true', xsd.boolean)
+  const { sh, xsd } = context.ns
+  const uniqueLangNode = constraint.getParameterValue(sh.uniqueLang)
+  const trueTerm = context.factory.literal('true', xsd.boolean)
+  const path = constraint.shape.pathObject
 
+  return function (context, focusNode, valueNode) {
     if (!trueTerm.equals(uniqueLangNode)) {
       return
     }
 
-    const path = constraint.shape.pathObject
     const map = {}
     getPathObjects(context.$data, focusNode, path).forEach(value => {
       const lang = value.language
@@ -462,10 +480,11 @@ function validateUniqueLangProperty(context, constraint) {
 }
 
 function validateXone(context, constraint) {
+  const { sh } = context.ns
+  const xoneNode = constraint.getParameterValue(sh.xone)
+  const shapes = rdfListToArray(context.$shapes.node(xoneNode))
+
   return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    const xoneNode = constraint.getParameterValue(sh.xone)
-    const shapes = rdfListToArray(context.$shapes.node(xoneNode))
     const conformsCount = shapes
       .map(shape => context.nodeConformsToShape(valueNode, shape))
       .filter(Boolean)
