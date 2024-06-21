@@ -8,7 +8,15 @@ class ValidationFunction {
   }
 
   compile(constraint) {
-    return new ValidationFunction(this.context, this.funcName, this.func.apply(globalObject, [this.context, constraint]))
+    return new CompiledValidationFunction(this.context, this.funcName, this.func.apply(globalObject, [this.context, constraint]))
+  }
+}
+
+class CompiledValidationFunction {
+  constructor(context, functionName, func) {
+    this.context = context
+    this.funcName = functionName
+    this.func = func
   }
 
   execute(focusNode, valueNode) {
