@@ -20,7 +20,7 @@ import NodeSet from './node-set.js'
 import ValidationFunction from './validation-function.js'
 import validatorsRegistry from './validators-registry.js'
 import { extractPropertyPath, getPathObjects } from './property-path.js'
-import { getInstancesOf, isInstanceOf, rdfListToArray } from './dataset-utils.js'
+import { getInstancesOf, isInstanceOf } from './dataset-utils.js'
 
 class ShapesGraph {
   constructor(context) {
@@ -126,14 +126,6 @@ class Constraint {
 
   get componentMessages() {
     return this.component.getMessages(this.shape)
-  }
-
-  get nodeSet() {
-    const { sh } = this.shape.context.ns
-    if (!this.inNodeSet) {
-      this.inNodeSet = new NodeSet(rdfListToArray(this.shapeNodePointer.out(sh.in)))
-    }
-    return this.inNodeSet
   }
 }
 

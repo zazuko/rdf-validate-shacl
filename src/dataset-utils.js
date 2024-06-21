@@ -40,7 +40,7 @@ export function * extractSourceShapeStructure(shape, dataset, startNode, visited
 
   const inListSize = term => {
     const inConstraint = shape.constraints.find(x => x.paramValue.equals(term))
-    return inConstraint?.nodeSet.size
+    return inConstraint?.validationFunction.func.nodeSet.size
   }
 
   visited.add(startNode)

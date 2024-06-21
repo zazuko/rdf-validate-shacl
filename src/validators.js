@@ -150,11 +150,15 @@ function validateHasValueProperty(context, constraint) {
 }
 
 function validateIn(context, constraint) {
-  // todo: refactor from previous implementation
-  return function (context, focusNode, valueNode) {
-    const { sh } = context.ns
-    return constraint.nodeSet.has(valueNode)
+  const { sh } = context.ns
+  const inNode = constraint.getParameterValue(sh.in)
+
+  function compiled(context, focusNode, valueNode) {
+    return compiled.nodeSet.has(valueNode)
   }
+  compiled.nodeSet = new NodeSet(rdfListToArray(context.$shapes.node(inNode)))
+
+  return compiled
 }
 
 function validateLanguageIn(context, constraint) {
