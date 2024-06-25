@@ -406,12 +406,22 @@ function validateXone(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const xoneNode = constraint.getParameterValue(sh.xone)
   const shapes = rdfListToArray(context.$shapes.node(xoneNode))
-  const conformsCount = shapes
-    .map(shape => context.nodeConformsToShape(valueNode, shape))
-    .filter(Boolean)
-    .length
 
-  return conformsCount === 1
+  const conformsPositions = []
+  for (let i = 0; i < shapes.length; i++) {
+    const shape = shapes[i]
+    if (context.nodeConformsToShape(valueNode, shape)) {
+      conformsPositions.push(i + 1)
+    }
+  }
+
+  if (conformsPositions.length === 0) {
+    return ['no shapes matched']
+  }
+  if (conformsPositions.length > 1) {
+    return ['multiple matches, at positions ' + conformsPositions.join(', ')]
+  }
+  return []
 }
 
 // Private helper functions
