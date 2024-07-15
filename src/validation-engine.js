@@ -67,6 +67,16 @@ class ValidationEngine {
 
     if (shape.deactivated) return false
 
+    // have we already checked this focusNode against the shape? If so, don't check again to prevent possible recursion.
+    if (focusNode.id && shape.shapeNode.id) {
+      let id = focusNode.id + '::' + shape.shapeNode.id
+      if (this.context.checkedNodes.has(id)) {
+        return false
+      }
+      // mark given focusNode/shape pair as 'checked'.
+      this.context.checkedNodes.add(id)
+    }
+
     const valueNodes = shape.getValueNodes(focusNode, dataGraph)
     let errorFound = false
     for (const constraint of shape.constraints) {

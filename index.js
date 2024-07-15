@@ -23,6 +23,7 @@ class SHACLValidator {
     this.allowNamedNodeInList = options.allowNamedNodeInList === undefined ? false : options.allowNamedNodeInList
     this.loadShapes(shapes)
     this.validationEngine = new ValidationEngine(this, options)
+    this.checkedNodes = new Set()
 
     this.depth = 0
   }
@@ -34,6 +35,7 @@ class SHACLValidator {
    * @return {ValidationReport} - Result of the validation
    */
   validate(data) {
+    this.checkedNodes.clear()
     this.$data = clownface({ dataset: data, factory: this.factory })
     this.validationEngine.validateAll(this.$data)
     return this.validationEngine.getReport()
@@ -48,6 +50,7 @@ class SHACLValidator {
    * @returns {ValidationReport} - Result of the validation
    */
   validateNode(data, focusNode, shapeNode) {
+    this.checkedNodes.clear()
     this.$data = clownface({ dataset: data, factory: this.factory })
     this.nodeConformsToShape(focusNode, shapeNode, this.validationEngine)
     return this.validationEngine.getReport()
