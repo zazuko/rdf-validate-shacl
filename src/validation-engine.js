@@ -15,7 +15,6 @@ class ValidationEngine {
     this.violationsCount = 0
     this.validationError = null
     this.nestedResults = {}
-    this.checkedNodes = new Set()
   }
 
   clone() {
@@ -24,6 +23,7 @@ class ValidationEngine {
 
   initReport() {
     const { rdf, sh } = this.context.ns
+    this.checkedNodes = new Set()
 
     this.reportPointer = clownface({
       dataset: this.factory.dataset(),
@@ -43,7 +43,6 @@ class ValidationEngine {
     this.validationError = null
     try {
       this.initReport()
-      this.checkedNodes.clear()
       let foundError = false
       const shapes = this.context.shapesGraph.shapesWithTarget
       for (const shape of shapes) {
