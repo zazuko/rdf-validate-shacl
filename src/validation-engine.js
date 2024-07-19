@@ -15,6 +15,7 @@ class ValidationEngine {
     this.violationsCount = 0
     this.validationError = null
     this.nestedResults = {}
+    this.checkedNodes = new Set()
   }
 
   clone() {
@@ -42,6 +43,7 @@ class ValidationEngine {
     this.validationError = null
     try {
       this.initReport()
+      this.checkedNodes.clear()
       let foundError = false
       const shapes = this.context.shapesGraph.shapesWithTarget
       for (const shape of shapes) {
@@ -69,11 +71,11 @@ class ValidationEngine {
 
     // have we already checked this focusNode against the shape? If so, don't check again to prevent possible recursion.
     let id = JSON.stringify([focusNode, shape.shapeNode])
-    if (this.context.checkedNodes.has(id)) {
+    if (this.checkedNodes.has(id)) {
       return false
     }
     // mark given focusNode/shape pair as 'checked'.
-    this.context.checkedNodes.add(id)
+    this.checkedNodes.add(id)
 
     const valueNodes = shape.getValueNodes(focusNode, dataGraph)
     let errorFound = false
