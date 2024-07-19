@@ -352,7 +352,7 @@ function validateQualifiedHelper(context, focusNode, constraint) {
   const path = constraint.shape.pathObject
   return getPathObjects(context.$data, focusNode, path)
     .filter(value =>
-      context.nodeConformsToShape(value, qualifiedValueShapeNode, context.validationEngine, true) &&
+      context.nodeConformsToShape(value, qualifiedValueShapeNode) &&
       !validateQualifiedConformsToASibling(context, value, [...siblingShapes]),
     )
     .length

@@ -70,10 +70,7 @@ class SHACLValidator {
   }
 
   // Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
-  nodeConformsToShape(focusNode, shapeNode, engine = this.validationEngine.clone(), resetCheckedNodes = false) {
-    if (resetCheckedNodes) {
-      this.checkedNodes.clear()
-    }
+  nodeConformsToShape(focusNode, shapeNode, engine = this.validationEngine.clone()) {
     const shape = this.shapesGraph.getShape(shapeNode)
     try {
       this.depth++
