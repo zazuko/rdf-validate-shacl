@@ -13,8 +13,11 @@ on:
 jobs:
   add-to-project:
     runs-on: ubuntu-latest
+    env:
+      BACKLOG_PAT: ${{ secrets.BACKLOG_PAT }}
     steps:
       - uses: actions/add-to-project@v0.5.0
+        if: env.BACKLOG_PAT
         with:
           project-url: https://github.com/orgs/zazuko/projects/23
           github-token: ${{ secrets.BACKLOG_PAT }}
