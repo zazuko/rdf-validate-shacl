@@ -86,6 +86,15 @@ ex:ValidPerson1
           sh:sourceShape ex:PersonShape-address-city ;
           sh:value ex:InvalidCity ;
         ] ;
+      sh:result [
+          rdf:type sh:ValidationResult ;
+          sh:focusNode ex:InvalidAddress ;
+          sh:resultPath ex:city ;
+          sh:resultSeverity sh:Violation ;
+          sh:sourceConstraintComponent sh:ClassConstraintComponent ;
+          sh:sourceShape ex:PersonShape-address-city ;
+          sh:value ex:InvalidCity ;
+        ] ;
     ] ;
   mf:status sht:approved ;
 .
