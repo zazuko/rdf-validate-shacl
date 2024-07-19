@@ -37,15 +37,6 @@
 			sh:resultPath ex:r ;
 			sh:sourceShape ex:s4 ;
 			sh:sourceConstraintComponent sh:ClassConstraintComponent
-		] ;
-		sh:result [ 
-			rdf:type sh:ValidationResult ;
-			sh:resultSeverity sh:Violation ;
-			sh:focusNode ex:j ;
-			sh:value ex:k ;
-			sh:resultPath ex:r ;
-			sh:sourceShape ex:s4 ;
-			sh:sourceConstraintComponent sh:ClassConstraintComponent
 		]
 	] ;
 	mf:status sht:approved .

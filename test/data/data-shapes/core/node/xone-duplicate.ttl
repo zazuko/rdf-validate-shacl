@@ -21,14 +21,14 @@
               sh:conforms "false"^^xsd:boolean ;
 	      sh:result [ rdf:type sh:ValidationResult ;
  	      		  sh:resultSeverity sh:Violation ;
- 			  sh:focusNode ex:i ;
- 			  sh:value ex:i ;
- 			  sh:sourceShape ex:s1 ;
- 			  sh:sourceConstraintComponent sh:XoneConstraintComponent ] ;
-	      sh:result [ rdf:type sh:ValidationResult ;
- 	      		  sh:resultSeverity sh:Violation ;
  			  sh:focusNode ex:j ;
  			  sh:value ex:j ;
  			  sh:sourceShape ex:s1 ;
  			  sh:sourceConstraintComponent sh:XoneConstraintComponent ] ] ;
+	      sh:result [ rdf:type sh:ValidationResult ;
+ 	      		  sh:resultSeverity sh:Violation ;
+ 			  sh:focusNode ex:i ;
+ 			  sh:value ex:i ;
+ 			  sh:sourceShape ex:s1 ;
+ 			  sh:sourceConstraintComponent sh:XoneConstraintComponent ] ;
   mf:status sht:approved .
