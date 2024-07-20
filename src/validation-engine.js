@@ -4,6 +4,7 @@ import ValidationReport from './validation-report.js'
 import { extractStructure, extractSourceShapeStructure } from './dataset-utils.js'
 
 const error = debug('validation-enging::error')
+const maxRecursionDepth = 30
 
 class ValidationEngine {
   constructor(context, options) {
@@ -23,7 +24,7 @@ class ValidationEngine {
 
   initReport() {
     const { rdf, sh } = this.context.ns
-    this.checkedNodes = new Set()
+    this.checkedNodes = {}
 
     this.reportPointer = clownface({
       dataset: this.factory.dataset(),
@@ -68,13 +69,15 @@ class ValidationEngine {
 
     if (shape.deactivated) return false
 
-    // have we already checked this focusNode against the shape? If so, don't check again to prevent possible recursion.
+    // check recursion depth: how many times have we already checked this focusNode against this shape?
     let id = JSON.stringify([focusNode, shape.shapeNode])
-    if (this.checkedNodes.has(id)) {
+    let recursionDepth = this.checkedNodes[id] === undefined ? 0 : this.checkedNodes[id]
+    if (recursionDepth > maxRecursionDepth) {
+      // max recursion depth reached, so bail out
       return false
     }
-    // mark given focusNode/shape pair as 'checked'.
-    this.checkedNodes.add(id)
+    // increment check counter for given focusNode/shape pair
+    this.checkedNodes[id] = recursionDepth + 1
 
     const valueNodes = shape.getValueNodes(focusNode, dataGraph)
     let errorFound = false
