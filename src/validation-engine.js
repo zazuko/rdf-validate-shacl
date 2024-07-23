@@ -4,12 +4,14 @@ import ValidationReport from './validation-report.js'
 import { extractStructure, extractSourceShapeStructure } from './dataset-utils.js'
 
 const error = debug('validation-enging::error')
+const defaultMaxNodeChecks = 50
 
 class ValidationEngine {
   constructor(context, options) {
     this.context = context
     this.factory = context.factory
     this.maxErrors = options.maxErrors
+    this.maxNodeChecks = options.maxNodeChecks === undefined ? defaultMaxNodeChecks : options.maxNodeChecks
     this.initReport()
     this.recordErrorsLevel = 0
     this.violationsCount = 0
@@ -18,11 +20,12 @@ class ValidationEngine {
   }
 
   clone() {
-    return new ValidationEngine(this.context, { maxErrors: this.maxErrors })
+    return new ValidationEngine(this.context, { maxErrors: this.maxErrors, maxNodeChecks: this.maxNodeChecks })
   }
 
   initReport() {
     const { rdf, sh } = this.context.ns
+    this.nodeCheckCounters = {}
 
     this.reportPointer = clownface({
       dataset: this.factory.dataset(),
@@ -66,6 +69,18 @@ class ValidationEngine {
     if (this.maxErrorsReached()) return true
 
     if (shape.deactivated) return false
+
+    if (this.maxNodeChecks > 0) {
+      // check how many times we have already tested this focusNode against this shape
+      const id = JSON.stringify([focusNode, shape.shapeNode])
+      const nodeCheckCounter = this.nodeCheckCounters[id] === undefined ? 0 : this.nodeCheckCounters[id]
+      if (nodeCheckCounter > this.maxNodeChecks) {
+        // max node checks reached, so bail out
+        return false
+      }
+      // increment check counter for given focusNode/shape pair
+      this.nodeCheckCounters[id] = nodeCheckCounter + 1
+    }
 
     const valueNodes = shape.getValueNodes(focusNode, dataGraph)
     let errorFound = false
