@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.5.6
+
+### Patch Changes
+
+- 6041552: Added a `maxNodeChecks` option to prevent `too much recursion` error caused by cyclic shape references (fixes #136)
+
 ## 0.5.5
 
 ### Patch Changes
