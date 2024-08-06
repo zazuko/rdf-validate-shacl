@@ -109,6 +109,10 @@ class Constraint {
     return this.paramValue || this.shapeNodePointer.out(param).term
   }
 
+  get pathObject() {
+    return this.shape.pathObject
+  }
+
   get validationFunction() {
     return this.shape.isPropertyShape
       ? this.component.propertyValidationFunction
@@ -231,7 +235,6 @@ class Shape {
     this.severity = this.shapeNodePointer.out(sh.severity).term || sh.Violation
     this.deactivated = this.shapeNodePointer.out(sh.deactivated).value === 'true'
     this.path = this.shapeNodePointer.out(sh.path).term
-    this.isPropertyShape = this.path != null
     this._pathObject = undefined
 
     this.constraints = []
@@ -249,6 +252,16 @@ class Shape {
         }
       }
     })
+  }
+
+  get isPropertyShape() {
+    return this.path != null
+  }
+
+  overridePath(path) {
+    const shape = new Shape(this.context, this.shapeNode)
+    shape.path = path
+    return shape
   }
 
   /**
