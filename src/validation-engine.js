@@ -12,15 +12,21 @@ class ValidationEngine {
     this.factory = context.factory
     this.maxErrors = options.maxErrors
     this.maxNodeChecks = options.maxNodeChecks === undefined ? defaultMaxNodeChecks : options.maxNodeChecks
+    this.propertyPath = options.propertyPath
     this.initReport()
-    this.recordErrorsLevel = 0
+    this.recordErrorsLevel = options.recordErrorsLevel || 0
     this.violationsCount = 0
     this.validationError = null
-    this.nestedResults = {}
+    this.nestedResults = options.nestedResults || {}
   }
 
-  clone() {
-    return new ValidationEngine(this.context, { maxErrors: this.maxErrors, maxNodeChecks: this.maxNodeChecks })
+  clone({ propertyPath, recordErrorsLevel } = {}) {
+    return new ValidationEngine(this.context, {
+      maxErrors: this.maxErrors,
+      maxNodeChecks: this.maxNodeChecks,
+      propertyPath,
+      recordErrorsLevel,
+    })
   }
 
   initReport() {
