@@ -1,8 +1,11 @@
 import { validateTerm } from 'rdf-validate-datatype'
 import { fromRdf } from 'rdf-literal'
+import { Store } from 'oxigraph'
+import sparqljs from 'sparqljs'
 import NodeSet from './node-set.js'
 import { getPathObjects } from './property-path.js'
 import { isInstanceOf, rdfListToArray } from './dataset-utils.js'
+const { Parser, Generator } = sparqljs
 
 function validateAnd(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
@@ -414,6 +417,73 @@ function validateXone(context, focusNode, valueNode, constraint) {
   return conformsCount === 1
 }
 
+const getPrefixes = context => {
+  const { sh } = context.ns
+  const pairs = context.$shapes
+    .has(sh.declare)
+    .map((declaration) => {
+      return declaration.out(sh.declare).out([
+        sh.namespace,
+        sh.prefix,
+      ]).values
+    })
+  return new Map(pairs)
+}
+
+const getSPARQLPath = path => {
+  if (path.termType === 'NamedNode') {
+    return `<${path.value}>`
+  }
+  if (Array.isArray(path)) {
+    return path.map(getSPARQLPath).join('/')
+  }
+  if (path.or) {
+    return path.or.map(getSPARQLPath).join('|')
+  }
+  if (path.inverse) {
+    return '^' + getSPARQLPath(path.inverse)
+  }
+  if (path.zeroOrMore) {
+    return getSPARQLPath(path.zeroOrMore) + '*'
+  }
+  if (path.oneOrMore) {
+    return getSPARQLPath(path.oneOrMore) + '+'
+  }
+  if (path.zeroOrOne) {
+    return getSPARQLPath(path.zeroOrOne) + '?'
+  }
+}
+
+function validateSparql(context, focusNode, valueNode, constraint) {
+  const { sh } = context.ns
+  const prefixMap = getPrefixes(context)
+  const store = new Store(context.$data.dataset)
+  const sparql = constraint.shapeNodePointer.out(sh.sparql)
+  const prefixes = sparql.out(sh.prefixes).map(prefix => `PREFIX ${prefixMap.get(prefix.value)}: <${prefix.value}>`)
+  let select = prefixes.join('\n') + sparql.out(sh.select).term.value
+  if (constraint.shape.pathObject) {
+    select = select.replaceAll('$PATH', getSPARQLPath(constraint.shape.pathObject))
+  }
+
+  const parsed = new Parser().parse(select)
+  // insert bind at the beginning of the where clause
+  parsed.where.unshift({
+    type: 'bind',
+    variable: { termType: 'Variable', value: 'this' },
+    expression: focusNode,
+  })
+  const generated = new Generator().stringify(parsed)
+  // console.log(generated)
+  const bindings = store.query(generated)
+  return bindings.map(binding => {
+    const result = { value: binding.get('value') }
+    if (binding.has('path')) {
+      result.path = binding.get('path')
+    }
+    return result
+  })
+}
+
 // Private helper functions
 
 /**
@@ -487,4 +557,5 @@ export default {
   validateQualifiedMinCountProperty,
   validateUniqueLangProperty,
   validateXone,
+  validateSparql,
 }

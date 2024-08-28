@@ -175,4 +175,10 @@ export default {
       func: validators.validateXone,
     },
   },
+  [ns.sh.SPARQLConstraintComponent.value]: {
+    validator: {
+      func: validators.validateSparql,
+    },
+  },
+
 }
