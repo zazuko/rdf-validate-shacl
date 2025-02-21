@@ -13,6 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: bencherdev/bencher@v0.4.36
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - run: npm ci
       - name: Track PR Benchmarks with Bencher
         run: |
           bencher run \         
