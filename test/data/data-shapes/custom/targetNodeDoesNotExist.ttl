@@ -8,10 +8,10 @@
 
 <>
   rdf:type mf:Manifest ;
-  mf:entries ( <target-node-does-not-exist> ) ;
+  mf:entries ( <targetNodeDoesNotExist> ) ;
 .
 
-<target-node-does-not-exist>
+<targetNodeDoesNotExist>
   rdf:type sht:Validate ;
   rdfs:label "Test of sh:targetNode absent from data graph" ;
   mf:action [
