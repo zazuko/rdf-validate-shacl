@@ -46,6 +46,7 @@
   },
   "files": [
     "/src",
-    "index.js"
+    "index.js",
+    "CHANGELOG.md"
   ]
 }
