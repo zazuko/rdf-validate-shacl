@@ -50,5 +50,8 @@
     "/src",
     "index.js",
     "CHANGELOG.md"
-  ]
+  ],
+  "mocha": {
+    "ignore": "test/run-benchmark.js"
+  }
 }
