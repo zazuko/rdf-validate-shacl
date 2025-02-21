@@ -9,13 +9,16 @@ const suite = new Suite({
     const report = {}
 
     for (const result of results) {
+      const lowerValue = result.histogram.min / 1000 / 1000
+      const upperValue = result.histogram.max / 1000 / 1000
       report[result.name] = {
-        opsSec: {
+        throughput: {
           value: result.opsSec,
         },
-        time: {
-          lower_value: result.histogram.min,
-          upper_value: result.histogram.max,
+        latency: {
+          value: lowerValue + (upperValue - lowerValue) / 2,
+          lower_value: lowerValue,
+          upper_value: upperValue,
         },
       }
     }
