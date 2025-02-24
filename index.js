@@ -49,7 +49,7 @@ class SHACLValidator {
    */
   validateNode(data, focusNode, shapeNode) {
     this.$data = clownface({ dataset: data, factory: this.factory })
-    this.nodeConformsToShape(focusNode, shapeNode)
+    this.nodeConformsToShape(focusNode, shapeNode, this.validationEngine)
     return this.validationEngine.getReport()
   }
 
@@ -67,15 +67,30 @@ class SHACLValidator {
   }
 
   // Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
-  nodeConformsToShape(focusNode, shapeNode) {
-    const shape = this.shapesGraph.getShape(shapeNode)
+  nodeConformsToShape(focusNode, shapeNode, propertyPathOrEngine) {
+    let engine
+    let shape = this.shapesGraph.getShape(shapeNode)
+
+    if (propertyPathOrEngine && 'termType' in propertyPathOrEngine) {
+      engine = this.validationEngine.clone({
+        propertyPath: propertyPathOrEngine,
+        recordErrorsLevel: this.validationEngine.recordErrorsLevel,
+      })
+      shape = shape.overridePath(propertyPathOrEngine)
+    } else {
+      engine = propertyPathOrEngine || this.validationEngine.clone()
+    }
     try {
       this.depth++
-      const foundViolations = this.validationEngine.validateNodeAgainstShape(focusNode, shape, this.$data)
+      const foundViolations = engine.validateNodeAgainstShape(focusNode, shape, this.$data)
       return !foundViolations
     } finally {
       this.depth--
     }
+  }
+
+  validateNodeAgainstShape(focusNode, shapeNode) {
+    return this.nodeConformsToShape(focusNode, shapeNode, this.validationEngine)
   }
 }
 

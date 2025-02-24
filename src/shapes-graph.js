@@ -21,7 +21,7 @@ import NodeSet from './node-set.js'
 import ValidationFunction from './validation-function.js'
 import validatorsRegistry from './validators-registry.js'
 import { getPathObjects } from './property-path.js'
-import { getInstancesOf, isInstanceOf } from './dataset-utils.js'
+import { getInstancesOf, isInstanceOf, rdfListToArray } from './dataset-utils.js'
 
 class ShapesGraph {
   constructor(context) {
@@ -110,6 +110,10 @@ class Constraint {
     return this.paramValue || this.shapeNodePointer.out(param).term
   }
 
+  get pathObject() {
+    return this.shape.pathObject
+  }
+
   get validationFunction() {
     return this.shape.isPropertyShape
       ? this.component.propertyValidationFunction
@@ -124,6 +128,14 @@ class Constraint {
 
   get componentMessages() {
     return this.component.getMessages(this.shape)
+  }
+
+  get nodeSet() {
+    const { sh } = this.shape.context.ns
+    if (!this.inNodeSet) {
+      this.inNodeSet = new NodeSet(rdfListToArray(this.shapeNodePointer.out(sh.in)))
+    }
+    return this.inNodeSet
   }
 }
 
@@ -224,7 +236,6 @@ class Shape {
     this.severity = this.shapeNodePointer.out(sh.severity).term || sh.Violation
     this.deactivated = this.shapeNodePointer.out(sh.deactivated).value === 'true'
     this.path = this.shapeNodePointer.out(sh.path).term
-    this.isPropertyShape = this.path != null
     this._pathObject = undefined
 
     this.constraints = []
@@ -242,6 +253,16 @@ class Shape {
         }
       }
     })
+  }
+
+  get isPropertyShape() {
+    return this.path != null
+  }
+
+  overridePath(path) {
+    const shape = new Shape(this.context, this.shapeNode)
+    shape.path = path
+    return shape
   }
 
   /**

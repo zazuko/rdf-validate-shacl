@@ -1,0 +1,9 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <https://example.org/> .
+
+ex:person1 a ex:Person .
+[] a ex:Person .
+
+ex:personShape a sh:NodeShape ;
+	sh:targetClass ex:Person ;
+    sh:node [ sh:nodeKind sh:BlankNode ] .

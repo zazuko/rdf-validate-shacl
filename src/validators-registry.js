@@ -54,7 +54,7 @@ export default {
   [ns.sh.InConstraintComponent.value]: {
     validator: {
       func: validators.validateIn,
-      message: 'Value is not in {$in}',
+      message: 'Value is not one of the allowed values: {$in}',
     },
   },
   [ns.sh.LanguageInConstraintComponent.value]: {

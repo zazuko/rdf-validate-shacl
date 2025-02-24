@@ -1,0 +1,23 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix ex: <https://example.org/> .
+
+ex:personShape a sh:NodeShape ;
+	sh:targetClass ex:Person ;
+	sh:property [
+		sh:path ex:address ;
+		sh:message "ex:city should be sh:IRI" ;
+		sh:node ex:cityShape
+	] .
+
+ex:cityShape 
+	sh:property [ 
+      sh:path ex:city ; 
+      sh:nodeKind sh:IRI 
+  ] .
+
+ex:sizeShape 
+	sh:targetObjectsOf ex:size ;
+	sh:or (
+        [ sh:hasValue ex:small ]
+		[ sh:hasValue ex:big ]
+	) .

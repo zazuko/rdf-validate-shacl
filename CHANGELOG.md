@@ -1,5 +1,37 @@
 ## 0.4.4
 
+## 0.5.6
+
+### Patch Changes
+
+- 6041552: Added a `maxNodeChecks` option to prevent `too much recursion` error caused by cyclic shape references (fixes #136)
+
+## 0.5.5
+
+### Patch Changes
+
+- e2f77f9: Improved result messages with lists
+- 1329680: Improve performance of validating `sh:in` constraints
+
+## 0.5.4
+
+### Patch Changes
+
+- 5257789: fix #125 (phantom result details)
+
+## 0.5.3
+
+### Patch Changes
+
+- dcad72a: More strict dependency on `@rdfjs/environment`
+
+## 0.5.2
+
+### Patch Changes
+
+- 4233170: Update example in readme
+- 7bae4cc: Update `@rdfjs/environment` to v1 (keep support for v0)
+
 ## 0.5.1
 
 ### Patch Changes

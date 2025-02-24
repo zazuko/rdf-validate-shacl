@@ -9,7 +9,13 @@ function validateAnd(context, focusNode, valueNode, constraint) {
   const andNode = constraint.getParameterValue(sh.and)
   const shapes = rdfListToArray(context.$shapes.node(andNode))
 
-  return shapes.every((shape) => context.nodeConformsToShape(valueNode, shape))
+  return shapes.every((shape) => {
+    if (constraint.shape.isPropertyShape) {
+      return context.nodeConformsToShape(focusNode, shape, constraint.pathObject)
+    }
+
+    return context.nodeConformsToShape(valueNode, shape)
+  })
 }
 
 function validateClass(context, focusNode, valueNode, constraint) {
@@ -131,10 +137,7 @@ function validateHasValueProperty(context, focusNode, valueNode, constraint) {
 }
 
 function validateIn(context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const inNode = constraint.getParameterValue(sh.in)
-
-  return new NodeSet(rdfListToArray(context.$shapes.node(inNode))).has(valueNode)
+  return constraint.nodeSet.has(valueNode)
 }
 
 function validateLanguageIn(context, focusNode, valueNode, constraint) {
@@ -229,7 +232,7 @@ function validateMaxLength(context, focusNode, valueNode, constraint) {
 
 function validateMinCountProperty(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
-  const path = constraint.shape.pathObject
+  const path = constraint.pathObject
   const count = getPathObjects(context.$data, focusNode, path).length
   const minCountNode = constraint.getParameterValue(sh.minCount)
 
@@ -284,7 +287,7 @@ function validateNodeKind(context, focusNode, valueNode, constraint) {
 function validateNode(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const nodeNode = constraint.getParameterValue(sh.node)
-  return context.nodeConformsToShape(valueNode, nodeNode)
+  return context.validateNodeAgainstShape(valueNode, nodeNode)
 }
 
 function validateNot(context, focusNode, valueNode, constraint) {

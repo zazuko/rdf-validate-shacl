@@ -1,24 +1,37 @@
 import clownface from 'clownface'
 import debug from 'debug'
 import ValidationReport from './validation-report.js'
-import { extractStructure } from './dataset-utils.js'
+import { extractStructure, extractSourceShapeStructure } from './dataset-utils.js'
 
 const error = debug('validation-engine::error')
+const defaultMaxNodeChecks = 50
 
 class ValidationEngine {
   constructor(context, options) {
     this.context = context
     this.factory = context.factory
     this.maxErrors = options.maxErrors
+    this.maxNodeChecks = options.maxNodeChecks === undefined ? defaultMaxNodeChecks : options.maxNodeChecks
+    this.propertyPath = options.propertyPath
     this.initReport()
-    this.recordErrorsLevel = 0
+    this.recordErrorsLevel = options.recordErrorsLevel || 0
     this.violationsCount = 0
     this.validationError = null
-    this.nestedResults = {}
+    this.nestedResults = options.nestedResults || {}
+  }
+
+  clone({ propertyPath, recordErrorsLevel } = {}) {
+    return new ValidationEngine(this.context, {
+      maxErrors: this.maxErrors,
+      maxNodeChecks: this.maxNodeChecks,
+      propertyPath,
+      recordErrorsLevel,
+    })
   }
 
   initReport() {
     const { rdf, sh } = this.context.ns
+    this.nodeCheckCounters = {}
 
     this.reportPointer = clownface({
       dataset: this.factory.dataset(),
@@ -62,6 +75,18 @@ class ValidationEngine {
     if (this.maxErrorsReached()) return true
 
     if (shape.deactivated) return false
+
+    if (this.maxNodeChecks > 0) {
+      // check how many times we have already tested this focusNode against this shape
+      const id = JSON.stringify([focusNode, shape.shapeNode])
+      const nodeCheckCounter = this.nodeCheckCounters[id] === undefined ? 0 : this.nodeCheckCounters[id]
+      if (nodeCheckCounter > this.maxNodeChecks) {
+        // max node checks reached, so bail out
+        return false
+      }
+      // increment check counter for given focusNode/shape pair
+      this.nodeCheckCounters[id] = nodeCheckCounter + 1
+    }
 
     const valueNodes = shape.getValueNodes(focusNode, dataGraph)
     let errorFound = false
@@ -237,7 +262,7 @@ class ValidationEngine {
       .addOut(sh.sourceShape, sourceShape)
       .addOut(sh.focusNode, focusNode)
 
-    this.copyNestedStructure(sourceShape, result)
+    this.copySourceShapeStructure(constraint.shape, result)
     this.copyNestedStructure(focusNode, result)
 
     const children = this.nestedResults[this.recordErrorsLevel + 1]
@@ -257,6 +282,13 @@ class ValidationEngine {
 
   copyNestedStructure(subject, result) {
     const structureQuads = extractStructure(this.context.$shapes.dataset, subject)
+    for (const quad of structureQuads) {
+      result.dataset.add(quad)
+    }
+  }
+
+  copySourceShapeStructure(shape, result) {
+    const structureQuads = extractSourceShapeStructure(shape, this.context.$shapes.dataset, shape.shapeNode)
     for (const quad of structureQuads) {
       result.dataset.add(quad)
     }
@@ -316,7 +348,16 @@ function localName(uri) {
   return uri.substring(index + 1)
 }
 
-function nodeLabel(node) {
+function * take(n, iterable) {
+  let i = 0
+  for (const item of iterable) {
+    if (i++ === n) break
+    yield item
+  }
+}
+
+function nodeLabel(constraint, param) {
+  const node = constraint.getParameterValue(param)
   if (!node) {
     return 'NULL'
   }
@@ -327,6 +368,16 @@ function nodeLabel(node) {
   }
 
   if (node.termType === 'BlankNode') {
+    if (constraint.nodeSet) {
+      const limit = 3
+      if (constraint.nodeSet.size > limit) {
+        const prefix = Array.from(take(limit, constraint.nodeSet)).map(x => x.value)
+        return prefix.join(', ') + ` ... (and ${constraint.nodeSet.size - limit} more)`
+      } else {
+        return Array.from(constraint.nodeSet).map(x => x.value).join(', ')
+      }
+    }
+
     return 'Blank node ' + node.value
   }
 
@@ -336,7 +387,7 @@ function nodeLabel(node) {
 function withSubstitutions(messageTerm, constraint, factory) {
   const message = constraint.component.parameters.reduce((message, param) => {
     const paramName = localName(param.value)
-    const paramValue = nodeLabel(constraint.getParameterValue(param))
+    const paramValue = nodeLabel(constraint, param)
     return message
       .replace(`{$${paramName}}`, paramValue)
       .replace(`{?${paramName}}`, paramValue)
