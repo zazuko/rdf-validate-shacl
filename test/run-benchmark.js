@@ -4,27 +4,29 @@ import rdf from '@zazuko/env-node'
 import SHACLValidator from '../index.js'
 import { walkManifests } from './manifests.js'
 
-const suite = new Suite({
-  reporter(results) {
-    const report = {}
+function reporter(results) {
+  const report = {}
 
-    for (const result of results) {
-      const lowerValue = result.histogram.min / 1000 / 1000
-      const upperValue = result.histogram.max / 1000 / 1000
-      report[result.name] = {
-        throughput: {
-          value: result.opsSec,
-        },
-        latency: {
-          value: lowerValue + (upperValue - lowerValue) / 2,
-          lower_value: lowerValue,
-          upper_value: upperValue,
-        },
-      }
+  for (const result of results) {
+    const lowerValue = result.histogram.min / 1000 / 1000
+    const upperValue = result.histogram.max / 1000 / 1000
+    report[result.name] = {
+      throughput: {
+        value: result.opsSec,
+      },
+      latency: {
+        value: lowerValue + (upperValue - lowerValue) / 2,
+        lower_value: lowerValue,
+        upper_value: upperValue,
+      },
     }
+  }
 
-    process.stdout.write(JSON.stringify(report, null, 2))
-  },
+  process.stdout.write(JSON.stringify(report, null, 2))
+}
+
+const suite = new Suite({
+  reporter,
 });
 
 (async () => {
