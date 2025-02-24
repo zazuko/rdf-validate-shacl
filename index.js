@@ -1,4 +1,3 @@
-import clownface from 'clownface'
 import shaclVocabularyFactory from '@vocabulary/sh'
 import factory from './src/defaultEnv.js'
 import { prepareNamespaces } from './src/namespaces.js'
@@ -7,21 +6,26 @@ import ValidationEngine from './src/validation-engine.js'
 
 /**
  * Validates RDF data based on a set of RDF shapes.
- *
- * @param {import('@rdfjs/types').DatasetCore} shapes - Dataset containing the SHACL shapes for validation
- * @param {object} options - Validator options
- * @param {import('./src/defaultEnv.js').Environment} options.factory - Optional RDFJS data factory
- * @param {number} options.maxErrors - Max number of errors before the engine
- *   stops. Defaults to finding all the errors.
  */
 class SHACLValidator {
+  /**
+   * @param {import('@rdfjs/types').DatasetCore} shapes - Dataset containing the SHACL shapes for validation
+   * @param {object} [options] - Validator options
+   * @param {import('./src/defaultEnv.js').Environment} [options.factory] - Optional RDFJS data factory
+   * @param {number} [options.maxErrors] - Max number of errors before the engine stops. Defaults to finding all the errors.
+   * @param {boolean} [options.allowNamedNodeInList]
+   */
   constructor(shapes, options) {
     options = options || {}
 
     this.factory = options.factory || factory
     this.ns = prepareNamespaces(this.factory)
     this.allowNamedNodeInList = options.allowNamedNodeInList === undefined ? false : options.allowNamedNodeInList
-    this.loadShapes(shapes)
+    const shaclQuads = shaclVocabularyFactory({ factory: this.factory })
+    const dataset = this.factory.dataset(shaclQuads.concat([...(shapes)]))
+    this.$shapes = this.factory.clownface({ dataset })
+    this.$data = this.factory.clownface()
+    this.shapesGraph = new ShapesGraph(this)
     this.validationEngine = new ValidationEngine(this, options)
 
     this.depth = 0
@@ -30,11 +34,11 @@ class SHACLValidator {
   /**
    * Validates the provided data graph against the provided shapes graph
    *
-   * @param {import('@rdfjs/types').DatasetCore} data - Dataset containing the data to validate
+   * @param {import('@rdfjs/types').DatasetCore} dataset - Dataset containing the data to validate
    * @return {import('./src/validation-report.js').default} - Result of the validation
    */
-  validate(data) {
-    this.$data = clownface({ dataset: data, factory: this.factory })
+  validate(dataset) {
+    this.$data = this.factory.clownface({ dataset })
     this.validationEngine.validateAll(this.$data)
     return this.validationEngine.getReport()
   }
@@ -42,36 +46,29 @@ class SHACLValidator {
   /**
    * Validates the provided focus node against the provided shape
    *
-   * @param {import('@rdfjs/types').DatasetCore} data - Dataset containing the data to validate
+   * @param {import('@rdfjs/types').DatasetCore} dataset - Dataset containing the data to validate
    * @param {import('@rdfjs/types').Term} focusNode - Node to validate
    * @param {import('@rdfjs/types').Term} shapeNode - Shape used to validate the node. It must be present in the shapes graph.
    * @returns {import('./src/validation-report.js').default} - Result of the validation
    */
-  validateNode(data, focusNode, shapeNode) {
-    this.$data = clownface({ dataset: data, factory: this.factory })
+  validateNode(dataset, focusNode, shapeNode) {
+    this.$data = this.factory.clownface({ dataset })
     this.nodeConformsToShape(focusNode, shapeNode, this.validationEngine)
     return this.validationEngine.getReport()
   }
 
   /**
-   * Load SHACL shapes constraints from dataset.
-   *
-   * @param {import('@rdfjs/types').DatasetCore} shapes - Dataset containing the shapes for validation
+   * Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
+   * @param {import('@rdfjs/types').Term} focusNode
+   * @param {import('@rdfjs/types').Term} shapeNode
+   * @param {ValidationEngine|import('clownface-shacl-path').ShaclPropertyPath} [propertyPathOrEngine]
+   * @return {boolean}
    */
-  loadShapes(shapes) {
-    const shaclQuads = shaclVocabularyFactory({ factory: this.factory })
-    const dataset = this.factory.dataset(shaclQuads.concat([...shapes]))
-    this.$shapes = clownface({ dataset, factory: this.factory })
-
-    this.shapesGraph = new ShapesGraph(this)
-  }
-
-  // Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
   nodeConformsToShape(focusNode, shapeNode, propertyPathOrEngine) {
     let engine
-    let shape = this.shapesGraph.getShape(shapeNode)
+    let shape = this.shapesGraph?.getShape(shapeNode)
 
-    if (propertyPathOrEngine && 'termType' in propertyPathOrEngine) {
+    if (propertyPathOrEngine && 'accept' in propertyPathOrEngine) {
       engine = this.validationEngine.clone({
         propertyPath: propertyPathOrEngine,
         recordErrorsLevel: this.validationEngine.recordErrorsLevel,
@@ -89,6 +86,10 @@ class SHACLValidator {
     }
   }
 
+  /**
+   * @param {import('@rdfjs/types').Term} focusNode
+   * @param {import('@rdfjs/types').Term} shapeNode
+   */
   validateNodeAgainstShape(focusNode, shapeNode) {
     return this.nodeConformsToShape(focusNode, shapeNode, this.validationEngine)
   }
