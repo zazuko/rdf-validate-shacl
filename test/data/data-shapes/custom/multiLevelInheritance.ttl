@@ -11,11 +11,11 @@
 <>
   rdf:type mf:Manifest ;
   mf:entries (
-      <multiInheritance2>
+      <multiLevelInheritance>
     ) ;
 .
 
-<multiInheritance2>
+<multiLevelInheritance>
   rdf:type sht:Validate ;
   rdfs:label "Test of multi level subclasses in shapes" ;
   mf:action [
