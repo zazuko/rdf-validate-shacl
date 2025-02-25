@@ -7,7 +7,7 @@
     "emitDeclarationOnly": true,
     "allowJs": true,
     "checkJs": true,
-    "strict": true
+    "esModuleInterop": true
   },
   "files": [
     "index.js"

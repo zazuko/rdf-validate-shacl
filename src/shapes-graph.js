@@ -117,7 +117,7 @@ export class Constraint {
   /**
    * @param {Shape} shape
    * @param {ConstraintComponent} component
-   * @param {import('@rdfjs/types').Term | undefined} paramValue
+   * @param {any | undefined} paramValue
    * @param {import('clownface').AnyPointer} shapesGraph
    */
   constructor(shape, component, paramValue, shapesGraph) {
@@ -127,9 +127,6 @@ export class Constraint {
     this.shapeNodePointer = shapesGraph.node(shape.shapeNode)
   }
 
-  /**
-   * @param {import('@rdfjs/types').Term} param
-   */
   getParameterValue(param) {
     return this.paramValue || this.shapeNodePointer.out(param).term
   }

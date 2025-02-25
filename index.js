@@ -65,6 +65,7 @@ class SHACLValidator {
    * @return {boolean}
    */
   nodeConformsToShape(focusNode, shapeNode, propertyPathOrEngine) {
+    /** @type {ValidationEngine} */
     let engine
     let shape = this.shapesGraph?.getShape(shapeNode)
 
@@ -73,8 +74,10 @@ class SHACLValidator {
         recordErrorsLevel: this.validationEngine.recordErrorsLevel,
       })
       shape = shape.overridePath(propertyPathOrEngine)
+    } else if (propertyPathOrEngine && 'clone' in propertyPathOrEngine) {
+      engine = propertyPathOrEngine
     } else {
-      engine = propertyPathOrEngine || this.validationEngine.clone()
+      engine = this.validationEngine.clone()
     }
     try {
       this.depth++
