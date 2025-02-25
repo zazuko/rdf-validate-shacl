@@ -323,15 +323,15 @@ export class Shape {
   }
 
   get isPropertyShape() {
-    return this.path != null
+    return this.pathObject != null
   }
 
   /**
-   * @param {import('@rdfjs/types').Term} path
+   * @param {import('clownface-shacl-path').ShaclPropertyPath} path
    */
   overridePath(path) {
     const shape = new Shape(this.context, this.shapeNode)
-    shape.path = path
+    shape._pathObject = path
     return shape
   }
 
@@ -399,9 +399,8 @@ export class Shape {
    * @param {import('clownface').AnyPointer} dataGraph
    */
   getValueNodes(focusNode, dataGraph) {
-    const { pathObject } = this
-    if (pathObject) {
-      return getPathObjects(dataGraph, focusNode, pathObject)
+    if (this.pathObject) {
+      return getPathObjects(dataGraph, focusNode, this.pathObject)
     } else {
       return [focusNode]
     }

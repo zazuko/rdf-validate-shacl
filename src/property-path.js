@@ -6,9 +6,13 @@ import { findNodes } from 'clownface-shacl-path'
  *
  * @param {import('clownface').AnyPointer} graph
  * @param {import('@rdfjs/types').Term} subject - Start node
- * @param {import('clownface-shacl-path').ShaclPropertyPath} path - Property path object
+ * @param {import('clownface-shacl-path').ShaclPropertyPath | null} path - Property path object
  * @return {import('@rdfjs/types').Term[]} - Nodes that are reachable through the property path
  */
 export function getPathObjects(graph, subject, path) {
+  if (!path) {
+    throw new Error('Property Path cannot be null')
+  }
+
   return findNodes(graph.node(subject), path).terms
 }

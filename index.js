@@ -61,7 +61,7 @@ class SHACLValidator {
    * Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
    * @param {import('@rdfjs/types').Term} focusNode
    * @param {import('@rdfjs/types').Term} shapeNode
-   * @param {ValidationEngine|import('clownface-shacl-path').ShaclPropertyPath} [propertyPathOrEngine]
+   * @param {ValidationEngine|import('clownface-shacl-path').ShaclPropertyPath|null} [propertyPathOrEngine]
    * @return {boolean}
    */
   nodeConformsToShape(focusNode, shapeNode, propertyPathOrEngine) {
@@ -70,7 +70,6 @@ class SHACLValidator {
 
     if (propertyPathOrEngine && 'accept' in propertyPathOrEngine) {
       engine = this.validationEngine.clone({
-        propertyPath: propertyPathOrEngine,
         recordErrorsLevel: this.validationEngine.recordErrorsLevel,
       })
       shape = shape.overridePath(propertyPathOrEngine)

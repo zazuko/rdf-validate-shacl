@@ -43,7 +43,6 @@ class ValidationEngine {
     this.factory = context.factory
     this.maxErrors = options.maxErrors
     this.maxNodeChecks = options.maxNodeChecks === undefined ? defaultMaxNodeChecks : options.maxNodeChecks
-    this.propertyPath = options.propertyPath
     this.initReport()
     this.recordErrorsLevel = options.recordErrorsLevel || 0
     this.violationsCount = 0
@@ -60,11 +59,10 @@ class ValidationEngine {
    * @param {Options} [options]
    * @return {ValidationEngine}
    */
-  clone({ propertyPath, recordErrorsLevel } = {}) {
+  clone({ recordErrorsLevel } = {}) {
     return new ValidationEngine(this.context, {
       maxErrors: this.maxErrors,
       maxNodeChecks: this.maxNodeChecks,
-      propertyPath,
       recordErrorsLevel,
     })
   }
