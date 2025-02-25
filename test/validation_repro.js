@@ -19,17 +19,17 @@ describe('validation repro', () => {
 
     assert.equal(1, report.results.length)
     const result = report.results[0]
-    assert.deepStrictEqual(result.sourceConstraintComponent, RDF.ns.sh.NodeConstraintComponent)
-    assert.deepStrictEqual(result.focusNode, RDF.namedNode('https://example.org/person1'))
-    assert.deepStrictEqual(result.path, RDF.namedNode('https://example.org/address'))
-    assert.deepStrictEqual(result.value, RDF.namedNode('https://example.org/address1'))
-    assert.deepStrictEqual(result.message, [RDF.literal('ex:city should be sh:IRI')])
+    assert(result.sourceConstraintComponent.equals(RDF.ns.sh.NodeConstraintComponent))
+    assert(result.focusNode.equals(RDF.namedNode('https://example.org/person1')))
+    assert(result.path.equals(RDF.namedNode('https://example.org/address')))
+    assert(result.value.equals(RDF.namedNode('https://example.org/address1')))
+    assert(result.message[0].equals(RDF.literal('ex:city should be sh:IRI')))
 
     assert.equal(1, result.detail.length)
     const detail = result.detail[0]
-    assert.deepStrictEqual(detail.sourceConstraintComponent, RDF.ns.sh.NodeKindConstraintComponent)
-    assert.deepStrictEqual(detail.focusNode, RDF.namedNode('https://example.org/address1'))
-    assert.deepStrictEqual(detail.path, RDF.namedNode('https://example.org/city'))
-    assert.deepStrictEqual(detail.value, RDF.literal('London'))
+    assert(detail.sourceConstraintComponent.equals(RDF.ns.sh.NodeKindConstraintComponent))
+    assert(detail.focusNode.equals(RDF.namedNode('https://example.org/address1')))
+    assert(detail.path.equals(RDF.namedNode('https://example.org/city')))
+    assert(detail.value.equals(RDF.literal('London')))
   })
 })

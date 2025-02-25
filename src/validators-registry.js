@@ -1,7 +1,18 @@
 import validators from './validators.js'
 import ns from './namespaces.js'
 
-// Constraint to validator registry
+/**
+ * @typedef {{
+ *   func: import('./validation-engine.js').ValidationFunction
+ *   message?: string
+ * }} Validator
+ */
+
+/**
+ * Constraint to validator registry
+ *
+ * @type {Record<string, Partial<Record<'validator' | 'nodeValidator' | 'propertyValidator', Validator>>>}
+ */
 export default {
   [ns.sh.AndConstraintComponent.value]: {
     validator: {

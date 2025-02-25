@@ -5,6 +5,12 @@ import { prepareNamespaces } from './namespaces.js'
  * Result of a SHACL validation.
  */
 class ValidationReport {
+  /**
+   * @param {import('clownface').GraphPointer} pointer
+   * @param {object} [options]
+   * @param {import('./defaultEnv.js').Environment} [options.factory]
+   * @param {import('./namespaces.js').Namespaces} [options.ns]
+   */
   constructor(pointer, options) {
     options = options || {}
     this.factory = options.factory || factory
@@ -35,6 +41,10 @@ class ValidationReport {
 }
 
 class ValidationResult {
+  /**
+   * @param {import('clownface').GraphPointer} pointer
+   * @param {import('./namespaces.js').Namespaces} ns
+   */
   constructor(pointer, ns) {
     this.pointer = pointer
     this.term = pointer.term

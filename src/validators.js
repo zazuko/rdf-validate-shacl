@@ -4,6 +4,9 @@ import NodeSet from './node-set.js'
 import { getPathObjects } from './property-path.js'
 import { isInstanceOf, rdfListToArray } from './dataset-utils.js'
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateAnd(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const andNode = constraint.getParameterValue(sh.and)
@@ -18,6 +21,9 @@ function validateAnd(context, focusNode, valueNode, constraint) {
   })
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateClass(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const classNode = constraint.getParameterValue(sh.class)
@@ -25,6 +31,9 @@ function validateClass(context, focusNode, valueNode, constraint) {
   return isInstanceOf(context.$data.node(valueNode), context.$data.node(classNode), context.ns)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateClosed(context, focusNode, valueNode, constraint) {
   const { sh, xsd } = context.ns
   const closedNode = constraint.getParameterValue(sh.closed)
@@ -49,6 +58,7 @@ function validateClosed(context, focusNode, valueNode, constraint) {
     allowed.addAll(rdfListToArray(context.$shapes.node(ignoredPropertiesNode)))
   }
 
+  /** @type import('./validation-engine.js').ValidationResult[] */
   const results = []
   const valueQuads = [...context.$data.dataset.match(valueNode, null, null)]
   valueQuads
@@ -60,17 +70,23 @@ function validateClosed(context, focusNode, valueNode, constraint) {
   return results
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateDatatype(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const datatypeNode = constraint.getParameterValue(sh.datatype)
 
   if (valueNode.termType === 'Literal') {
-    return datatypeNode.equals(valueNode.datatype) && validateTerm(valueNode)
+    return valueNode.datatype.equals(datatypeNode) && validateTerm(valueNode)
   } else {
     return false
   }
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateDisjoint(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const disjointNode = constraint.getParameterValue(sh.disjoint)
@@ -78,11 +94,15 @@ function validateDisjoint(context, focusNode, valueNode, constraint) {
   return context.$data.dataset.match(focusNode, disjointNode, valueNode).size === 0
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateEqualsProperty(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const path = constraint.shape.pathObject
   const equalsNode = constraint.getParameterValue(sh.equals)
 
+  /** @type import('./validation-engine.js').ValidationResult[] */
   const results = []
   getPathObjects(context.$data, focusNode, path).forEach(value => {
     if (context.$data.dataset.match(focusNode, equalsNode, value).size === 0) {
@@ -100,9 +120,14 @@ function validateEqualsProperty(context, focusNode, valueNode, constraint) {
   return results
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateEqualsNode(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const equalsNode = constraint.getParameterValue(sh.equals)
+
+  /** @type import('./validation-engine.js').ValidationResult[] */
   const results = []
 
   let solutions = 0
@@ -120,6 +145,9 @@ function validateEqualsNode(context, focusNode, valueNode, constraint) {
   return results
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateHasValueNode(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const hasValueNode = constraint.getParameterValue(sh.hasValue)
@@ -127,6 +155,9 @@ function validateHasValueNode(context, focusNode, valueNode, constraint) {
   return focusNode.equals(hasValueNode)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateHasValueProperty(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const path = constraint.shape.pathObject
@@ -136,10 +167,16 @@ function validateHasValueProperty(context, focusNode, valueNode, constraint) {
     .some(value => value.equals(hasValueNode))
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateIn(context, focusNode, valueNode, constraint) {
   return constraint.nodeSet.has(valueNode)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateLanguageIn(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   if (valueNode.termType !== 'Literal') {
@@ -152,11 +189,17 @@ function validateLanguageIn(context, focusNode, valueNode, constraint) {
   }
 
   const languageInNode = constraint.getParameterValue(sh.languageIn)
+  /**
+   * @type {import('@rdfjs/types').Term[]}
+   */
   const allowedLanguages = rdfListToArray(context.$shapes.node(languageInNode))
 
   return allowedLanguages.some(allowedLanguage => valueLanguage.startsWith(allowedLanguage.value))
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateLessThanProperty(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const valuePath = constraint.shape.pathObject
@@ -164,6 +207,7 @@ function validateLessThanProperty(context, focusNode, valueNode, constraint) {
   const lessThanNode = constraint.getParameterValue(sh.lessThan)
   const referenceValues = context.$data.node(focusNode).out(lessThanNode).terms
 
+  /** @type import('./validation-engine.js').ValidationResult[] */
   const invalidValues = []
   for (const value of values) {
     for (const referenceValue of referenceValues) {
@@ -176,6 +220,9 @@ function validateLessThanProperty(context, focusNode, valueNode, constraint) {
   return invalidValues
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateLessThanOrEqualsProperty(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const valuePath = constraint.shape.pathObject
@@ -183,6 +230,7 @@ function validateLessThanOrEqualsProperty(context, focusNode, valueNode, constra
   const lessThanOrEqualsNode = constraint.getParameterValue(sh.lessThanOrEquals)
   const referenceValues = context.$data.node(focusNode).out(lessThanOrEqualsNode).terms
 
+  /** @type import('./validation-engine.js').ValidationResult[] */
   const invalidValues = []
   for (const value of values) {
     for (const referenceValue of referenceValues) {
@@ -195,15 +243,21 @@ function validateLessThanOrEqualsProperty(context, focusNode, valueNode, constra
   return invalidValues
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateMaxCountProperty(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const path = constraint.shape.pathObject
   const count = getPathObjects(context.$data, focusNode, path).length
   const maxCountNode = constraint.getParameterValue(sh.maxCount)
 
-  return count <= Number(maxCountNode.value)
+  return maxCountNode && count <= Number(maxCountNode.value)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateMaxExclusive(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const maxExclusiveNode = constraint.getParameterValue(sh.maxExclusive)
@@ -212,6 +266,9 @@ function validateMaxExclusive(context, focusNode, valueNode, constraint) {
   return (comp !== null && comp < 0)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateMaxInclusive(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const maxInclusiveNode = constraint.getParameterValue(sh.maxInclusive)
@@ -220,6 +277,9 @@ function validateMaxInclusive(context, focusNode, valueNode, constraint) {
   return (comp !== null && comp <= 0)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateMaxLength(context, focusNode, valueNode, constraint) {
   if (valueNode.termType === 'BlankNode') {
     return false
@@ -230,6 +290,9 @@ function validateMaxLength(context, focusNode, valueNode, constraint) {
   return valueNode.value.length <= Number(maxLengthNode.value)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateMinCountProperty(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const path = constraint.pathObject
@@ -239,6 +302,9 @@ function validateMinCountProperty(context, focusNode, valueNode, constraint) {
   return count >= Number(minCountNode.value)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateMinExclusive(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const minExclusiveNode = constraint.getParameterValue(sh.minExclusive)
@@ -247,6 +313,9 @@ function validateMinExclusive(context, focusNode, valueNode, constraint) {
   return (comp !== null && comp > 0)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateMinInclusive(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const minInclusiveNode = constraint.getParameterValue(sh.minInclusive)
@@ -255,6 +324,9 @@ function validateMinInclusive(context, focusNode, valueNode, constraint) {
   return (comp !== null && comp >= 0)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateMinLength(context, focusNode, valueNode, constraint) {
   if (valueNode.termType === 'BlankNode') {
     return false
@@ -265,6 +337,9 @@ function validateMinLength(context, focusNode, valueNode, constraint) {
   return valueNode.value.length >= Number(minLengthNode.value)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateNodeKind(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const nodeKindNode = constraint.getParameterValue(sh.nodeKind)
@@ -284,18 +359,27 @@ function validateNodeKind(context, focusNode, valueNode, constraint) {
   }
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateNode(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const nodeNode = constraint.getParameterValue(sh.node)
   return context.validateNodeAgainstShape(valueNode, nodeNode)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateNot(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const notNode = constraint.getParameterValue(sh.not)
   return !context.nodeConformsToShape(valueNode, notNode)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateOr(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const orNode = constraint.getParameterValue(sh.or)
@@ -303,6 +387,9 @@ function validateOr(context, focusNode, valueNode, constraint) {
   return shapes.some(shape => context.nodeConformsToShape(valueNode, shape))
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validatePattern(context, focusNode, valueNode, constraint) {
   if (valueNode.termType === 'BlankNode') {
     return false
@@ -315,6 +402,9 @@ function validatePattern(context, focusNode, valueNode, constraint) {
   return re.test(valueNode.value)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateQualifiedMaxCountProperty(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const count = validateQualifiedHelper(context, focusNode, constraint)
@@ -323,6 +413,9 @@ function validateQualifiedMaxCountProperty(context, focusNode, valueNode, constr
   return qualifiedMaxCountNode.termType === 'Literal' && count <= Number(qualifiedMaxCountNode.value)
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateQualifiedMinCountProperty(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const count = validateQualifiedHelper(context, focusNode, constraint)
@@ -331,6 +424,11 @@ function validateQualifiedMinCountProperty(context, focusNode, valueNode, constr
   return qualifiedMinCountNode.termType === 'Literal' && count >= Number(qualifiedMinCountNode.value)
 }
 
+/**
+ * @param {import('../index.js').default} context
+ * @param {import('@rdfjs/types').Term} focusNode
+ * @param {import('./shapes-graph.js').Constraint} constraint
+ */
 function validateQualifiedHelper(context, focusNode, constraint) {
   const { sh, xsd } = context.ns
   const currentShapeNode = constraint.shape.shapeNode
@@ -364,6 +462,11 @@ function validateQualifiedHelper(context, focusNode, constraint) {
     .length
 }
 
+/**
+ * @param {import('../index.js').default} context
+ * @param {import('@rdfjs/types').Term} value
+ * @param {import('@rdfjs/types').Term[]} siblingShapes
+ */
 function validateQualifiedConformsToASibling(context, value, siblingShapes) {
   for (let i = 0; i < siblingShapes.length; i++) {
     if (context.nodeConformsToShape(value, siblingShapes[i])) {
@@ -373,6 +476,9 @@ function validateQualifiedConformsToASibling(context, value, siblingShapes) {
   return false
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateUniqueLangProperty(context, focusNode, valueNode, constraint) {
   const { sh, xsd } = context.ns
   const uniqueLangNode = constraint.getParameterValue(sh.uniqueLang)
@@ -383,19 +489,22 @@ function validateUniqueLangProperty(context, focusNode, valueNode, constraint) {
   }
 
   const path = constraint.shape.pathObject
+  /**
+   * @type {Record<string, number>}
+   */
   const map = {}
   getPathObjects(context.$data, focusNode, path).forEach(value => {
-    const lang = value.language
-    if (lang && lang !== '') {
-      const old = map[lang]
+    if (value.termType === 'Literal' && value.language && value.language !== '') {
+      const old = map[value.language]
       if (!old) {
-        map[lang] = 1
+        map[value.language] = 1
       } else {
-        map[lang] = old + 1
+        map[value.language] = old + 1
       }
     }
   })
 
+  /** @type string[] */
   const results = []
   for (const lang in map) {
     if (Object.prototype.hasOwnProperty.call(map, lang)) {
@@ -408,6 +517,9 @@ function validateUniqueLangProperty(context, focusNode, valueNode, constraint) {
   return results
 }
 
+/**
+ * @type import('./validation-engine.js').ValidationFunction
+ */
 function validateXone(context, focusNode, valueNode, constraint) {
   const { sh } = context.ns
   const xoneNode = constraint.getParameterValue(sh.xone)
@@ -424,6 +536,10 @@ function validateXone(context, focusNode, valueNode, constraint) {
 
 /**
  * Compare 2 terms.
+ *
+ * @param {import('@rdfjs/types').Term | null | undefined} term1
+ * @param {import('@rdfjs/types').Term | null | undefined} term2
+ * @param {import('./namespaces.js').Namespaces} ns
  *
  * Returns:
  * - a negative number if term1 occurs before term2
@@ -457,6 +573,10 @@ function compareTerms(term1, term2, ns) {
   }
 }
 
+/**
+ * @param {import('@rdfjs/types').Literal} node
+ * @param {import('./namespaces.js').Namespaces} ns
+ */
 function hasTimezone(node, ns) {
   const pattern = /^.*(((\+|-)\d{2}:\d{2})|Z)$/
   return ns.xsd.dateTime.equals(node.datatype) && pattern.test(node.value)

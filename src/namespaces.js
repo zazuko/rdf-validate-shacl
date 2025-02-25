@@ -1,5 +1,18 @@
 import namespace from '@rdfjs/namespace'
 
+/**
+ * @typedef {{
+ *   sh: import('@rdfjs/namespace').NamespaceBuilder,
+ *   xsd: import('@rdfjs/namespace').NamespaceBuilder,
+ *   rdf: import('@rdfjs/namespace').NamespaceBuilder,
+ *   rdfs: import('@rdfjs/namespace').NamespaceBuilder
+ * }} Namespaces
+ */
+
+/**
+ * @param {import('@rdfjs/types').DataFactory} [factory]
+ * @return {Namespaces}
+ */
 export function prepareNamespaces(factory) {
   return {
     sh: namespace('http://www.w3.org/ns/shacl#', { factory }),

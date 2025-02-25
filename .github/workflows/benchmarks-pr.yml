@@ -12,14 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: bencherdev/bencher@v0.4.36
+      - uses: bencherdev/bencher@main
       - uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
       - run: npm ci
       - name: Track PR Benchmarks with Bencher
         run: |
-          bencher run \         
+          bencher run \
           --project rdf-validate-shacl \
           --token '${{ secrets.BENCHER_API_TOKEN }}' \
           --branch "$GITHUB_HEAD_REF" \
@@ -31,5 +31,6 @@ jobs:
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          --ci-only-thresholds \
           --file benchmark.json \
           npm run benchmark

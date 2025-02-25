@@ -5,9 +5,10 @@ import NodeSet from './node-set.js'
  * Extracts all the quads forming the structure under a blank node. Stops at
  * non-blank nodes.
  *
- * @param {DatasetCore} dataset
- * @param {Term} startNode
- * @yields {Quad}
+ * @param {import('@rdfjs/types').DatasetCore} dataset
+ * @param {import('@rdfjs/types').Term} startNode
+ * @param {Set<import('@rdfjs/types').Term>} visited
+ * @returns {Generator<import('@rdfjs/types').Quad>}
  */
 export function * extractStructure(dataset, startNode, visited = new TermSet()) {
   if (startNode.termType !== 'BlankNode' || visited.has(startNode)) {
@@ -25,10 +26,11 @@ export function * extractStructure(dataset, startNode, visited = new TermSet()) 
  * Extracts all the quads forming the structure under a blank shape node. Stops at
  * non-blank nodes. Replaces sh:in with a comment if the list is too long.
  *
- * @param {Shape} shape
- * @param {DatasetCore} dataset
- * @param {Term} startNode
- * @yields {Quad}
+ * @param {import('./shapes-graph.js').Shape} shape
+ * @param {import('@rdfjs/types').DatasetCore} dataset
+ * @param {import('@rdfjs/types').Term} startNode
+ * @param {Set<import('@rdfjs/types').Term>} visited
+ * @return {Generator<import('@rdfjs/types').Quad>}
  */
 export function * extractSourceShapeStructure(shape, dataset, startNode, visited = new TermSet()) {
   if (startNode.termType !== 'BlankNode' || visited.has(startNode)) {
@@ -38,9 +40,9 @@ export function * extractSourceShapeStructure(shape, dataset, startNode, visited
   const { factory } = shape.context
   const { sh, rdfs } = shape.context.ns
 
-  const inListSize = term => {
-    const inConstraint = shape.constraints.find(x => x.paramValue.equals(term))
-    return inConstraint?.nodeSet.size
+  const inListSize = (/** @type import('@rdfjs/types').Term */ term) => {
+    const inConstraint = shape.constraints.find(x => term.equals(x.paramValue))
+    return inConstraint?.nodeSet.size || -1
   }
 
   visited.add(startNode)
@@ -58,8 +60,8 @@ export function * extractSourceShapeStructure(shape, dataset, startNode, visited
 /**
  * Get instances of a class.
  *
- * @param {Clownface} cls - pointer to a class
- * @param {Object} ns - namespace
+ * @param {import('clownface').GraphPointer} cls - pointer to a class
+ * @param {import('./namespaces.js').Namespaces} ns
  * @returns NodeSet
  */
 export function getInstancesOf(cls, ns) {
@@ -81,7 +83,8 @@ export function getInstancesOf(cls, ns) {
 /**
  * Get subclasses of a class.
  *
- * @param {Clownface} cls - pointer to a class
+ * @param {import('clownface').GraphPointer} cls - pointer to a class
+ * @param {import('./namespaces.js').Namespaces} ns
  */
 export function getSubClassesOf(cls, ns) {
   const subclasses = cls.in(ns.rdfs.subClassOf)
@@ -100,10 +103,10 @@ export function getSubClassesOf(cls, ns) {
 /**
  * Check if a node is an instance of a class.
  *
- * @param {Clownface} instance - pointer to a term
- * @param {Clownface} cls - pointer to a class
- * @param {Object} ns - namespace
- * @returns boolean
+ * @param {import('clownface').GraphPointer} instance - pointer to a term
+ * @param {import('clownface').GraphPointer} cls - pointer to a class
+ * @param {import('./namespaces.js').Namespaces} ns
+ * @returns {boolean}
  */
 export function isInstanceOf(instance, cls, ns) {
   const classes = getSubClassesOf(cls, ns)
@@ -117,9 +120,9 @@ export function isInstanceOf(instance, cls, ns) {
 /**
  * Extract all the terms of an RDF-list and return then as an array.
  *
- * @param {Clownface} listNode - pointer to start of the list
- * @returns Array
+ * @param {import('clownface').MultiPointer} listNode - pointer to start of the list
+ * @returns {import('@rdfjs/types').Term[]}
  */
 export function rdfListToArray(listNode) {
-  return [...listNode.list()].map(({ term }) => term)
+  return [...listNode.list?.() || []].map(({ term }) => term)
 }
