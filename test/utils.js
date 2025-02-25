@@ -1,9 +1,9 @@
 import fs from 'fs'
-import ParserN3 from '@rdfjs/parser-n3'
+import { StreamParser } from 'n3'
 import $rdf from '@zazuko/env-node'
 
 export async function loadDataset(filePath) {
   const stream = fs.createReadStream(filePath)
-  const parser = new ParserN3({ factory: $rdf })
+  const parser = new StreamParser({ blankNodePrefix: 'd' })
   return $rdf.dataset().import(parser.import(stream))
 }
