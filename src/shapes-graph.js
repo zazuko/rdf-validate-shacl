@@ -17,6 +17,7 @@
 // for each Constraint of the shape, producing results along the way.
 
 import { fromNode } from 'clownface-shacl-path'
+import { isGraphPointer } from 'is-graph-pointer'
 import NodeSet from './node-set.js'
 import ValidationFunction from './validation-function.js'
 import validatorsRegistry from './validators-registry.js'
@@ -290,7 +291,7 @@ export class Shape {
    * @param {import('@rdfjs/types').Term} shapeNode
    */
   constructor(context, shapeNode) {
-    const { $shapes, ns, shapesGraph } = context
+    const { $shapes, ns, shapesGraph, allowNamedNodeInList: allowNamedNodeSequencePaths } = context
     const { sh } = ns
 
     this.context = context
@@ -299,8 +300,13 @@ export class Shape {
 
     this.severity = this.shapeNodePointer.out(sh.severity).term || sh.Violation
     this.deactivated = this.shapeNodePointer.out(sh.deactivated).value === 'true'
-    this.path = this.shapeNodePointer.out(sh.path).term
-    this._pathObject = undefined
+    /** @type import('clownface-shacl-path').ShaclPropertyPath | null */
+    this.pathObject = null
+    const path = this.shapeNodePointer.out(sh.path)
+    if (isGraphPointer(path)) {
+      this.path = path
+      this.pathObject = fromNode(this.path, { allowNamedNodeSequencePaths })
+    }
 
     /**
      * @type {Constraint[]}
@@ -331,22 +337,8 @@ export class Shape {
    */
   overridePath(path) {
     const shape = new Shape(this.context, this.shapeNode)
-    shape._pathObject = path
+    shape.pathObject = path
     return shape
-  }
-
-  /**
-   * Property path object
-   * @returns {import('clownface-shacl-path').ShaclPropertyPath | null}
-   */
-  get pathObject() {
-    const { $shapes, allowNamedNodeInList: allowNamedNodeSequencePaths } = this.context
-
-    if (this._pathObject === undefined) {
-      this._pathObject = this.path ? fromNode($shapes.node(this.path), { allowNamedNodeSequencePaths }) : null
-    }
-
-    return this._pathObject
   }
 
   /**

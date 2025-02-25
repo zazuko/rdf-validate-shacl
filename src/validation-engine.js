@@ -1,5 +1,5 @@
 import debug from 'debug'
-import { isLiteral } from 'is-graph-pointer'
+import { isGraphPointer, isLiteral } from 'is-graph-pointer'
 import ValidationReport from './validation-report.js'
 import { extractStructure, extractSourceShapeStructure } from './dataset-utils.js'
 
@@ -265,9 +265,9 @@ class ValidationEngine {
     if (validationResultObj.path) {
       result.addOut(sh.resultPath, validationResultObj.path)
       this.copyNestedStructure(validationResultObj.path, result)
-    } else if (constraint.shape.isPropertyShape && constraint.shape.path) {
+    } else if (constraint.shape.isPropertyShape && isGraphPointer(constraint.shape.path)) {
       result.addOut(sh.resultPath, constraint.shape.path)
-      this.copyNestedStructure(constraint.shape.path, result)
+      this.copyNestedStructure(constraint.shape.path.term, result)
     }
 
     if (validationResultObj.value) {
