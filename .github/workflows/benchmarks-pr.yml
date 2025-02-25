@@ -31,5 +31,6 @@ jobs:
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          --ci-only-thresholds \
           --file benchmark.json \
           npm run benchmark
