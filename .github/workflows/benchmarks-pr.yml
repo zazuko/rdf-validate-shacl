@@ -19,7 +19,7 @@ jobs:
       - run: npm ci
       - name: Track PR Benchmarks with Bencher
         run: |
-          bencher run \         
+          bencher run \
           --project rdf-validate-shacl \
           --token '${{ secrets.BENCHER_API_TOKEN }}' \
           --branch "$GITHUB_HEAD_REF" \
