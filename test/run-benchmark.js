@@ -1,4 +1,5 @@
 #!/usr/bin/env -S node --allow-natives-syntax --no-warnings
+import url from 'node:url'
 import { Suite } from 'bench-node'
 import rdf from '@zazuko/env-node'
 import SHACLValidator from '../index.js'
@@ -30,7 +31,9 @@ const suite = new Suite({
 });
 
 (async () => {
-  const testCases = await walkManifests()
+  const testCases = await walkManifests({
+    manifestPath: url.fileURLToPath(new URL('data/benchmarks/manifest.ttl', import.meta.url)),
+  })
 
   for (const testCase of testCases) {
     suite.add(testCase.label, async (timer) => {

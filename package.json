@@ -7,6 +7,7 @@
   "scripts": {
     "lint": "eslint . --ignore-path .gitignore",
     "test": "mocha",
+    "benchmark-prepare": "test/data/benchmarks/prepare.sh",
     "benchmark": "test/run-benchmark.js > benchmark.json",
     "release": "changeset publish"
   },
@@ -38,6 +39,7 @@
     "@rdfjs/parser-n3": "^2.0.1",
     "@tpluscode/eslint-config": "^0.4.4",
     "@zazuko/env-node": "^2",
+    "@zazuko/shacl-test": "^0.1.1",
     "bench-node": "^0.5.2",
     "c8": "^8.0.1",
     "get-stream": "^6.0.0",
