@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --allow-natives-syntax --no-warnings
+#!/usr/bin/env -S node --allow-natives-syntax --no-warnings --import tsx
 import { Suite } from 'bench-node'
 import rdf from '@zazuko/env-node'
 import SHACLValidator from '../index.js'
