@@ -17,6 +17,7 @@ jobs:
         with:
           node-version: "lts/*"
       - run: npm ci
+      - run: npm run build
       - name: Track PR Benchmarks with Bencher
         run: |
           bencher run \

@@ -6,9 +6,8 @@
   "type": "module",
   "scripts": {
     "lint": "eslint . --ignore-path .gitignore",
-    "test": "mocha",
+    "test": "mocha --require tsx",
     "benchmark": "test/run-benchmark.js > benchmark.json",
-    "prebuild": "rimraf index.d.ts src/*.d.ts",
     "build": "tsc",
     "prepack": "npm run build",
     "release": "changeset publish"
@@ -61,7 +60,6 @@
     "n3": "^1",
     "rdf-ext": "^2.5.1",
     "rdf-utils-dataset": "^2.0.0",
-    "rimraf": "^5.0.5",
     "tsx": "^4.19.3",
     "typescript": "^5.3.3"
   },
@@ -73,7 +71,6 @@
     "CHANGELOG.md"
   ],
   "mocha": {
-    "import": "tsx",
     "ignore": "test/run-benchmark.js"
   }
 }
