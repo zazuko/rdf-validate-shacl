@@ -15,7 +15,7 @@ export const sht = $rdf.namespace('http://www.w3.org/ns/shacl-test#')
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 const rootManifestPath = path.join(__dirname, 'data', 'data-shapes', 'manifest.ttl')
 
-export async function walkManifests(mapTestCase = toTestCase, manifestPath = rootManifestPath) {
+export async function walkManifests({ mapTestCase = toTestCase, manifestPath = rootManifestPath } = {}) {
   const dir = path.dirname(manifestPath)
   const dataset = await loadDataset(manifestPath)
   const cf = $rdf.clownface({ dataset, factory: $rdf })
@@ -31,7 +31,10 @@ export async function walkManifests(mapTestCase = toTestCase, manifestPath = roo
       .values
       .map((childRelativePath) => {
         const childManifestPath = path.join(dir, childRelativePath)
-        return walkManifests(mapTestCase, childManifestPath)
+        return walkManifests({
+          mapTestCase,
+          manifestPath: childManifestPath,
+        })
       }),
   )
 
@@ -65,10 +68,14 @@ class TestCase {
   async _loadDataset(relativePath) {
     if (relativePath === '') {
       return this.node.dataset
-    } else {
-      const filePath = path.join(this.dir, relativePath)
-      return loadDataset(filePath)
     }
+
+    if (!relativePath.startsWith('.')) {
+      relativePath = './' + relativePath
+    }
+
+    const filePath = path.resolve(this.dir, relativePath)
+    return loadDataset(filePath)
   }
 
   async execute({ useRdfExt = false } = {}) {
