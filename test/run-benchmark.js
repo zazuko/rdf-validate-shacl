@@ -1,4 +1,5 @@
 #!/usr/bin/env -S node --allow-natives-syntax --no-warnings
+import url from 'node:url'
 import { Suite } from 'bench-node'
 import rdf from '@zazuko/env-node'
 import SHACLValidator from '../index.js'
@@ -30,7 +31,9 @@ const suite = new Suite({
 });
 
 (async () => {
-  const testCases = await walkManifests()
+  const testCases = await walkManifests({
+    manifestPath: url.fileURLToPath(new URL('data/benchmarks/manifest.ttl', import.meta.url)),
+  })
 
   for (const testCase of testCases) {
     suite.add(testCase.label, async (timer) => {
@@ -39,8 +42,11 @@ const suite = new Suite({
 
       timer.start()
       const validator = new SHACLValidator(shapesGraph, { factory: rdf })
-      validator.validate(dataGraph)
+      const report = validator.validate(dataGraph)
       timer.end()
+      if (!report.conforms) {
+        throw new Error('SHACL violations found')
+      }
     })
   }
 
