@@ -1,16 +1,15 @@
 import TermSet from '@rdfjs/term-set'
+import type { DatasetCore, Quad, Term } from '@rdfjs/types'
+import type { GraphPointer, MultiPointer } from 'clownface'
 import NodeSet from './node-set.js'
+import type { Shape } from './shapes-graph.js'
+import type { Namespaces } from './namespaces.js'
 
 /**
  * Extracts all the quads forming the structure under a blank node. Stops at
  * non-blank nodes.
- *
- * @param {import('@rdfjs/types').DatasetCore} dataset
- * @param {import('@rdfjs/types').Term} startNode
- * @param {Set<import('@rdfjs/types').Term>} visited
- * @returns {Generator<import('@rdfjs/types').Quad>}
  */
-export function * extractStructure(dataset, startNode, visited = new TermSet()) {
+export function * extractStructure(dataset: DatasetCore, startNode: Term, visited = new TermSet()): Generator<Quad> {
   if (startNode.termType !== 'BlankNode' || visited.has(startNode)) {
     return
   }
@@ -25,14 +24,8 @@ export function * extractStructure(dataset, startNode, visited = new TermSet()) 
 /**
  * Extracts all the quads forming the structure under a blank shape node. Stops at
  * non-blank nodes. Replaces sh:in with a comment if the list is too long.
- *
- * @param {import('./shapes-graph.js').Shape} shape
- * @param {import('@rdfjs/types').DatasetCore} dataset
- * @param {import('@rdfjs/types').Term} startNode
- * @param {Set<import('@rdfjs/types').Term>} visited
- * @return {Generator<import('@rdfjs/types').Quad>}
  */
-export function * extractSourceShapeStructure(shape, dataset, startNode, visited = new TermSet()) {
+export function * extractSourceShapeStructure(shape: Shape, dataset: DatasetCore, startNode: Term, visited = new TermSet()): Generator<Quad> {
   if (startNode.termType !== 'BlankNode' || visited.has(startNode)) {
     return
   }
@@ -40,7 +33,7 @@ export function * extractSourceShapeStructure(shape, dataset, startNode, visited
   const { factory } = shape.context
   const { sh, rdfs } = shape.context.ns
 
-  const inListSize = (/** @type import('@rdfjs/types').Term */ term) => {
+  const inListSize = (term: Term) => {
     const inConstraint = shape.constraints.find(x => term.equals(x.paramValue))
     return inConstraint?.nodeSet.size || -1
   }
@@ -59,12 +52,8 @@ export function * extractSourceShapeStructure(shape, dataset, startNode, visited
 
 /**
  * Get instances of a class.
- *
- * @param {import('clownface').GraphPointer} cls - pointer to a class
- * @param {import('./namespaces.js').Namespaces} ns
- * @returns NodeSet
  */
-export function getInstancesOf(cls, ns) {
+export function getInstancesOf(cls: GraphPointer, ns: Namespaces) {
   const classes = getSubClassesOf(cls, ns)
   classes.add(cls.term)
 
@@ -82,11 +71,8 @@ export function getInstancesOf(cls, ns) {
 
 /**
  * Get subclasses of a class.
- *
- * @param {import('clownface').GraphPointer} cls - pointer to a class
- * @param {import('./namespaces.js').Namespaces} ns
  */
-export function getSubClassesOf(cls, ns) {
+export function getSubClassesOf(cls: GraphPointer, ns: Namespaces) {
   const subclasses = cls.in(ns.rdfs.subClassOf)
 
   const transubclasses = subclasses.toArray().reduce((acc, subclass) => {
@@ -102,13 +88,8 @@ export function getSubClassesOf(cls, ns) {
 
 /**
  * Check if a node is an instance of a class.
- *
- * @param {import('clownface').GraphPointer} instance - pointer to a term
- * @param {import('clownface').GraphPointer} cls - pointer to a class
- * @param {import('./namespaces.js').Namespaces} ns
- * @returns {boolean}
  */
-export function isInstanceOf(instance, cls, ns) {
+export function isInstanceOf(instance: GraphPointer, cls: GraphPointer, ns: Namespaces) {
   const classes = getSubClassesOf(cls, ns)
   classes.add(cls.term)
 
@@ -119,10 +100,7 @@ export function isInstanceOf(instance, cls, ns) {
 
 /**
  * Extract all the terms of an RDF-list and return then as an array.
- *
- * @param {import('clownface').MultiPointer} listNode - pointer to start of the list
- * @returns {import('@rdfjs/types').Term[]}
  */
-export function rdfListToArray(listNode) {
+export function rdfListToArray(listNode: MultiPointer) {
   return [...listNode.list?.() || []].map(({ term }) => term)
 }

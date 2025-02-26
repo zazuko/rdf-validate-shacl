@@ -1,21 +1,41 @@
 import shaclVocabularyFactory from '@vocabulary/sh'
+import type { DatasetCore, Term } from '@rdfjs/types'
+import type { AnyPointer } from 'clownface'
+import type { ShaclPropertyPath } from 'clownface-shacl-path'
+import type { Environment } from './src/defaultEnv.js'
 import factory from './src/defaultEnv.js'
+import type { Namespaces } from './src/namespaces.js'
 import { prepareNamespaces } from './src/namespaces.js'
 import ShapesGraph from './src/shapes-graph.js'
 import ValidationEngine from './src/validation-engine.js'
+
+interface Options {
+  factory?: Environment
+  /**
+   * Max number of errors before the engine stops. Defaults to finding all the errors.
+   */
+  maxErrors?: number
+  allowNamedNodeInList?: boolean
+}
 
 /**
  * Validates RDF data based on a set of RDF shapes.
  */
 class SHACLValidator {
+  declare factory: Environment
+  declare ns: Namespaces
+  declare allowNamedNodeInList: boolean
+  declare $shapes: AnyPointer
+  declare $data: AnyPointer
+  declare shapesGraph: ShapesGraph
+  declare validationEngine: ValidationEngine
+  declare depth: number
+
   /**
-   * @param {import('@rdfjs/types').DatasetCore} shapes - Dataset containing the SHACL shapes for validation
+   * @param shapes - Dataset containing the SHACL shapes for validation
    * @param {object} [options] - Validator options
-   * @param {import('./src/defaultEnv.js').Environment} [options.factory] - Optional RDFJS data factory
-   * @param {number} [options.maxErrors] - Max number of errors before the engine stops. Defaults to finding all the errors.
-   * @param {boolean} [options.allowNamedNodeInList]
    */
-  constructor(shapes, options) {
+  constructor(shapes: DatasetCore, options: Options) {
     options = options || {}
 
     this.factory = options.factory || factory
@@ -33,11 +53,8 @@ class SHACLValidator {
 
   /**
    * Validates the provided data graph against the provided shapes graph
-   *
-   * @param {import('@rdfjs/types').DatasetCore} dataset - Dataset containing the data to validate
-   * @return {import('./src/validation-report.js').default} - Result of the validation
    */
-  validate(dataset) {
+  validate(dataset: DatasetCore) {
     this.$data = this.factory.clownface({ dataset })
     this.validationEngine.validateAll(this.$data)
     return this.validationEngine.getReport()
@@ -45,13 +62,8 @@ class SHACLValidator {
 
   /**
    * Validates the provided focus node against the provided shape
-   *
-   * @param {import('@rdfjs/types').DatasetCore} dataset - Dataset containing the data to validate
-   * @param {import('@rdfjs/types').Term} focusNode - Node to validate
-   * @param {import('@rdfjs/types').Term} shapeNode - Shape used to validate the node. It must be present in the shapes graph.
-   * @returns {import('./src/validation-report.js').default} - Result of the validation
    */
-  validateNode(dataset, focusNode, shapeNode) {
+  validateNode(dataset: DatasetCore, focusNode: Term, shapeNode: Term) {
     this.$data = this.factory.clownface({ dataset })
     this.nodeConformsToShape(focusNode, shapeNode, this.validationEngine)
     return this.validationEngine.getReport()
@@ -59,12 +71,8 @@ class SHACLValidator {
 
   /**
    * Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
-   * @param {import('@rdfjs/types').Term} focusNode
-   * @param {import('@rdfjs/types').Term} shapeNode
-   * @param {ValidationEngine|import('clownface-shacl-path').ShaclPropertyPath|null} [propertyPathOrEngine]
-   * @return {boolean}
    */
-  nodeConformsToShape(focusNode, shapeNode, propertyPathOrEngine) {
+  nodeConformsToShape(focusNode: Term, shapeNode: Term, propertyPathOrEngine?: ValidationEngine | ShaclPropertyPath | null) {
     /** @type {ValidationEngine} */
     let engine
     let shape = this.shapesGraph?.getShape(shapeNode)
@@ -88,11 +96,7 @@ class SHACLValidator {
     }
   }
 
-  /**
-   * @param {import('@rdfjs/types').Term} focusNode
-   * @param {import('@rdfjs/types').Term} shapeNode
-   */
-  validateNodeAgainstShape(focusNode, shapeNode) {
+  validateNodeAgainstShape(focusNode: Term, shapeNode: Term) {
     return this.nodeConformsToShape(focusNode, shapeNode, this.validationEngine)
   }
 }

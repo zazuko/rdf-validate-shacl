@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define, camelcase */
 // Design:
 //
 // First, derive a ShapesGraph object from the definitions in $shapes.
@@ -16,8 +17,12 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
+import type { ShaclPropertyPath } from 'clownface-shacl-path'
 import { fromNode } from 'clownface-shacl-path'
 import { isGraphPointer } from 'is-graph-pointer'
+import type { Quad_Predicate, Term } from '@rdfjs/types'
+import type { AnyPointer, GraphPointer } from 'clownface'
+import type SHACLValidator from '../index.js'
 import NodeSet from './node-set.js'
 import ValidationFunction from './validation-function.js'
 import validatorsRegistry from './validators-registry.js'
@@ -25,10 +30,14 @@ import { getPathObjects } from './property-path.js'
 import { getInstancesOf, isInstanceOf, rdfListToArray } from './dataset-utils.js'
 
 class ShapesGraph {
-  /**
-   * @param {import('../index.js').default} context
-   */
-  constructor(context) {
+  declare context: SHACLValidator
+  private readonly _components: ConstraintComponent[]
+  private readonly _parametersMap: Map<string, ConstraintComponent>
+  private readonly _shapes: Map<string, Shape>
+  private _shapeNodesWithConstraints: Term[] | undefined
+  private _shapesWithTarget: Shape[] | undefined
+
+  constructor(context: SHACLValidator) {
     this.context = context
 
     // Collect all defined constraint components
@@ -37,10 +46,6 @@ class ShapesGraph {
     this._components = [...componentNodes].map((node) => new ConstraintComponent(node, context))
 
     // Build map from parameters to constraint components
-    /**
-     * @type {Map<string, ConstraintComponent>}
-     * @private
-     */
     this._parametersMap = new Map()
     for (const component of this._components) {
       for (const parameter of component.parameters) {
@@ -52,18 +57,11 @@ class ShapesGraph {
     this._shapes = new Map()
   }
 
-  /**
-   * @param {import('@rdfjs/types').Term} parameter
-   * @returns {ConstraintComponent | undefined}
-   */
-  getComponentWithParameter(parameter) {
+  getComponentWithParameter(parameter: Term): ConstraintComponent | undefined {
     return this._parametersMap.get(parameter.value)
   }
 
-  /**
-   * @param {import('@rdfjs/types').Term} shapeNode
-   */
-  getShape(shapeNode) {
+  getShape(shapeNode: Term) {
     if (!this._shapes.has(shapeNode.value)) {
       const shape = new Shape(this.context, shapeNode)
       this._shapes.set(shapeNode.value, shape)
@@ -114,20 +112,20 @@ class ShapesGraph {
 }
 
 export class Constraint {
-  /**
-   * @param {Shape} shape
-   * @param {ConstraintComponent} component
-   * @param {any | undefined} paramValue
-   * @param {import('clownface').AnyPointer} shapesGraph
-   */
-  constructor(shape, component, paramValue, shapesGraph) {
+  declare shape: Shape
+  declare component: ConstraintComponent
+  declare paramValue: any
+  declare shapeNodePointer: AnyPointer
+  private inNodeSet: NodeSet | undefined
+
+  constructor(shape: Shape, component: ConstraintComponent, paramValue: unknown, shapesGraph: AnyPointer) {
     this.shape = shape
     this.component = component
     this.paramValue = paramValue
     this.shapeNodePointer = shapesGraph.node(shape.shapeNode)
   }
 
-  getParameterValue(param) {
+  getParameterValue(param: Term) {
     return this.paramValue || this.shapeNodePointer.out(param).term
   }
 
@@ -161,11 +159,19 @@ export class Constraint {
 }
 
 class ConstraintComponent {
-  /**
-   * @param {import('@rdfjs/types').Term} node
-   * @param {import('../index.js').default} context
-   */
-  constructor(node, context) {
+  declare context: SHACLValidator
+  declare node: Term
+  declare nodePointer: GraphPointer
+  declare parameters: Term[]
+  declare parameterNodes: unknown[]
+  declare requiredParameters: Term[]
+  declare optionals: Record<string, unknown>
+  declare nodeValidationFunction: ValidationFunction | null
+  declare nodeValidationFunctionGeneric: boolean
+  declare propertyValidationFunction: ValidationFunction | null
+  declare propertyValidationFunctionGeneric: boolean
+
+  constructor(node: Term, context: SHACLValidator) {
     const { $shapes, factory, ns } = context
     const { sh, xsd } = ns
 
@@ -173,21 +179,9 @@ class ConstraintComponent {
     this.node = node
     this.nodePointer = $shapes.node(node)
 
-    /**
-     * @type {import('@rdfjs/types').Term[]}
-     */
     this.parameters = []
-    /**
-     * @type {unknown[]}
-     */
     this.parameterNodes = []
-    /**
-     * @type {import('@rdfjs/types').Term[]}
-     */
     this.requiredParameters = []
-    /**
-     * @type {Record<string, unknown>}
-     */
     this.optionals = {}
     const trueTerm = factory.literal('true', xsd.boolean)
     this.nodePointer
@@ -218,16 +212,8 @@ class ConstraintComponent {
     }
   }
 
-  /**
-   * @param {import('@rdfjs/types').Quad_Predicate} predicate
-   * @return {ValidationFunction|null}
-   */
-  findValidationFunction(predicate) {
-    /**
-     * @type {'validator' | 'nodeValidator' | 'propertyValidator'}
-     */
-    // @ts-ignore
-    const validatorType = predicate.value.split('#').slice(-1)[0]
+  findValidationFunction(predicate: Quad_Predicate): ValidationFunction | null {
+    const validatorType = predicate.value.split('#').slice(-1)[0] as 'validator' | 'nodeValidator' | 'propertyValidator'
     const validator = this.findValidator(validatorType)
 
     if (!validator) return null
@@ -235,11 +221,7 @@ class ConstraintComponent {
     return new ValidationFunction(this.context, validator.func.name, validator.func)
   }
 
-  /**
-   * @param {Shape} shape
-   * @return {[string]|[]}
-   */
-  getMessages(shape) {
+  getMessages(shape: Shape): [string] | [] {
     const generic = shape.isPropertyShape ? this.propertyValidationFunctionGeneric : this.nodeValidationFunctionGeneric
     const validatorType = generic ? 'validator' : (shape.isPropertyShape ? 'propertyValidator' : 'nodeValidator')
     const validator = this.findValidator(validatorType)
@@ -251,10 +233,7 @@ class ConstraintComponent {
     return message ? [message] : []
   }
 
-  /**
-   * @param {'validator' | 'nodeValidator' | 'propertyValidator'} validatorType
-   */
-  findValidator(validatorType) {
+  findValidator(validatorType: 'validator' | 'nodeValidator' | 'propertyValidator') {
     const constraintValidators = validatorsRegistry[this.node.value]
 
     if (!constraintValidators) return null
@@ -264,30 +243,29 @@ class ConstraintComponent {
     return validator || null
   }
 
-  /**
-   * @param {import('@rdfjs/types').Term} shapeNode
-   */
-  isComplete(shapeNode) {
+  isComplete(shapeNode: Term) {
     return !this.parameters.some((parameter) => (
       this.isRequired(parameter.value) &&
       this.context.$shapes.dataset.match(shapeNode, parameter, null).size === 0
     ))
   }
 
-  /**
-   * @param {string} parameterURI
-   */
-  isRequired(parameterURI) {
+  isRequired(parameterURI: string) {
     return !this.optionals[parameterURI]
   }
 }
 
 export class Shape {
-  /**
-   * @param {import('../index.js').default} context
-   * @param {import('@rdfjs/types').Term} shapeNode
-   */
-  constructor(context, shapeNode) {
+  declare context: SHACLValidator
+  declare shapeNode: Term
+  declare shapeNodePointer: GraphPointer
+  declare severity: Term
+  declare deactivated: boolean
+  declare path: GraphPointer | undefined
+  declare pathObject: ShaclPropertyPath | null
+  declare constraints: Constraint[]
+
+  constructor(context: SHACLValidator, shapeNode: Term) {
     const { $shapes, ns, shapesGraph, allowNamedNodeInList: allowNamedNodeSequencePaths } = context
     const { sh } = ns
 
@@ -305,9 +283,6 @@ export class Shape {
       this.pathObject = fromNode(this.path, { allowNamedNodeSequencePaths })
     }
 
-    /**
-     * @type {Constraint[]}
-     */
     this.constraints = []
     const handled = new NodeSet()
     const shapeProperties = [...$shapes.dataset.match(shapeNode, null, null)]
@@ -329,19 +304,13 @@ export class Shape {
     return this.pathObject != null
   }
 
-  /**
-   * @param {import('clownface-shacl-path').ShaclPropertyPath} path
-   */
-  overridePath(path) {
+  overridePath(path: ShaclPropertyPath) {
     const shape = new Shape(this.context, this.shapeNode)
     shape.pathObject = path
     return shape
   }
 
-  /**
-   * @param {import('clownface').AnyPointer} dataGraph
-   */
-  getTargetNodes(dataGraph) {
+  getTargetNodes(dataGraph: AnyPointer) {
     const { $shapes, ns } = this.context
     const { rdfs, sh } = ns
     const results = new NodeSet()
@@ -383,11 +352,7 @@ export class Shape {
     return [...results]
   }
 
-  /**
-   * @param {import('@rdfjs/types').Term} focusNode
-   * @param {import('clownface').AnyPointer} dataGraph
-   */
-  getValueNodes(focusNode, dataGraph) {
+  getValueNodes(focusNode: Term, dataGraph: AnyPointer) {
     if (this.pathObject) {
       return getPathObjects(dataGraph, focusNode, this.pathObject)
     } else {

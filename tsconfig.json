@@ -4,12 +4,10 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "declaration": true,
-    "emitDeclarationOnly": true,
-    "allowJs": true,
-    "checkJs": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "noImplicitAny": true
   },
   "files": [
-    "index.js"
+    "index.ts"
   ]
 }
