@@ -7,7 +7,9 @@ import factory from './src/defaultEnv.js'
 import type { Namespaces } from './src/namespaces.js'
 import { prepareNamespaces } from './src/namespaces.js'
 import ShapesGraph from './src/shapes-graph.js'
+import type { ValidatorRegistry } from './src/validation-engine.js'
 import ValidationEngine from './src/validation-engine.js'
+import defaultValidators from './src/validators-registry.js'
 
 interface Options {
   factory?: Environment
@@ -30,6 +32,7 @@ class SHACLValidator {
   declare shapesGraph: ShapesGraph
   declare validationEngine: ValidationEngine
   declare depth: number
+  declare validators: ValidatorRegistry
 
   /**
    * @param shapes - Dataset containing the SHACL shapes for validation
@@ -45,6 +48,7 @@ class SHACLValidator {
     const dataset = this.factory.dataset(shaclQuads.concat([...(shapes)]))
     this.$shapes = this.factory.clownface({ dataset })
     this.$data = this.factory.clownface()
+    this.validators = this.factory.termMap(defaultValidators)
     this.shapesGraph = new ShapesGraph(this)
     this.validationEngine = new ValidationEngine(this, options)
 
@@ -73,8 +77,7 @@ class SHACLValidator {
    * Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
    */
   nodeConformsToShape(focusNode: Term, shapeNode: Term, propertyPathOrEngine?: ValidationEngine | ShaclPropertyPath | null) {
-    /** @type {ValidationEngine} */
-    let engine
+    let engine: ValidationEngine
     let shape = this.shapesGraph?.getShape(shapeNode)
 
     if (propertyPathOrEngine && 'accept' in propertyPathOrEngine) {

@@ -5,341 +5,413 @@ import type SHACLValidator from '../index.js'
 import NodeSet from './node-set.js'
 import { getPathObjects } from './property-path.js'
 import { isInstanceOf, rdfListToArray } from './dataset-utils.js'
-import type { ValidationFunction, ValidationResult } from './validation-engine.js'
+import type { ValidationResult, Validator } from './validation-engine.js'
 import type { Namespaces } from './namespaces.js'
 import type { Constraint } from './shapes-graph.js'
+import ns from './namespaces.js'
 
-const validateAnd: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const andNode = constraint.getParameterValue(sh.and)
-  const shapes = rdfListToArray(context.$shapes.node(andNode))
+const validateAnd: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const andNode = constraint.getParameterValue(sh.and)
+    const shapes = rdfListToArray(context.$shapes.node(andNode))
 
-  return shapes.every((shape) => {
-    if (constraint.shape.isPropertyShape) {
-      return context.nodeConformsToShape(focusNode, shape, constraint.pathObject)
+    return shapes.every((shape) => {
+      if (constraint.shape.isPropertyShape) {
+        return context.nodeConformsToShape(focusNode, shape, constraint.pathObject)
+      }
+
+      return context.nodeConformsToShape(valueNode, shape)
+    })
+  },
+}
+
+const validateClass: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const classNode = constraint.getParameterValue(ns.sh.class)
+
+    return isInstanceOf(context.$data.node(valueNode), context.$data.node(classNode), context.ns)
+  },
+}
+
+const validateClosed: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh, xsd } = context.ns
+    const closedNode = constraint.getParameterValue(sh.closed)
+    const ignoredPropertiesNode = constraint.getParameterValue(sh.ignoredProperties)
+    const currentShape = constraint.shape.shapeNode
+    const trueTerm = context.factory.literal('true', xsd.boolean)
+
+    if (!trueTerm.equals(closedNode)) {
+      return
     }
 
-    return context.nodeConformsToShape(valueNode, shape)
-  })
+    const allowed = new NodeSet(
+      context.$shapes
+        .node(currentShape)
+        .out(sh.property)
+        .out(sh.path)
+        .terms
+        .filter((term) => term.termType === 'NamedNode'),
+    )
+
+    if (ignoredPropertiesNode) {
+      allowed.addAll(rdfListToArray(context.$shapes.node(ignoredPropertiesNode)))
+    }
+
+    const results: ValidationResult[] = []
+    const valueQuads = [...context.$data.dataset.match(valueNode, null, null)]
+    valueQuads
+      .filter(({ predicate }) => !allowed.has(predicate))
+      .forEach(({ predicate, object }) => {
+        results.push({ path: predicate, value: object })
+      })
+
+    return results
+  },
+  validationMessage: 'Predicate is not allowed (closed shape)',
 }
 
-const validateClass: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const classNode = constraint.getParameterValue(sh.class)
+const validateDatatype: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const datatypeNode = constraint.getParameterValue(sh.datatype)
 
-  return isInstanceOf(context.$data.node(valueNode), context.$data.node(classNode), context.ns)
+    if (valueNode.termType === 'Literal') {
+      return valueNode.datatype.equals(datatypeNode) && validateTerm(valueNode)
+    } else {
+      return false
+    }
+  },
+  validationMessage: 'Value does not have datatype {$datatype}',
 }
 
-const validateClosed: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh, xsd } = context.ns
-  const closedNode = constraint.getParameterValue(sh.closed)
-  const ignoredPropertiesNode = constraint.getParameterValue(sh.ignoredProperties)
-  const currentShape = constraint.shape.shapeNode
-  const trueTerm = context.factory.literal('true', xsd.boolean)
+const validateDisjoint: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const disjointNode = constraint.getParameterValue(sh.disjoint)
 
-  if (!trueTerm.equals(closedNode)) {
-    return
-  }
+    return context.$data.dataset.match(focusNode, disjointNode, valueNode).size === 0
+  },
+  validationMessage: 'Value node must not also be one of the values of {$disjoint}',
+}
 
-  const allowed = new NodeSet(
-    context.$shapes
-      .node(currentShape)
-      .out(sh.property)
-      .out(sh.path)
-      .terms
-      .filter((term) => term.termType === 'NamedNode'),
-  )
+const validateEquals: Validator = {
+  propertyValidate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const path = constraint.shape.pathObject
+    const equalsNode = constraint.getParameterValue(sh.equals)
 
-  if (ignoredPropertiesNode) {
-    allowed.addAll(rdfListToArray(context.$shapes.node(ignoredPropertiesNode)))
-  }
-
-  const results: ValidationResult[] = []
-  const valueQuads = [...context.$data.dataset.match(valueNode, null, null)]
-  valueQuads
-    .filter(({ predicate }) => !allowed.has(predicate))
-    .forEach(({ predicate, object }) => {
-      results.push({ path: predicate, value: object })
+    const results: ValidationResult[] = []
+    getPathObjects(context.$data, focusNode, path).forEach(value => {
+      if (context.$data.dataset.match(focusNode, equalsNode, value).size === 0) {
+        results.push({ value })
+      }
     })
 
-  return results
-}
+    const equalsQuads = [...context.$data.dataset.match(focusNode, equalsNode, null)]
+    equalsQuads.forEach(({ object }) => {
+      const value = object
+      if (!getPathObjects(context.$data, focusNode, path).some(pathValue => pathValue.equals(value))) {
+        results.push({ value })
+      }
+    })
+    return results
+  },
+  propertyValidationMessage: 'Must have same values as {$equals}',
 
-const validateDatatype: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const datatypeNode = constraint.getParameterValue(sh.datatype)
+  nodeValidate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const equalsNode = constraint.getParameterValue(sh.equals)
 
-  if (valueNode.termType === 'Literal') {
-    return valueNode.datatype.equals(datatypeNode) && validateTerm(valueNode)
-  } else {
-    return false
-  }
-}
+    const results: ValidationResult[] = []
 
-const validateDisjoint: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const disjointNode = constraint.getParameterValue(sh.disjoint)
+    let solutions = 0
+    getPathObjects(context.$data, focusNode, equalsNode).forEach(value => {
+      solutions++
+      if (!value.equals(focusNode)) {
+        results.push({ value })
+      }
+    })
 
-  return context.$data.dataset.match(focusNode, disjointNode, valueNode).size === 0
-}
-
-const validateEqualsProperty: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const path = constraint.shape.pathObject
-  const equalsNode = constraint.getParameterValue(sh.equals)
-
-  const results: ValidationResult[] = []
-  getPathObjects(context.$data, focusNode, path).forEach(value => {
-    if (context.$data.dataset.match(focusNode, equalsNode, value).size === 0) {
-      results.push({ value })
+    if (results.length === 0 && solutions === 0) {
+      results.push({ value: focusNode })
     }
-  })
 
-  const equalsQuads = [...context.$data.dataset.match(focusNode, equalsNode, null)]
-  equalsQuads.forEach(({ object }) => {
-    const value = object
-    if (!getPathObjects(context.$data, focusNode, path).some(pathValue => pathValue.equals(value))) {
-      results.push({ value })
+    return results
+  },
+  nodeValidationMessage: 'Must have same values as {$equals}',
+}
+
+const validateHasValue: Validator = {
+  nodeValidate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const hasValueNode = constraint.getParameterValue(sh.hasValue)
+
+    return focusNode.equals(hasValueNode)
+  },
+  nodeValidationMessage: 'Value must be {$hasValue}',
+
+  propertyValidate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const path = constraint.shape.pathObject
+    const hasValueNode = constraint.getParameterValue(sh.hasValue)
+
+    return getPathObjects(context.$data, focusNode, path)
+      .some(value => value.equals(hasValueNode))
+  },
+  propertyValidationMessage: 'Missing expected value {$hasValue}',
+}
+
+const validateIn: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    return constraint.nodeSet.has(valueNode)
+  },
+  validationMessage: 'Value is not one of the allowed values: {$in}',
+}
+
+const validateLanguageIn: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    if (valueNode.termType !== 'Literal') {
+      return false
     }
-  })
-  return results
-}
 
-const validateEqualsNode: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const equalsNode = constraint.getParameterValue(sh.equals)
-
-  /** @type import('./validation-engine.js').ValidationResult[] */
-  const results = []
-
-  let solutions = 0
-  getPathObjects(context.$data, focusNode, equalsNode).forEach(value => {
-    solutions++
-    if (!value.equals(focusNode)) {
-      results.push({ value })
+    const valueLanguage = valueNode.language
+    if (!valueLanguage || valueLanguage === '') {
+      return false
     }
-  })
 
-  if (results.length === 0 && solutions === 0) {
-    results.push({ value: focusNode })
-  }
+    const languageInNode = constraint.getParameterValue(sh.languageIn)
+    const allowedLanguages = rdfListToArray(context.$shapes.node(languageInNode))
 
-  return results
+    return allowedLanguages.some(allowedLanguage => valueLanguage.startsWith(allowedLanguage.value))
+  },
+  validationMessage: 'Language does not match any of {$languageIn}',
 }
 
-const validateHasValueNode: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const hasValueNode = constraint.getParameterValue(sh.hasValue)
+const validateLessThan: Validator = {
+  propertyValidate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const valuePath = constraint.shape.pathObject
+    const values = getPathObjects(context.$data, focusNode, valuePath)
+    const lessThanNode = constraint.getParameterValue(sh.lessThan)
+    const referenceValues = context.$data.node(focusNode).out(lessThanNode).terms
 
-  return focusNode.equals(hasValueNode)
-}
-
-const validateHasValueProperty: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const path = constraint.shape.pathObject
-  const hasValueNode = constraint.getParameterValue(sh.hasValue)
-
-  return getPathObjects(context.$data, focusNode, path)
-    .some(value => value.equals(hasValueNode))
-}
-
-const validateIn: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  return constraint.nodeSet.has(valueNode)
-}
-
-const validateLanguageIn: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  if (valueNode.termType !== 'Literal') {
-    return false
-  }
-
-  const valueLanguage = valueNode.language
-  if (!valueLanguage || valueLanguage === '') {
-    return false
-  }
-
-  const languageInNode = constraint.getParameterValue(sh.languageIn)
-  const allowedLanguages = rdfListToArray(context.$shapes.node(languageInNode))
-
-  return allowedLanguages.some(allowedLanguage => valueLanguage.startsWith(allowedLanguage.value))
-}
-
-const validateLessThanProperty: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const valuePath = constraint.shape.pathObject
-  const values = getPathObjects(context.$data, focusNode, valuePath)
-  const lessThanNode = constraint.getParameterValue(sh.lessThan)
-  const referenceValues = context.$data.node(focusNode).out(lessThanNode).terms
-
-  const invalidValues: ValidationResult[] = []
-  for (const value of values) {
-    for (const referenceValue of referenceValues) {
-      const c = compareTerms(value, referenceValue, context.ns)
-      if (c === null || c >= 0) {
-        invalidValues.push({ value })
+    const invalidValues: ValidationResult[] = []
+    for (const value of values) {
+      for (const referenceValue of referenceValues) {
+        const c = compareTerms(value, referenceValue, context.ns)
+        if (c === null || c >= 0) {
+          invalidValues.push({ value })
+        }
       }
     }
-  }
-  return invalidValues
+    return invalidValues
+  },
+  propertyValidationMessage: 'Value is not less than value of {$lessThan}',
 }
 
-/**
- * @type import('./validation-engine.js').ValidationFunction
- */
-const validateLessThanOrEqualsProperty: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const valuePath = constraint.shape.pathObject
-  const values = getPathObjects(context.$data, focusNode, valuePath)
-  const lessThanOrEqualsNode = constraint.getParameterValue(sh.lessThanOrEquals)
-  const referenceValues = context.$data.node(focusNode).out(lessThanOrEqualsNode).terms
+const validateLessThanOrEquals: Validator = {
+  propertyValidate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const valuePath = constraint.shape.pathObject
+    const values = getPathObjects(context.$data, focusNode, valuePath)
+    const lessThanOrEqualsNode = constraint.getParameterValue(sh.lessThanOrEquals)
+    const referenceValues = context.$data.node(focusNode).out(lessThanOrEqualsNode).terms
 
-  /** @type import('./validation-engine.js').ValidationResult[] */
-  const invalidValues = []
-  for (const value of values) {
-    for (const referenceValue of referenceValues) {
-      const c = compareTerms(value, referenceValue, context.ns)
-      if (c === null || c > 0) {
-        invalidValues.push({ value })
+    const invalidValues: ValidationResult[] = []
+    for (const value of values) {
+      for (const referenceValue of referenceValues) {
+        const c = compareTerms(value, referenceValue, context.ns)
+        if (c === null || c > 0) {
+          invalidValues.push({ value })
+        }
       }
     }
-  }
-  return invalidValues
+    return invalidValues
+  },
+  propertyValidationMessage: 'Value is not less than or equal to value of {$lessThanOrEquals}',
 }
 
-const validateMaxCountProperty: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const path = constraint.shape.pathObject
-  const count = getPathObjects(context.$data, focusNode, path).length
-  const maxCountNode = constraint.getParameterValue(sh.maxCount)
+const validateMaxCount: Validator = {
+  propertyValidate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const path = constraint.shape.pathObject
+    const count = getPathObjects(context.$data, focusNode, path).length
+    const maxCountNode = constraint.getParameterValue(sh.maxCount)
 
-  return maxCountNode && count <= Number(maxCountNode.value)
+    return maxCountNode && count <= Number(maxCountNode.value)
+  },
+  propertyValidationMessage: 'More than {$maxCount} values',
 }
 
-const validateMaxExclusive: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const maxExclusiveNode = constraint.getParameterValue(sh.maxExclusive)
-  const comp = compareTerms(valueNode, maxExclusiveNode, context.ns)
+const validateMaxExclusive: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const maxExclusiveNode = constraint.getParameterValue(sh.maxExclusive)
+    const comp = compareTerms(valueNode, maxExclusiveNode, context.ns)
 
-  return (comp !== null && comp < 0)
+    return (comp !== null && comp < 0)
+  },
+  validationMessage: 'Value is not less than {$maxExclusive}',
 }
 
-const validateMaxInclusive: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const maxInclusiveNode = constraint.getParameterValue(sh.maxInclusive)
-  const comp = compareTerms(valueNode, maxInclusiveNode, context.ns)
+const validateMaxInclusive: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const maxInclusiveNode = constraint.getParameterValue(sh.maxInclusive)
+    const comp = compareTerms(valueNode, maxInclusiveNode, context.ns)
 
-  return (comp !== null && comp <= 0)
+    return (comp !== null && comp <= 0)
+  },
+  validationMessage: 'Value is not less than or equal to {$maxInclusive}',
 }
 
-const validateMaxLength: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  if (valueNode.termType === 'BlankNode') {
-    return false
-  }
+const validateMaxLength: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    if (valueNode.termType === 'BlankNode') {
+      return false
+    }
 
-  const { sh } = context.ns
-  const maxLengthNode = constraint.getParameterValue(sh.maxLength)
-  return valueNode.value.length <= Number(maxLengthNode.value)
+    const { sh } = context.ns
+    const maxLengthNode = constraint.getParameterValue(sh.maxLength)
+    return valueNode.value.length <= Number(maxLengthNode.value)
+  },
+  validationMessage: 'Value has more than {$maxLength} characters',
 }
 
-const validateMinCountProperty: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const path = constraint.pathObject
-  const count = getPathObjects(context.$data, focusNode, path).length
-  const minCountNode = constraint.getParameterValue(sh.minCount)
+const validateMinCount: Validator = {
+  propertyValidate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const path = constraint.pathObject
+    const count = getPathObjects(context.$data, focusNode, path).length
+    const minCountNode = constraint.getParameterValue(sh.minCount)
 
-  return count >= Number(minCountNode.value)
+    return count >= Number(minCountNode.value)
+  },
+  propertyValidationMessage: 'Less than {$minCount} values',
 }
 
-const validateMinExclusive: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const minExclusiveNode = constraint.getParameterValue(sh.minExclusive)
-  const comp = compareTerms(valueNode, minExclusiveNode, context.ns)
+const validateMinExclusive: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const minExclusiveNode = constraint.getParameterValue(sh.minExclusive)
+    const comp = compareTerms(valueNode, minExclusiveNode, context.ns)
 
-  return (comp !== null && comp > 0)
+    return (comp !== null && comp > 0)
+  },
+  validationMessage: 'Value is not greater than {$minExclusive}',
 }
 
-const validateMinInclusive: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const minInclusiveNode = constraint.getParameterValue(sh.minInclusive)
-  const comp = compareTerms(valueNode, minInclusiveNode, context.ns)
+const validateMinInclusive: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const minInclusiveNode = constraint.getParameterValue(sh.minInclusive)
+    const comp = compareTerms(valueNode, minInclusiveNode, context.ns)
 
-  return (comp !== null && comp >= 0)
+    return (comp !== null && comp >= 0)
+  },
+  validationMessage: 'Value is not greater than or equal to {$minInclusive}',
 }
 
-const validateMinLength: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  if (valueNode.termType === 'BlankNode') {
-    return false
-  }
+const validateMinLength: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    if (valueNode.termType === 'BlankNode') {
+      return false
+    }
 
-  const { sh } = context.ns
-  const minLengthNode = constraint.getParameterValue(sh.minLength)
-  return valueNode.value.length >= Number(minLengthNode.value)
+    const { sh } = context.ns
+    const minLengthNode = constraint.getParameterValue(sh.minLength)
+    return valueNode.value.length >= Number(minLengthNode.value)
+  },
+  validationMessage: 'Value has less than {$minLength} characters',
 }
 
-const validateNodeKind: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const nodeKindNode = constraint.getParameterValue(sh.nodeKind)
+const validateNodeKind: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const nodeKindNode = constraint.getParameterValue(sh.nodeKind)
 
-  if (valueNode.termType === 'BlankNode') {
-    return sh.BlankNode.equals(nodeKindNode) ||
-      sh.BlankNodeOrIRI.equals(nodeKindNode) ||
-      sh.BlankNodeOrLiteral.equals(nodeKindNode)
-  } else if (valueNode.termType === 'NamedNode') {
-    return sh.IRI.equals(nodeKindNode) ||
-      sh.BlankNodeOrIRI.equals(nodeKindNode) ||
-      sh.IRIOrLiteral.equals(nodeKindNode)
-  } else if (valueNode.termType === 'Literal') {
-    return sh.Literal.equals(nodeKindNode) ||
-      sh.BlankNodeOrLiteral.equals(nodeKindNode) ||
-      sh.IRIOrLiteral.equals(nodeKindNode)
-  }
+    if (valueNode.termType === 'BlankNode') {
+      return sh.BlankNode.equals(nodeKindNode) ||
+          sh.BlankNodeOrIRI.equals(nodeKindNode) ||
+          sh.BlankNodeOrLiteral.equals(nodeKindNode)
+    } else if (valueNode.termType === 'NamedNode') {
+      return sh.IRI.equals(nodeKindNode) ||
+          sh.BlankNodeOrIRI.equals(nodeKindNode) ||
+          sh.IRIOrLiteral.equals(nodeKindNode)
+    } else if (valueNode.termType === 'Literal') {
+      return sh.Literal.equals(nodeKindNode) ||
+          sh.BlankNodeOrLiteral.equals(nodeKindNode) ||
+          sh.IRIOrLiteral.equals(nodeKindNode)
+    }
+  },
+  validationMessage: 'Value does not have node kind {$nodeKind}',
 }
 
-const validateNode: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const nodeNode = constraint.getParameterValue(sh.node)
-  return context.validateNodeAgainstShape(valueNode, nodeNode)
+const validateNode: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const nodeNode = constraint.getParameterValue(sh.node)
+    return context.validateNodeAgainstShape(valueNode, nodeNode)
+  },
+  validationMessage: 'Value does not have shape {$node}',
 }
 
-const validateNot: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const notNode = constraint.getParameterValue(sh.not)
-  return !context.nodeConformsToShape(valueNode, notNode)
+const validateNot: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const notNode = constraint.getParameterValue(sh.not)
+    return !context.nodeConformsToShape(valueNode, notNode)
+  },
+  validationMessage: 'Value does have shape {$not}',
 }
 
-const validateOr: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const orNode = constraint.getParameterValue(sh.or)
-  const shapes = rdfListToArray(context.$shapes.node(orNode))
-  return shapes.some(shape => context.nodeConformsToShape(valueNode, shape))
+const validateOr: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const orNode = constraint.getParameterValue(sh.or)
+    const shapes = rdfListToArray(context.$shapes.node(orNode))
+    return shapes.some(shape => context.nodeConformsToShape(valueNode, shape))
+  },
 }
 
-const validatePattern: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  if (valueNode.termType === 'BlankNode') {
-    return false
-  }
+const validatePattern: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    if (valueNode.termType === 'BlankNode') {
+      return false
+    }
 
-  const { sh } = context.ns
-  const flagsNode = constraint.getParameterValue(sh.flags)
-  const patternNode = constraint.getParameterValue(sh.pattern)
-  const re = flagsNode ? new RegExp(patternNode.value, flagsNode.value) : new RegExp(patternNode.value)
-  return re.test(valueNode.value)
+    const { sh } = context.ns
+    const flagsNode = constraint.getParameterValue(sh.flags)
+    const patternNode = constraint.getParameterValue(sh.pattern)
+    const re = flagsNode ? new RegExp(patternNode.value, flagsNode.value) : new RegExp(patternNode.value)
+    return re.test(valueNode.value)
+  },
+  validationMessage: 'Value does not match pattern "{$pattern}"',
 }
 
-const validateQualifiedMaxCountProperty: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const count = validateQualifiedHelper(context, focusNode, constraint)
-  const qualifiedMaxCountNode = constraint.getParameterValue(sh.qualifiedMaxCount)
+const validateQualifiedMaxCount: Validator = {
+  propertyValidate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const count = validateQualifiedHelper(context, focusNode, constraint)
+    const qualifiedMaxCountNode = constraint.getParameterValue(sh.qualifiedMaxCount)
 
-  return qualifiedMaxCountNode.termType === 'Literal' && count <= Number(qualifiedMaxCountNode.value)
+    return qualifiedMaxCountNode.termType === 'Literal' && count <= Number(qualifiedMaxCountNode.value)
+  },
+  propertyValidationMessage: 'More than {$qualifiedMaxCount} values have shape {$qualifiedValueShape}',
 }
 
-const validateQualifiedMinCountProperty: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const count = validateQualifiedHelper(context, focusNode, constraint)
-  const qualifiedMinCountNode = constraint.getParameterValue(sh.qualifiedMinCount)
+const validateQualifiedMinCount: Validator = {
+  propertyValidate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const count = validateQualifiedHelper(context, focusNode, constraint)
+    const qualifiedMinCountNode = constraint.getParameterValue(sh.qualifiedMinCount)
 
-  return qualifiedMinCountNode.termType === 'Literal' && count >= Number(qualifiedMinCountNode.value)
+    return qualifiedMinCountNode.termType === 'Literal' && count >= Number(qualifiedMinCountNode.value)
+  },
+  propertyValidationMessage: 'Less than {$qualifiedMinCount} values have shape {$qualifiedValueShape}',
 }
 
 function validateQualifiedHelper(context: SHACLValidator, focusNode: Term, constraint: Constraint) {
@@ -384,51 +456,56 @@ function validateQualifiedConformsToASibling(context: SHACLValidator, value: Ter
   return false
 }
 
-const validateUniqueLangProperty: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh, xsd } = context.ns
-  const uniqueLangNode = constraint.getParameterValue(sh.uniqueLang)
-  const trueTerm = context.factory.literal('true', xsd.boolean)
+const validateUniqueLang: Validator = {
+  propertyValidate(context, focusNode, valueNode, constraint) {
+    const { sh, xsd } = context.ns
+    const uniqueLangNode = constraint.getParameterValue(sh.uniqueLang)
+    const trueTerm = context.factory.literal('true', xsd.boolean)
 
-  if (!trueTerm.equals(uniqueLangNode)) {
-    return
-  }
+    if (!trueTerm.equals(uniqueLangNode)) {
+      return
+    }
 
-  const path = constraint.shape.pathObject
-  const map: Record<string, number> = {}
-  getPathObjects(context.$data, focusNode, path).forEach(value => {
-    if (value.termType === 'Literal' && value.language && value.language !== '') {
-      const old = map[value.language]
-      if (!old) {
-        map[value.language] = 1
-      } else {
-        map[value.language] = old + 1
+    const path = constraint.shape.pathObject
+    const map: Record<string, number> = {}
+    getPathObjects(context.$data, focusNode, path).forEach(value => {
+      if (value.termType === 'Literal' && value.language && value.language !== '') {
+        const old = map[value.language]
+        if (!old) {
+          map[value.language] = 1
+        } else {
+          map[value.language] = old + 1
+        }
+      }
+    })
+
+    /** @type string[] */
+    const results = []
+    for (const lang in map) {
+      if (Object.prototype.hasOwnProperty.call(map, lang)) {
+        const count = map[lang]
+        if (count > 1) {
+          results.push('Language "' + lang + '" has been used by ' + count + ' values')
+        }
       }
     }
-  })
-
-  /** @type string[] */
-  const results = []
-  for (const lang in map) {
-    if (Object.prototype.hasOwnProperty.call(map, lang)) {
-      const count = map[lang]
-      if (count > 1) {
-        results.push('Language "' + lang + '" has been used by ' + count + ' values')
-      }
-    }
-  }
-  return results
+    return results
+  },
+  propertyValidationMessage: 'Language "{?lang}" used more than once',
 }
 
-const validateXone: ValidationFunction = function (context, focusNode, valueNode, constraint) {
-  const { sh } = context.ns
-  const xoneNode = constraint.getParameterValue(sh.xone)
-  const shapes = rdfListToArray(context.$shapes.node(xoneNode))
-  const conformsCount = shapes
-    .map(shape => context.nodeConformsToShape(valueNode, shape))
-    .filter(Boolean)
-    .length
+const validateXone: Validator = {
+  validate(context, focusNode, valueNode, constraint) {
+    const { sh } = context.ns
+    const xoneNode = constraint.getParameterValue(sh.xone)
+    const shapes = rdfListToArray(context.$shapes.node(xoneNode))
+    const conformsCount = shapes
+      .map(shape => context.nodeConformsToShape(valueNode, shape))
+      .filter(Boolean)
+      .length
 
-  return conformsCount === 1
+    return conformsCount === 1
+  },
 }
 
 // Private helper functions
@@ -479,19 +556,17 @@ export default {
   validateClosed,
   validateDatatype,
   validateDisjoint,
-  validateEqualsNode,
-  validateEqualsProperty,
-  validateHasValueNode,
-  validateHasValueProperty,
+  validateEquals,
+  validateHasValue,
   validateIn,
   validateLanguageIn,
-  validateLessThanProperty,
-  validateLessThanOrEqualsProperty,
-  validateMaxCountProperty,
+  validateLessThan,
+  validateLessThanOrEquals,
+  validateMaxCount,
   validateMaxExclusive,
   validateMaxInclusive,
   validateMaxLength,
-  validateMinCountProperty,
+  validateMinCount,
   validateMinExclusive,
   validateMinInclusive,
   validateMinLength,
@@ -500,8 +575,8 @@ export default {
   validateNot,
   validateOr,
   validatePattern,
-  validateQualifiedMaxCountProperty,
-  validateQualifiedMinCountProperty,
-  validateUniqueLangProperty,
+  validateQualifiedMaxCount,
+  validateQualifiedMinCount,
+  validateUniqueLang,
   validateXone,
 }
