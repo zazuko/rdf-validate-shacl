@@ -153,11 +153,6 @@ export class Constraint {
         yield new Constraint(shape, component, shapesGraph, params)
       }
     }
-
-    return combinations.map((paramValues) => {
-      const rawParams = shape.context.factory.termMap(paramValues)
-      return new Constraint(shape, component, shapesGraph, component.prepareParams(rawParams))
-    })
   }
 
   getParameterValue(param: NamedNode) {
