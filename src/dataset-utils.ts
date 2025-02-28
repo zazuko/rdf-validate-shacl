@@ -34,7 +34,7 @@ export function * extractSourceShapeStructure(shape: Shape, dataset: DatasetCore
   const { sh, rdfs } = shape.context.ns
 
   const inListSize = (term: Term) => {
-    const inConstraint = shape.constraints.find(x => term.equals(x.getParameterValue(sh.in)))
+    const inConstraint = shape.constraints.find(x => term.equals(x.paramValue))
     return inConstraint?.nodeSet.size || -1
   }
 

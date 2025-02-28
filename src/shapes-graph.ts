@@ -112,12 +112,18 @@ class ShapesGraph {
 
 export class Constraint {
   declare shapeNodePointer: AnyPointer
-
+  readonly paramValue: Term
+  private _parameterValues: Map<NamedNode, Term>
   private inNodeSet: NodeSet | undefined
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  constructor(public readonly shape: Shape, public readonly component: ConstraintComponent, shapesGraph: AnyPointer, private readonly _parameterValues: Map<NamedNode, any>) {
+  constructor(public readonly shape: Shape, public readonly component: ConstraintComponent, shapesGraph: AnyPointer, _parameterValuesOrSingleParam: Term | Map<NamedNode, Term>) {
     this.shapeNodePointer = shapesGraph.node(shape.shapeNode)
+    if ('termType' in _parameterValuesOrSingleParam) {
+      this.paramValue = _parameterValuesOrSingleParam
+    } else {
+      this._parameterValues = _parameterValuesOrSingleParam
+    }
   }
 
   get validate() {
@@ -129,12 +135,12 @@ export class Constraint {
   }
 
   static * fromShape(shape: Shape, component: ConstraintComponent, shapesGraph: AnyPointer) {
-    const allParams: [NamedNode, GraphPointer[]][] = component.parameters.map((param) => {
-      return [param, shape.shapeNodePointer.out(param).toArray()]
+    const allParams: [NamedNode, Term[]][] = component.parameters.map((param) => {
+      return [param, shape.shapeNodePointer.out(param).terms]
     })
 
     // create a cartesian product of all parameter values
-    const combinations: [NamedNode, GraphPointer][][] = allParams.reduce((acc, [param, values]) => {
+    const combinations: [NamedNode, Term][][] = allParams.reduce((acc, [param, values]) => {
       if (values.length === 0) {
         return acc
       }
@@ -147,8 +153,11 @@ export class Constraint {
     }, [])
 
     for (const combination of combinations) {
-      const rawParams = shape.context.factory.termMap(combination)
-      const params = component.prepareParams(rawParams)
+      if (component.parameters.length === 1) {
+        yield new Constraint(shape, component, shapesGraph, combination[0][1])
+        continue
+      }
+      const params = shape.context.factory.termMap(combination)
       if (component.isComplete(params)) {
         yield new Constraint(shape, component, shapesGraph, params)
       }
@@ -156,7 +165,7 @@ export class Constraint {
   }
 
   getParameterValue(param: NamedNode) {
-    return this._parameterValues.get(param)
+    return this.paramValue || this._parameterValues.get(param)
   }
 
   get pathObject() {
@@ -255,18 +264,6 @@ class ConstraintComponent {
   getMessages(shape: Shape): [string] | [] {
     const message = shape.isPropertyShape ? this.propertyValidationMessage : this.nodeValidationMessage
     return message ? [message] : []
-  }
-
-  prepareParams(params: Map<NamedNode, GraphPointer>): Map<NamedNode, unknown> {
-    return this.context.factory.termMap([...params.entries()].map(([param, pointer]) => {
-      return [param, this.prepareParam(param, pointer, params)]
-    }))
-  }
-
-  private prepareParam(param: NamedNode, pointer: GraphPointer, params: Map<NamedNode, GraphPointer>) {
-    const mappedValue = this.validator?.prepareParam?.(param, pointer, params)
-
-    return mappedValue || pointer.term
   }
 
   isComplete(parameterValues: Map<NamedNode, unknown>) {

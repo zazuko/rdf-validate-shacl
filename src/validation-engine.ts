@@ -163,7 +163,7 @@ class ValidationEngine {
     if (sh.PropertyConstraintComponent.equals(constraint.component.node)) {
       let errorFound = false
       for (const valueNode of valueNodes) {
-        if (this.validateNodeAgainstShape(valueNode, this.context.shapesGraph.getShape(constraint.getParameterValue(sh.property)), dataGraph)) {
+        if (this.validateNodeAgainstShape(valueNode, this.context.shapesGraph.getShape(constraint.paramValue), dataGraph)) {
           errorFound = true
         }
       }
