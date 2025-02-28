@@ -339,7 +339,7 @@ export class Shape {
 
     const targetNodes = this.shapeNodePointer.out(sh.targetNode).terms
       // Ensure the node exists in data graph before considering it as a validatable target node
-      .filter((/** @type import('@rdfjs/types').Term */ targetNode) => (
+      .filter((targetNode) => (
         dataGraph.dataset.match(targetNode).size > 0 ||
         dataGraph.dataset.match(null, targetNode).size > 0 ||
         dataGraph.dataset.match(null, null, targetNode).size > 0
@@ -349,7 +349,7 @@ export class Shape {
     this.shapeNodePointer
       .out(sh.targetSubjectsOf)
       .terms
-      .forEach((/** @type import('@rdfjs/types').Term */ predicate) => {
+      .forEach((predicate) => {
         const subjects = [...dataGraph.dataset.match(null, predicate, null)].map(({ subject }) => subject)
         results.addAll(subjects)
       })
@@ -357,7 +357,7 @@ export class Shape {
     this.shapeNodePointer
       .out(sh.targetObjectsOf)
       .terms
-      .forEach((/** @type import('@rdfjs/types').Term */ predicate) => {
+      .forEach((predicate) => {
         const objects = [...dataGraph.dataset.match(null, predicate, null)].map(({ object }) => object)
         results.addAll(objects)
       })

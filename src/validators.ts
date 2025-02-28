@@ -479,8 +479,7 @@ const validateUniqueLang: Validator = {
       }
     })
 
-    /** @type string[] */
-    const results = []
+    const results: string[] = []
     for (const lang in map) {
       if (Object.prototype.hasOwnProperty.call(map, lang)) {
         const count = map[lang]
