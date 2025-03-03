@@ -2,13 +2,13 @@
 import debug from 'debug'
 import { isGraphPointer, isLiteral } from 'is-graph-pointer'
 import type { AnyPointer, GraphPointer } from 'clownface'
-import type { ShaclPropertyPath } from 'clownface-shacl-path'
 import type { Literal, Quad_Predicate, Term } from '@rdfjs/types'
 import type SHACLValidator from '../index.js'
 import ValidationReport from './validation-report.js'
 import { extractStructure, extractSourceShapeStructure } from './dataset-utils.js'
 import type { Constraint, Shape } from './shapes-graph.js'
 import type { Environment } from './defaultEnv.js'
+import type { ShaclPropertyPath } from './property-path.js'
 
 const error = debug('validation-engine::error')
 const defaultMaxNodeChecks = 50
