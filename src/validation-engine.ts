@@ -1,6 +1,5 @@
 /* eslint-disable camelcase */
 import debug from 'debug'
-import { isGraphPointer, isLiteral } from 'is-graph-pointer'
 import type { AnyPointer, GraphPointer } from 'clownface'
 import type { Literal, Quad_Predicate, Term } from '@rdfjs/types'
 import type SHACLValidator from '../index.js'
@@ -239,7 +238,7 @@ class ValidationEngine {
     if (validationResultObj.path) {
       result.addOut(sh.resultPath, validationResultObj.path)
       this.copyNestedStructure(validationResultObj.path, result)
-    } else if (constraint.shape.isPropertyShape && isGraphPointer(constraint.shape.path)) {
+    } else if (constraint.shape.isPropertyShape && constraint.shape.path?.term) {
       result.addOut(sh.resultPath, constraint.shape.path)
       this.copyNestedStructure(constraint.shape.path.term, result)
     }
@@ -334,7 +333,7 @@ class ValidationEngine {
     const { $shapes, ns } = this.context
     const { sh } = ns
 
-    let messages: Literal[] = []
+    let messages: Term[] = []
 
     // 1. Try to get message from the validation result
     if (validationResult.message) {
@@ -346,7 +345,6 @@ class ValidationEngine {
       messages = $shapes
         .node(constraint.shape.shapeNode)
         .out(sh.message)
-        .filter(isLiteral)
         .terms
     }
 
@@ -360,11 +358,10 @@ class ValidationEngine {
       messages = $shapes
         .node(constraint.component.node)
         .out(sh.message)
-        .filter(isLiteral)
         .terms
     }
 
-    return messages.map(message => withSubstitutions(message, constraint, this.factory))
+    return messages.map((message: Literal) => withSubstitutions(message, constraint, this.factory))
   }
 }
 

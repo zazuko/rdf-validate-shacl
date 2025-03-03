@@ -34,7 +34,6 @@
     "@vocabulary/sh": "^1.1.5",
     "clownface": "^2.0.0",
     "debug": "^4.3.2",
-    "is-graph-pointer": "^2.1.0",
     "rdf-literal": "^1.3.2",
     "rdf-validate-datatype": "^0.2.0"
   },

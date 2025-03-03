@@ -17,7 +17,6 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
-import { isGraphPointer } from 'is-graph-pointer'
 import type { Quad_Predicate, Term } from '@rdfjs/types'
 import type { AnyPointer, GraphPointer } from 'clownface'
 import type SHACLValidator from '../index.js'
@@ -276,8 +275,8 @@ export class Shape {
     this.deactivated = this.shapeNodePointer.out(sh.deactivated).value === 'true'
     this.pathObject = null
     const path = this.shapeNodePointer.out(sh.path)
-    if (isGraphPointer(path)) {
-      this.path = path
+    if (path.term) {
+      this.path = path as GraphPointer
       this.pathObject = extractPropertyPath(this.path, ns, allowNamedNodeSequencePaths)
     }
 
@@ -324,7 +323,7 @@ export class Shape {
 
     const targetNodes = this.shapeNodePointer.out(sh.targetNode).terms
       // Ensure the node exists in data graph before considering it as a validatable target node
-      .filter((/** @type import('@rdfjs/types').Term */ targetNode) => (
+      .filter((targetNode) => (
         dataGraph.dataset.match(targetNode).size > 0 ||
         dataGraph.dataset.match(null, targetNode).size > 0 ||
         dataGraph.dataset.match(null, null, targetNode).size > 0
@@ -334,7 +333,7 @@ export class Shape {
     this.shapeNodePointer
       .out(sh.targetSubjectsOf)
       .terms
-      .forEach((/** @type import('@rdfjs/types').Term */ predicate) => {
+      .forEach((predicate) => {
         const subjects = [...dataGraph.dataset.match(null, predicate, null)].map(({ subject }) => subject)
         results.addAll(subjects)
       })
@@ -342,7 +341,7 @@ export class Shape {
     this.shapeNodePointer
       .out(sh.targetObjectsOf)
       .terms
-      .forEach((/** @type import('@rdfjs/types').Term */ predicate) => {
+      .forEach((predicate) => {
         const objects = [...dataGraph.dataset.match(null, predicate, null)].map(({ object }) => object)
         results.addAll(objects)
       })
