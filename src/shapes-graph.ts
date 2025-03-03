@@ -17,14 +17,15 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
+import type { ShaclPropertyPath } from 'clownface-shacl-path'
+import { fromNode } from 'clownface-shacl-path'
 import type { Quad_Predicate, Term } from '@rdfjs/types'
 import type { AnyPointer, GraphPointer } from 'clownface'
 import type SHACLValidator from '../index.js'
 import NodeSet from './node-set.js'
 import ValidationFunction from './validation-function.js'
 import validatorsRegistry from './validators-registry.js'
-import type { ShaclPropertyPath } from './property-path.js'
-import { extractPropertyPath, getPathObjects } from './property-path.js'
+import { getPathObjects } from './property-path.js'
 import { getInstancesOf, isInstanceOf, rdfListToArray } from './dataset-utils.js'
 
 class ShapesGraph {
@@ -273,11 +274,12 @@ export class Shape {
 
     this.severity = this.shapeNodePointer.out(sh.severity).term || sh.Violation
     this.deactivated = this.shapeNodePointer.out(sh.deactivated).value === 'true'
+    /** @type import('clownface-shacl-path').ShaclPropertyPath | null */
     this.pathObject = null
     const path = this.shapeNodePointer.out(sh.path)
     if (path.term) {
       this.path = path as GraphPointer
-      this.pathObject = extractPropertyPath(this.path, ns, allowNamedNodeSequencePaths)
+      this.pathObject = fromNode(this.path, { allowNamedNodeSequencePaths })
     }
 
     this.constraints = []
