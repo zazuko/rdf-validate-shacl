@@ -17,14 +17,12 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
-import type { ShaclPropertyPath } from 'clownface-shacl-path'
-import { fromNode } from 'clownface-shacl-path'
-import { isGraphPointer, isNamedNode } from 'is-graph-pointer'
 import type { NamedNode, Term } from '@rdfjs/types'
 import type { AnyPointer, GraphPointer } from 'clownface'
 import type SHACLValidator from '../index.js'
 import NodeSet from './node-set.js'
-import { getPathObjects } from './property-path.js'
+import type { ShaclPropertyPath } from './property-path.js'
+import { extractPropertyPath, getPathObjects } from './property-path.js'
 import { getInstancesOf, isInstanceOf, rdfListToArray } from './dataset-utils.js'
 import type { ValidationFunction, Validator } from './validation-engine.js'
 
@@ -199,9 +197,9 @@ export class Constraint {
 
 class ConstraintComponent {
   declare nodePointer: GraphPointer
-  declare parameters: NamedNode[]
+  declare parameters: Term[]
   declare parameterNodes: unknown[]
-  declare requiredParameters: NamedNode[]
+  declare requiredParameters: Term[]
   declare optionals: Record<string, unknown>
   declare validator: Validator | undefined
   declare nodeValidationFunction: (focusNode: Term, valueNode: Term, constraint: Constraint) => ReturnType<ValidationFunction>
@@ -227,7 +225,7 @@ class ConstraintComponent {
       .forEach((parameterCf) => {
         const parameter = parameterCf.term
 
-        parameterCf.out(sh.path).filter(isNamedNode).forEach(({ term: path }) => {
+        parameterCf.out(sh.path).forEach(({ term: path }) => {
           this.parameters.push(path)
           this.parameterNodes.push(parameter)
           if ($shapes.dataset.match(parameter, sh.optional, trueTerm).size > 0) {
@@ -266,7 +264,7 @@ class ConstraintComponent {
     return message ? [message] : []
   }
 
-  isComplete(parameterValues: Map<NamedNode, unknown>) {
+  isComplete(parameterValues: Map<Term, unknown>) {
     return this.requiredParameters.every((param) => parameterValues.has(param))
   }
 }
@@ -293,9 +291,9 @@ export class Shape {
     this.deactivated = this.shapeNodePointer.out(sh.deactivated).value === 'true'
     this.pathObject = null
     const path = this.shapeNodePointer.out(sh.path)
-    if (isGraphPointer(path)) {
-      this.path = path
-      this.pathObject = fromNode(this.path, { allowNamedNodeSequencePaths })
+    if (path.term) {
+      this.path = path as GraphPointer
+      this.pathObject = extractPropertyPath(this.path, ns, allowNamedNodeSequencePaths)
     }
 
     this.constraints = []

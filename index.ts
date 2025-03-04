@@ -1,7 +1,6 @@
 import shaclVocabularyFactory from '@vocabulary/sh'
 import type { DatasetCore, Term } from '@rdfjs/types'
 import type { AnyPointer } from 'clownface'
-import type { ShaclPropertyPath } from 'clownface-shacl-path'
 import type { Environment } from './src/defaultEnv.js'
 import factory from './src/defaultEnv.js'
 import type { Namespaces } from './src/namespaces.js'
@@ -9,6 +8,7 @@ import { prepareNamespaces } from './src/namespaces.js'
 import ShapesGraph from './src/shapes-graph.js'
 import type { ValidatorRegistry } from './src/validation-engine.js'
 import ValidationEngine from './src/validation-engine.js'
+import type { ShaclPropertyPath } from './src/property-path.js'
 import defaultValidators from './src/validators-registry.js'
 
 interface Options {
@@ -80,7 +80,7 @@ class SHACLValidator {
     let engine: ValidationEngine
     let shape = this.shapesGraph?.getShape(shapeNode)
 
-    if (propertyPathOrEngine && 'accept' in propertyPathOrEngine) {
+    if (propertyPathOrEngine && 'termType' in propertyPathOrEngine) {
       engine = this.validationEngine.clone({
         recordErrorsLevel: this.validationEngine.recordErrorsLevel,
       })
