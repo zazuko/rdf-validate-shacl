@@ -27,7 +27,7 @@ function reporter(results) {
 }
 
 const suite = new Suite({
-  reporter,
+  reporter: process.argv.includes('--no-json') ? undefined : reporter,
 });
 
 (async () => {

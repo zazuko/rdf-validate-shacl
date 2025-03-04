@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 import debug from 'debug'
 import type { AnyPointer, GraphPointer } from 'clownface'
-import type { Literal, Quad_Predicate, Term } from '@rdfjs/types'
+import type { Literal, NamedNode, Quad_Predicate, Term } from '@rdfjs/types'
 import type SHACLValidator from '../index.js'
 import ValidationReport from './validation-report.js'
 import { extractStructure, extractSourceShapeStructure } from './dataset-utils.js'
@@ -24,6 +24,27 @@ export type ValidationFunction = (
   valueNode: Term,
   constraint: Constraint
 ) => ValidationResult[] | string[] | boolean | void
+
+export interface NodeValidator {
+  nodeValidate: ValidationFunction
+  nodeValidationMessage?: string
+}
+
+export interface PropertyValidator {
+  propertyValidate: ValidationFunction
+  propertyValidationMessage?: string
+}
+
+export interface GenericValidator {
+  validate: ValidationFunction
+  validationMessage?: string
+}
+
+export type Validator = (NodeValidator | PropertyValidator | GenericValidator) & {
+  prepareParam?(param: NamedNode, value: GraphPointer, allParams: Map<NamedNode, GraphPointer>): unknown | void
+}
+
+export type ValidatorRegistry = Map<NamedNode, Validator>
 
 type Options = {
   propertyPath?: ShaclPropertyPath
@@ -148,7 +169,7 @@ class ValidationEngine {
       return errorFound
     }
 
-    if (!constraint.validationFunction) {
+    if (!constraint.validate) {
       throw new Error('Cannot find validator for constraint component ' + constraint.component.node.value)
     }
 
@@ -179,7 +200,7 @@ class ValidationEngine {
     const { sh } = this.context.ns
 
     this.recordErrorsLevel++
-    const validationOutput = constraint.validationFunction?.execute(focusNode, valueNode, constraint)
+    const validationOutput = constraint.validate(focusNode, valueNode)
 
     const validationResults = Array.isArray(validationOutput) ? validationOutput : [validationOutput]
     const results = validationResults
@@ -350,7 +371,7 @@ class ValidationEngine {
 
     // 3. Try to get message from the constraint component validator
     if (messages.length === 0) {
-      messages = constraint.componentMessages.map((/** @type string */ m) => this.factory.literal(m))
+      messages = constraint.componentMessages.map((m) => this.factory.literal(m))
     }
 
     // 4. Try to get message from the constraint component node
