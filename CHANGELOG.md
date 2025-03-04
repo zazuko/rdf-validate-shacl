@@ -1,5 +1,12 @@
 ## 0.4.4
 
+## 0.5.7
+
+### Patch Changes
+
+- adf47e5: Bundle TypeScript declarations
+- f49bdc0: Gracefully handle Property Shapes used inside logical constraints (fixes #140)
+
 ## 0.5.6
 
 ### Patch Changes
