@@ -111,11 +111,11 @@ class ShapesGraph {
 export class Constraint {
   declare shapeNodePointer: AnyPointer
   readonly paramValue: Term
-  private _parameterValues: Map<NamedNode, Term>
+  private _parameterValues: Map<Term, Term>
   private inNodeSet: NodeSet | undefined
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  constructor(public readonly shape: Shape, public readonly component: ConstraintComponent, shapesGraph: AnyPointer, _parameterValuesOrSingleParam: Term | Map<NamedNode, Term>) {
+  constructor(public readonly shape: Shape, public readonly component: ConstraintComponent, shapesGraph: AnyPointer, _parameterValuesOrSingleParam: Term | Map<Term, Term>) {
     this.shapeNodePointer = shapesGraph.node(shape.shapeNode)
     if ('termType' in _parameterValuesOrSingleParam) {
       this.paramValue = _parameterValuesOrSingleParam
@@ -133,12 +133,12 @@ export class Constraint {
   }
 
   static * fromShape(shape: Shape, component: ConstraintComponent, shapesGraph: AnyPointer) {
-    const allParams: [NamedNode, Term[]][] = component.parameters.map((param) => {
+    const allParams: [Term, Term[]][] = component.parameters.map((param) => {
       return [param, shape.shapeNodePointer.out(param).terms]
     })
 
     // create a cartesian product of all parameter values
-    const combinations: [NamedNode, Term][][] = allParams.reduce((acc, [param, values]) => {
+    const combinations = allParams.reduce<[Term, Term][][]>((acc, [param, values]) => {
       if (values.length === 0) {
         return acc
       }
@@ -162,7 +162,7 @@ export class Constraint {
     }
   }
 
-  getParameterValue(param: NamedNode) {
+  getParameterValue(param: Term) {
     return this.paramValue || this._parameterValues.get(param)
   }
 

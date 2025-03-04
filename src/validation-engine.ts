@@ -409,7 +409,7 @@ function * take<T>(n: number, iterable: Iterable<T>) {
   }
 }
 
-function nodeLabel(constraint: Constraint, param: NamedNode) {
+function nodeLabel(constraint: Constraint, param: Term) {
   const node = constraint.getParameterValue(param)
   if (!node) {
     return 'NULL'
