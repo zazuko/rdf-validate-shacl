@@ -19,14 +19,14 @@ describe('validation details', () => {
 
     assert.equal(1, report.results.length)
     const result = report.results[0]
-    assert.deepStrictEqual(result.sourceConstraintComponent, RDF.ns.sh.NodeConstraintComponent)
-    assert.deepStrictEqual(result.focusNode, RDF.namedNode('https://example.org/person1'))
-    assert.deepStrictEqual(result.value, RDF.namedNode('https://example.org/person1'))
+    assert(result.sourceConstraintComponent.equals(RDF.ns.sh.NodeConstraintComponent))
+    assert(result.focusNode.equals(RDF.namedNode('https://example.org/person1')))
+    assert(result.value.equals(RDF.namedNode('https://example.org/person1')))
 
     assert.equal(1, result.detail.length)
     const detail = result.detail[0]
-    assert.deepStrictEqual(detail.sourceConstraintComponent, RDF.ns.sh.NodeKindConstraintComponent)
-    assert.deepStrictEqual(detail.focusNode, RDF.namedNode('https://example.org/person1'))
-    assert.deepStrictEqual(detail.value, RDF.namedNode('https://example.org/person1'))
+    assert(detail.sourceConstraintComponent.equals(RDF.ns.sh.NodeKindConstraintComponent))
+    assert(detail.focusNode.equals(RDF.namedNode('https://example.org/person1')))
+    assert(detail.value.equals(RDF.namedNode('https://example.org/person1')))
   })
 })

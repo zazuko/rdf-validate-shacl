@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define, camelcase */
 // Design:
 //
 // First, derive a ShapesGraph object from the definitions in $shapes.
@@ -16,14 +17,25 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
+import type { Quad_Predicate, Term } from '@rdfjs/types'
+import type { AnyPointer, GraphPointer } from 'clownface'
+import type SHACLValidator from '../index.js'
 import NodeSet from './node-set.js'
 import ValidationFunction from './validation-function.js'
 import validatorsRegistry from './validators-registry.js'
+import type { ShaclPropertyPath } from './property-path.js'
 import { extractPropertyPath, getPathObjects } from './property-path.js'
 import { getInstancesOf, isInstanceOf, rdfListToArray } from './dataset-utils.js'
 
 class ShapesGraph {
-  constructor(context) {
+  declare context: SHACLValidator
+  private readonly _components: ConstraintComponent[]
+  private readonly _parametersMap: Map<string, ConstraintComponent>
+  private readonly _shapes: Map<string, Shape>
+  private _shapeNodesWithConstraints: Term[] | undefined
+  private _shapesWithTarget: Shape[] | undefined
+
+  constructor(context: SHACLValidator) {
     this.context = context
 
     // Collect all defined constraint components
@@ -43,11 +55,11 @@ class ShapesGraph {
     this._shapes = new Map()
   }
 
-  getComponentWithParameter(parameter) {
+  getComponentWithParameter(parameter: Term): ConstraintComponent | undefined {
     return this._parametersMap.get(parameter.value)
   }
 
-  getShape(shapeNode) {
+  getShape(shapeNode: Term) {
     if (!this._shapes.has(shapeNode.value)) {
       const shape = new Shape(this.context, shapeNode)
       this._shapes.set(shapeNode.value, shape)
@@ -97,15 +109,21 @@ class ShapesGraph {
   }
 }
 
-class Constraint {
-  constructor(shape, component, paramValue, shapesGraph) {
+export class Constraint {
+  declare shape: Shape
+  declare component: ConstraintComponent
+  declare paramValue: any
+  declare shapeNodePointer: AnyPointer
+  private inNodeSet: NodeSet | undefined
+
+  constructor(shape: Shape, component: ConstraintComponent, paramValue: unknown, shapesGraph: AnyPointer) {
     this.shape = shape
     this.component = component
     this.paramValue = paramValue
     this.shapeNodePointer = shapesGraph.node(shape.shapeNode)
   }
 
-  getParameterValue(param) {
+  getParameterValue(param: Term) {
     return this.paramValue || this.shapeNodePointer.out(param).term
   }
 
@@ -139,7 +157,19 @@ class Constraint {
 }
 
 class ConstraintComponent {
-  constructor(node, context) {
+  declare context: SHACLValidator
+  declare node: Term
+  declare nodePointer: GraphPointer
+  declare parameters: Term[]
+  declare parameterNodes: unknown[]
+  declare requiredParameters: Term[]
+  declare optionals: Record<string, unknown>
+  declare nodeValidationFunction: ValidationFunction | null
+  declare nodeValidationFunctionGeneric: boolean
+  declare propertyValidationFunction: ValidationFunction | null
+  declare propertyValidationFunctionGeneric: boolean
+
+  constructor(node: Term, context: SHACLValidator) {
     const { $shapes, factory, ns } = context
     const { sh, xsd } = ns
 
@@ -154,7 +184,7 @@ class ConstraintComponent {
     const trueTerm = factory.literal('true', xsd.boolean)
     this.nodePointer
       .out(sh.parameter)
-      .forEach(parameterCf => {
+      .forEach((/** @type import('clownface').GraphPointer */ parameterCf) => {
         const parameter = parameterCf.term
 
         parameterCf.out(sh.path).forEach(({ term: path }) => {
@@ -180,8 +210,8 @@ class ConstraintComponent {
     }
   }
 
-  findValidationFunction(predicate) {
-    const validatorType = predicate.value.split('#').slice(-1)[0]
+  findValidationFunction(predicate: Quad_Predicate): ValidationFunction | null {
+    const validatorType = predicate.value.split('#').slice(-1)[0] as 'validator' | 'nodeValidator' | 'propertyValidator'
     const validator = this.findValidator(validatorType)
 
     if (!validator) return null
@@ -189,7 +219,7 @@ class ConstraintComponent {
     return new ValidationFunction(this.context, validator.func.name, validator.func)
   }
 
-  getMessages(shape) {
+  getMessages(shape: Shape): [string] | [] {
     const generic = shape.isPropertyShape ? this.propertyValidationFunctionGeneric : this.nodeValidationFunctionGeneric
     const validatorType = generic ? 'validator' : (shape.isPropertyShape ? 'propertyValidator' : 'nodeValidator')
     const validator = this.findValidator(validatorType)
@@ -201,7 +231,7 @@ class ConstraintComponent {
     return message ? [message] : []
   }
 
-  findValidator(validatorType) {
+  findValidator(validatorType: 'validator' | 'nodeValidator' | 'propertyValidator') {
     const constraintValidators = validatorsRegistry[this.node.value]
 
     if (!constraintValidators) return null
@@ -211,21 +241,30 @@ class ConstraintComponent {
     return validator || null
   }
 
-  isComplete(shapeNode) {
+  isComplete(shapeNode: Term) {
     return !this.parameters.some((parameter) => (
       this.isRequired(parameter.value) &&
       this.context.$shapes.dataset.match(shapeNode, parameter, null).size === 0
     ))
   }
 
-  isRequired(parameterURI) {
+  isRequired(parameterURI: string) {
     return !this.optionals[parameterURI]
   }
 }
 
-class Shape {
-  constructor(context, shapeNode) {
-    const { $shapes, ns, shapesGraph } = context
+export class Shape {
+  declare context: SHACLValidator
+  declare shapeNode: Term
+  declare shapeNodePointer: GraphPointer
+  declare severity: Term
+  declare deactivated: boolean
+  declare path: GraphPointer | undefined
+  declare pathObject: ShaclPropertyPath | null
+  declare constraints: Constraint[]
+
+  constructor(context: SHACLValidator, shapeNode: Term) {
+    const { $shapes, ns, shapesGraph, allowNamedNodeInList: allowNamedNodeSequencePaths } = context
     const { sh } = ns
 
     this.context = context
@@ -234,8 +273,12 @@ class Shape {
 
     this.severity = this.shapeNodePointer.out(sh.severity).term || sh.Violation
     this.deactivated = this.shapeNodePointer.out(sh.deactivated).value === 'true'
-    this.path = this.shapeNodePointer.out(sh.path).term
-    this._pathObject = undefined
+    this.pathObject = null
+    const path = this.shapeNodePointer.out(sh.path)
+    if (path.term) {
+      this.path = path as GraphPointer
+      this.pathObject = extractPropertyPath(this.path, ns, allowNamedNodeSequencePaths)
+    }
 
     this.constraints = []
     const handled = new NodeSet()
@@ -255,32 +298,16 @@ class Shape {
   }
 
   get isPropertyShape() {
-    return this.path != null
+    return this.pathObject != null
   }
 
-  overridePath(path) {
+  overridePath(path: ShaclPropertyPath) {
     const shape = new Shape(this.context, this.shapeNode)
-    shape.path = path
+    shape.pathObject = path
     return shape
   }
 
-  /**
-   * Property path object
-   */
-  get pathObject() {
-    const { $shapes, ns, allowNamedNodeInList } = this.context
-
-    if (this._pathObject === undefined) {
-      this._pathObject = this.path ? extractPropertyPath($shapes.node(this.path), ns, allowNamedNodeInList) : null
-    }
-
-    return this._pathObject
-  }
-
-  /**
-   * @param {Clownface} dataGraph
-   */
-  getTargetNodes(dataGraph) {
+  getTargetNodes(dataGraph: AnyPointer) {
     const { $shapes, ns } = this.context
     const { rdfs, sh } = ns
     const results = new NodeSet()
@@ -296,7 +323,7 @@ class Shape {
 
     const targetNodes = this.shapeNodePointer.out(sh.targetNode).terms
       // Ensure the node exists in data graph before considering it as a validatable target node
-      .filter(targetNode => (
+      .filter((targetNode) => (
         dataGraph.dataset.match(targetNode).size > 0 ||
         dataGraph.dataset.match(null, targetNode).size > 0 ||
         dataGraph.dataset.match(null, null, targetNode).size > 0
@@ -322,8 +349,8 @@ class Shape {
     return [...results]
   }
 
-  getValueNodes(focusNode, dataGraph) {
-    if (this.path) {
+  getValueNodes(focusNode: Term, dataGraph: AnyPointer) {
+    if (this.pathObject) {
       return getPathObjects(dataGraph, focusNode, this.pathObject)
     } else {
       return [focusNode]

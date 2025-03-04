@@ -1,6 +1,15 @@
+import type { NamespaceBuilder } from '@rdfjs/namespace'
 import namespace from '@rdfjs/namespace'
+import type { DataFactory } from '@rdfjs/types'
 
-export function prepareNamespaces(factory) {
+export type Namespaces = {
+  sh: NamespaceBuilder
+  xsd: NamespaceBuilder
+  rdf: NamespaceBuilder
+  rdfs: NamespaceBuilder
+}
+
+export function prepareNamespaces(factory?: DataFactory): Namespaces {
   return {
     sh: namespace('http://www.w3.org/ns/shacl#', { factory }),
     xsd: namespace('http://www.w3.org/2001/XMLSchema#', { factory }),

@@ -1,12 +1,24 @@
+import type { GraphPointer } from 'clownface'
+import type { DatasetCore, Term } from '@rdfjs/types'
+import type { Environment } from './defaultEnv.js'
 import factory from './defaultEnv.js'
+import type { Namespaces } from './namespaces.js'
 import { prepareNamespaces } from './namespaces.js'
 
 /**
  * Result of a SHACL validation.
  */
 class ValidationReport {
-  constructor(pointer, options) {
-    options = options || {}
+  declare factory: Environment
+  declare ns: Namespaces
+  declare pointer: GraphPointer
+  declare term: Term
+  declare dataset: DatasetCore
+  declare conforms: boolean
+  // eslint-disable-next-line no-use-before-define
+  declare results: ValidationResult[]
+
+  constructor(pointer: GraphPointer, options: { factory?: Environment; ns?: Namespaces } = {}) {
     this.factory = options.factory || factory
     this.ns = options.ns || prepareNamespaces(this.factory)
 
@@ -35,11 +47,12 @@ class ValidationReport {
 }
 
 class ValidationResult {
-  constructor(pointer, ns) {
-    this.pointer = pointer
+  declare term: Term
+  declare dataset: DatasetCore
+
+  constructor(private pointer: GraphPointer, private ns: Namespaces) {
     this.term = pointer.term
     this.dataset = pointer.dataset
-    this.ns = ns
   }
 
   get message() {

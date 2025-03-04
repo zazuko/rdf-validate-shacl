@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "declaration": true,
+    "esModuleInterop": true,
+    "noImplicitAny": true
+  },
+  "files": [
+    "index.ts"
+  ]
+}

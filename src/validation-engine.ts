@@ -1,30 +1,68 @@
-import clownface from 'clownface'
+/* eslint-disable camelcase */
 import debug from 'debug'
+import type { AnyPointer, GraphPointer } from 'clownface'
+import type { Literal, Quad_Predicate, Term } from '@rdfjs/types'
+import type SHACLValidator from '../index.js'
 import ValidationReport from './validation-report.js'
 import { extractStructure, extractSourceShapeStructure } from './dataset-utils.js'
+import type { Constraint, Shape } from './shapes-graph.js'
+import type { Environment } from './defaultEnv.js'
+import type { ShaclPropertyPath } from './property-path.js'
 
-const error = debug('validation-enging::error')
+const error = debug('validation-engine::error')
 const defaultMaxNodeChecks = 50
 
+export type ValidationResult = {
+  path?: Term
+  value?: Term | null
+  message?: string
+}
+
+export type ValidationFunction = (
+  context: SHACLValidator,
+  focusNode: Term,
+  valueNode: Term,
+  constraint: Constraint
+) => ValidationResult[] | string[] | boolean | void
+
+type Options = {
+  propertyPath?: ShaclPropertyPath
+  recordErrorsLevel?: number
+  maxErrors?: number
+  maxNodeChecks?: number
+  nestedResults?: Record<string, GraphPointer[]>
+}
+
 class ValidationEngine {
-  constructor(context, options) {
+  declare context: SHACLValidator
+  declare factory: Environment
+  declare maxErrors: number | undefined
+  declare maxNodeChecks: number
+  declare recordErrorsLevel: number
+  declare violationsCount: number
+  declare validationError: Error | null
+  declare nestedResults: Record<string, GraphPointer[]>
+  declare nodeCheckCounters: Record<string, number>
+  declare reportPointer: GraphPointer
+
+  constructor(context: SHACLValidator, options: Options) {
     this.context = context
     this.factory = context.factory
     this.maxErrors = options.maxErrors
     this.maxNodeChecks = options.maxNodeChecks === undefined ? defaultMaxNodeChecks : options.maxNodeChecks
-    this.propertyPath = options.propertyPath
     this.initReport()
     this.recordErrorsLevel = options.recordErrorsLevel || 0
     this.violationsCount = 0
     this.validationError = null
     this.nestedResults = options.nestedResults || {}
+    this.nodeCheckCounters = {}
+    this.reportPointer = this.factory.clownface().blankNode()
   }
 
-  clone({ propertyPath, recordErrorsLevel } = {}) {
+  clone({ recordErrorsLevel }: Options = {}): ValidationEngine {
     return new ValidationEngine(this.context, {
       maxErrors: this.maxErrors,
       maxNodeChecks: this.maxNodeChecks,
-      propertyPath,
       recordErrorsLevel,
     })
   }
@@ -33,19 +71,15 @@ class ValidationEngine {
     const { rdf, sh } = this.context.ns
     this.nodeCheckCounters = {}
 
-    this.reportPointer = clownface({
-      dataset: this.factory.dataset(),
-      factory: this.factory,
+    this.reportPointer = this.factory.clownface({
       term: this.factory.blankNode('report'),
     }).addOut(rdf.type, sh.ValidationReport)
   }
 
   /**
    * Validates the data graph against the shapes graph
-   *
-   * @param {Clownface} dataGraph
    */
-  validateAll(dataGraph) {
+  validateAll(dataGraph: AnyPointer) {
     if (this.maxErrorsReached()) return true
 
     this.validationError = null
@@ -71,7 +105,7 @@ class ValidationEngine {
   /**
    * Returns true if any violation has been found
    */
-  validateNodeAgainstShape(focusNode, shape, dataGraph) {
+  validateNodeAgainstShape(focusNode: Term, shape: Shape, dataGraph: AnyPointer) {
     if (this.maxErrorsReached()) return true
 
     if (shape.deactivated) return false
@@ -98,7 +132,7 @@ class ValidationEngine {
     return errorFound
   }
 
-  validateNodeAgainstConstraint(focusNode, valueNodes, constraint, dataGraph) {
+  validateNodeAgainstConstraint(focusNode: Term, valueNodes: Term[], constraint: Constraint, dataGraph: AnyPointer) {
     const { sh } = this.context.ns
 
     if (this.maxErrorsReached()) return true
@@ -141,11 +175,11 @@ class ValidationEngine {
     }
   }
 
-  validateValueNodeAgainstConstraint(focusNode, valueNode, constraint) {
+  validateValueNodeAgainstConstraint(focusNode: Term, valueNode: Term | null, constraint: Constraint) {
     const { sh } = this.context.ns
 
     this.recordErrorsLevel++
-    const validationOutput = constraint.validationFunction.execute(focusNode, valueNode, constraint)
+    const validationOutput = constraint.validationFunction?.execute(focusNode, valueNode, constraint)
 
     const validationResults = Array.isArray(validationOutput) ? validationOutput : [validationOutput]
     const results = validationResults
@@ -189,7 +223,7 @@ class ValidationEngine {
    * Result passed as the first argument can be false, a resultMessage or a validation result object.
    * If none of these values is passed no error result or error message will be created.
    */
-  createResultFromObject(validationResult, constraint, focusNode, valueNode) {
+  createResultFromObject(validationResult: void|undefined|boolean|string|ValidationResult, constraint: Constraint, focusNode: Term, valueNode: Term | null) {
     const { sh } = this.context.ns
 
     const validationResultObj = this.normalizeValidationResult(validationResult, valueNode)
@@ -204,9 +238,9 @@ class ValidationEngine {
     if (validationResultObj.path) {
       result.addOut(sh.resultPath, validationResultObj.path)
       this.copyNestedStructure(validationResultObj.path, result)
-    } else if (constraint.shape.isPropertyShape) {
+    } else if (constraint.shape.isPropertyShape && constraint.shape.path?.term) {
       result.addOut(sh.resultPath, constraint.shape.path)
-      this.copyNestedStructure(constraint.shape.path, result)
+      this.copyNestedStructure(constraint.shape.path.term, result)
     }
 
     if (validationResultObj.value) {
@@ -228,10 +262,9 @@ class ValidationEngine {
   /**
    * Validators can return a boolean, a string (message) or a validation result object.
    * This function normalizes all of them as a validation result object.
-   *
-   * Returns null if validation was successful.
+   * @returns null if validation was successful.
    */
-  normalizeValidationResult(validationResult, valueNode) {
+  normalizeValidationResult(validationResult: void|undefined|boolean|string|ValidationResult, valueNode: Term | null): ValidationResult | null {
     if (validationResult === false) {
       return { value: valueNode }
     } else if (typeof validationResult === 'string') {
@@ -247,13 +280,12 @@ class ValidationEngine {
    * Creates a new BlankNode holding the SHACL validation result, adding the default
    * properties for the constraint, focused node and value node
    */
-  createResult(constraint, focusNode) {
+  createResult(constraint: Constraint, focusNode: Term): GraphPointer {
     const { rdf, sh } = this.context.ns
     const severity = constraint.shape.severity
     const sourceConstraintComponent = constraint.component.node
     const sourceShape = constraint.shape.shapeNode
-    const resultId = this.factory.blankNode()
-    const result = clownface({ dataset: this.factory.dataset(), term: resultId })
+    const result = this.factory.clownface().blankNode()
 
     result
       .addOut(rdf.type, sh.ValidationResult)
@@ -280,14 +312,14 @@ class ValidationEngine {
     return result
   }
 
-  copyNestedStructure(subject, result) {
+  copyNestedStructure(subject: Term, result: GraphPointer) {
     const structureQuads = extractStructure(this.context.$shapes.dataset, subject)
     for (const quad of structureQuads) {
       result.dataset.add(quad)
     }
   }
 
-  copySourceShapeStructure(shape, result) {
+  copySourceShapeStructure(shape: Shape, result: GraphPointer) {
     const structureQuads = extractSourceShapeStructure(shape, this.context.$shapes.dataset, shape.shapeNode)
     for (const quad of structureQuads) {
       result.dataset.add(quad)
@@ -297,11 +329,11 @@ class ValidationEngine {
   /**
    * Creates a result message from the validation result and the message pattern in the constraint
    */
-  createResultMessages(validationResult, constraint) {
+  createResultMessages(validationResult: ValidationResult, constraint: Constraint) {
     const { $shapes, ns } = this.context
     const { sh } = ns
 
-    let messages = []
+    let messages: Term[] = []
 
     // 1. Try to get message from the validation result
     if (validationResult.message) {
@@ -318,7 +350,7 @@ class ValidationEngine {
 
     // 3. Try to get message from the constraint component validator
     if (messages.length === 0) {
-      messages = constraint.componentMessages.map((m) => this.factory.literal(m))
+      messages = constraint.componentMessages.map((/** @type string */ m) => this.factory.literal(m))
     }
 
     // 4. Try to get message from the constraint component node
@@ -329,12 +361,12 @@ class ValidationEngine {
         .terms
     }
 
-    return messages.map(message => withSubstitutions(message, constraint, this.factory))
+    return messages.map((message: Literal) => withSubstitutions(message, constraint, this.factory))
   }
 }
 
 // TODO: This is not the 100% correct local name algorithm
-function localName(uri) {
+function localName(uri: string) {
   let index = uri.lastIndexOf('#')
 
   if (index < 0) {
@@ -348,7 +380,7 @@ function localName(uri) {
   return uri.substring(index + 1)
 }
 
-function * take(n, iterable) {
+function * take<T>(n: number, iterable: Iterable<T>) {
   let i = 0
   for (const item of iterable) {
     if (i++ === n) break
@@ -356,7 +388,7 @@ function * take(n, iterable) {
   }
 }
 
-function nodeLabel(constraint, param) {
+function nodeLabel(constraint: Constraint, param: Term) {
   const node = constraint.getParameterValue(param)
   if (!node) {
     return 'NULL'
@@ -384,7 +416,7 @@ function nodeLabel(constraint, param) {
   return node.value
 }
 
-function withSubstitutions(messageTerm, constraint, factory) {
+function withSubstitutions(messageTerm: Literal, constraint: Constraint, factory: Environment) {
   const message = constraint.component.parameters.reduce((message, param) => {
     const paramName = localName(param.value)
     const paramValue = nodeLabel(constraint, param)
@@ -396,9 +428,11 @@ function withSubstitutions(messageTerm, constraint, factory) {
   return factory.literal(message, messageTerm.language || messageTerm.datatype)
 }
 
-// Copy a standalone result pointer/dataset into another pointer/dataset
-// and link it with the given predicate
-function copyResult(resultPointer, targetPointer, predicate) {
+/**
+ * Copy a standalone result pointer/dataset into another pointer/dataset
+ * and link it with the given predicate
+ */
+function copyResult(resultPointer: GraphPointer, targetPointer: GraphPointer, predicate: Quad_Predicate) {
   for (const quad of resultPointer.dataset) {
     targetPointer.dataset.add(quad)
   }

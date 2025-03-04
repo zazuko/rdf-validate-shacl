@@ -12,11 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: bencherdev/bencher@v0.4.36
+      - uses: bencherdev/bencher@main
       - uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
       - run: npm ci
+      - run: npm run build
       - name: Track PR Benchmarks with Bencher
         run: |
           bencher run \
@@ -31,5 +32,6 @@ jobs:
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          --ci-only-thresholds \
           --file benchmark.json \
           npm run benchmark

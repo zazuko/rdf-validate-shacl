@@ -2,3 +2,6 @@ node_modules
 coverage
 .nyc_output
 benchmark.json
+*.d.ts
+*.js
+!test/*.js
