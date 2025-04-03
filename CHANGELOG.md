@@ -1,5 +1,12 @@
 ## 0.4.4
 
+## 0.5.8
+
+### Patch Changes
+
+- accf704: Allow clownface pointer as argument to `.validate`
+- a11586f: Do not load SHACL dataset into the Shapes Graph
+
 ## 0.5.7
 
 ### Patch Changes
