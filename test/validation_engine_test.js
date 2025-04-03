@@ -85,4 +85,16 @@ describe('owl:imports', () => {
     // then
     expect(importGraph).to.have.callCount(1)
   })
+
+  it('throws when an owl:import is attempted without `importGraph` argument', async () => {
+    // given
+    const dataPath = path.join(rootPath, 'data/owl-duplicate-import.ttl')
+    const graph = await loadDataset(dataPath)
+
+    // when
+    const validator = new SHACLValidator(graph, { factory: rdf })
+
+    // then
+    await expect(validator.validate(graph)).to.have.been.rejected
+  })
 })
