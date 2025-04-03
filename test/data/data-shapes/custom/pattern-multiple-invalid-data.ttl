@@ -1,0 +1,4 @@
+PREFIX schema: <http://schema.org/>
+@prefix ex: <http://datashapes.org/sh/tests/custom/pattern-multiple.test#> .
+
+ex:Instance schema:name "john" .

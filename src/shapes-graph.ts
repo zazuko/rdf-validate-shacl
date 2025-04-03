@@ -18,15 +18,14 @@
 // for each Constraint of the shape, producing results along the way.
 
 import shaclVocabularyFactory from '@vocabulary/sh'
-import type { Quad_Predicate, Term } from '@rdfjs/types'
+import type { NamedNode, Term } from '@rdfjs/types'
 import type { AnyPointer, GraphPointer } from 'clownface'
 import type SHACLValidator from '../index.js'
 import NodeSet from './node-set.js'
-import ValidationFunction from './validation-function.js'
-import validatorsRegistry from './validators-registry.js'
 import type { ShaclPropertyPath } from './property-path.js'
 import { extractPropertyPath, getPathObjects } from './property-path.js'
 import { getInstancesOf, isInstanceOf, rdfListToArray } from './dataset-utils.js'
+import type { ValidationFunction, Validator } from './validation-engine.js'
 
 class ShapesGraph {
   declare context: SHACLValidator
@@ -45,7 +44,7 @@ class ShapesGraph {
       dataset: context.factory.dataset(shaclVocabularyFactory(context)),
     })
     const componentNodes = getInstancesOf(shaclVocabulary.node(sh.ConstraintComponent), context.ns)
-    this._components = [...componentNodes].map((node) => new ConstraintComponent(node, context, shaclVocabulary))
+    this._components = [...componentNodes].map((node: NamedNode) => new ConstraintComponent(node, context, shaclVocabulary))
 
     // Build map from parameters to constraint components
     this._parametersMap = new Map()
@@ -114,21 +113,61 @@ class ShapesGraph {
 }
 
 export class Constraint {
-  declare shape: Shape
-  declare component: ConstraintComponent
-  declare paramValue: any
   declare shapeNodePointer: AnyPointer
+  readonly paramValue: Term
+  private _parameterValues: Map<Term, Term>
   private inNodeSet: NodeSet | undefined
 
-  constructor(shape: Shape, component: ConstraintComponent, paramValue: unknown, shapesGraph: AnyPointer) {
-    this.shape = shape
-    this.component = component
-    this.paramValue = paramValue
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  constructor(public readonly shape: Shape, public readonly component: ConstraintComponent, shapesGraph: AnyPointer, _parameterValuesOrSingleParam: Term | Map<Term, Term>) {
     this.shapeNodePointer = shapesGraph.node(shape.shapeNode)
+    if ('termType' in _parameterValuesOrSingleParam) {
+      this.paramValue = _parameterValuesOrSingleParam
+    } else {
+      this._parameterValues = _parameterValuesOrSingleParam
+    }
+  }
+
+  get validate() {
+    if (this.component.validator && this.validationFunction) {
+      return (focusNode: Term, valueNode: Term) => {
+        return this.validationFunction(focusNode, valueNode, this)
+      }
+    }
+  }
+
+  static * fromShape(shape: Shape, component: ConstraintComponent, shapesGraph: AnyPointer) {
+    const allParams: [Term, Term[]][] = component.parameters.map((param) => {
+      return [param, shape.shapeNodePointer.out(param).terms]
+    })
+
+    // create a cartesian product of all parameter values
+    const combinations = allParams.reduce<[Term, Term][][]>((acc, [param, values]) => {
+      if (values.length === 0) {
+        return acc
+      }
+
+      if (acc.length === 0) {
+        return values.map((value) => [[param, value]])
+      }
+
+      return acc.flatMap((comb) => values.map((value) => comb.concat([[param, value]])))
+    }, [])
+
+    for (const combination of combinations) {
+      if (component.parameters.length === 1) {
+        yield new Constraint(shape, component, shapesGraph, combination[0][1])
+        continue
+      }
+      const params = shape.context.factory.termMap(combination)
+      if (component.isComplete(params)) {
+        yield new Constraint(shape, component, shapesGraph, params)
+      }
+    }
   }
 
   getParameterValue(param: Term) {
-    return this.paramValue || this.shapeNodePointer.out(param).term
+    return this.paramValue || this._parameterValues.get(param)
   }
 
   get pathObject() {
@@ -161,24 +200,23 @@ export class Constraint {
 }
 
 class ConstraintComponent {
-  declare context: SHACLValidator
-  declare node: Term
   declare nodePointer: GraphPointer
   declare parameters: Term[]
   declare parameterNodes: unknown[]
   declare requiredParameters: Term[]
   declare optionals: Record<string, unknown>
-  declare nodeValidationFunction: ValidationFunction | null
+  declare validator: Validator | undefined
+  declare nodeValidationFunction: (focusNode: Term, valueNode: Term, constraint: Constraint) => ReturnType<ValidationFunction>
   declare nodeValidationFunctionGeneric: boolean
-  declare propertyValidationFunction: ValidationFunction | null
+  declare nodeValidationMessage: string | undefined
+  declare propertyValidationFunction: (focusNode: Term, valueNode: Term, constraint: Constraint) => ReturnType<ValidationFunction>
   declare propertyValidationFunctionGeneric: boolean
+  declare propertyValidationMessage: string | undefined
 
-  constructor(node: Term, context: SHACLValidator, shaclVocabulary: AnyPointer) {
+  constructor(readonly node: NamedNode, readonly context: SHACLValidator, shaclVocabulary: AnyPointer) {
     const { factory, ns } = context
     const { sh, xsd } = ns
 
-    this.context = context
-    this.node = node
     this.nodePointer = shaclVocabulary.node(node)
 
     this.parameters = []
@@ -202,58 +240,36 @@ class ConstraintComponent {
         })
       })
 
-    this.nodeValidationFunction = this.findValidationFunction(sh.nodeValidator)
-    if (!this.nodeValidationFunction) {
-      this.nodeValidationFunction = this.findValidationFunction(sh.validator)
+    this.validator = context.validators.get(node)
+    if (!this.validator) {
+      return
+    }
+
+    if ('nodeValidate' in this.validator) {
+      this.nodeValidationFunction = this.validator.nodeValidate.bind(undefined, this.context)
+      this.nodeValidationMessage = this.validator.nodeValidationMessage
+    } else if ('validate' in this.validator) {
+      this.nodeValidationFunction = this.validator.validate.bind(undefined, this.context)
+      this.nodeValidationMessage = this.validator.validationMessage
       this.nodeValidationFunctionGeneric = true
     }
-    this.propertyValidationFunction = this.findValidationFunction(sh.propertyValidator)
-    if (!this.propertyValidationFunction) {
-      this.propertyValidationFunction = this.findValidationFunction(sh.validator)
+    if ('propertyValidate' in this.validator) {
+      this.propertyValidationFunction = this.validator.propertyValidate.bind(undefined, this.context)
+      this.propertyValidationMessage = this.validator.propertyValidationMessage
+    } else if ('validate' in this.validator) {
+      this.propertyValidationFunction = this.validator.validate.bind(undefined, this.context)
+      this.propertyValidationMessage = this.validator.validationMessage
       this.propertyValidationFunctionGeneric = true
     }
   }
 
-  findValidationFunction(predicate: Quad_Predicate): ValidationFunction | null {
-    const validatorType = predicate.value.split('#').slice(-1)[0] as 'validator' | 'nodeValidator' | 'propertyValidator'
-    const validator = this.findValidator(validatorType)
-
-    if (!validator) return null
-
-    return new ValidationFunction(this.context, validator.func.name, validator.func)
-  }
-
   getMessages(shape: Shape): [string] | [] {
-    const generic = shape.isPropertyShape ? this.propertyValidationFunctionGeneric : this.nodeValidationFunctionGeneric
-    const validatorType = generic ? 'validator' : (shape.isPropertyShape ? 'propertyValidator' : 'nodeValidator')
-    const validator = this.findValidator(validatorType)
-
-    if (!validator) return []
-
-    const message = validator.message
-
+    const message = shape.isPropertyShape ? this.propertyValidationMessage : this.nodeValidationMessage
     return message ? [message] : []
   }
 
-  findValidator(validatorType: 'validator' | 'nodeValidator' | 'propertyValidator') {
-    const constraintValidators = validatorsRegistry[this.node.value]
-
-    if (!constraintValidators) return null
-
-    const validator = constraintValidators[validatorType]
-
-    return validator || null
-  }
-
-  isComplete(shapeNode: Term) {
-    return !this.parameters.some((parameter) => (
-      this.isRequired(parameter.value) &&
-      this.context.$shapes.dataset.match(shapeNode, parameter, null).size === 0
-    ))
-  }
-
-  isRequired(parameterURI: string) {
-    return !this.optionals[parameterURI]
+  isComplete(parameterValues: Map<Term, unknown>) {
+    return this.requiredParameters.every((param) => parameterValues.has(param))
   }
 }
 
@@ -290,13 +306,8 @@ export class Shape {
     shapeProperties.forEach((sol) => {
       const component = shapesGraph.getComponentWithParameter(sol.predicate)
       if (component && !handled.has(component.node)) {
-        const params = component.parameters
-        if (params.length === 1) {
-          this.constraints.push(new Constraint(this, component, sol.object, $shapes))
-        } else if (component.isComplete(shapeNode)) {
-          this.constraints.push(new Constraint(this, component, undefined, $shapes))
-          handled.add(component.node)
-        }
+        this.constraints.push(...Constraint.fromShape(this, component, $shapes))
+        handled.add(component.node)
       }
     })
   }
