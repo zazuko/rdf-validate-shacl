@@ -17,6 +17,7 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
+import shaclVocabularyFactory from '@vocabulary/sh'
 import type { NamedNode, Term } from '@rdfjs/types'
 import type { AnyPointer, GraphPointer } from 'clownface'
 import type SHACLValidator from '../index.js'
@@ -39,8 +40,11 @@ class ShapesGraph {
 
     // Collect all defined constraint components
     const { sh } = context.ns
-    const componentNodes = getInstancesOf(context.$shapes.node(sh.ConstraintComponent), context.ns)
-    this._components = [...componentNodes].map((node: NamedNode) => new ConstraintComponent(node, context))
+    const shaclVocabulary = context.factory.clownface({
+      dataset: context.factory.dataset(shaclVocabularyFactory(context)),
+    })
+    const componentNodes = getInstancesOf(shaclVocabulary.node(sh.ConstraintComponent), context.ns)
+    this._components = [...componentNodes].map((node: NamedNode) => new ConstraintComponent(node, context, shaclVocabulary))
 
     // Build map from parameters to constraint components
     this._parametersMap = new Map()
@@ -209,11 +213,11 @@ class ConstraintComponent {
   declare propertyValidationFunctionGeneric: boolean
   declare propertyValidationMessage: string | undefined
 
-  constructor(readonly node: NamedNode, readonly context: SHACLValidator) {
-    const { $shapes, factory, ns } = context
+  constructor(readonly node: NamedNode, readonly context: SHACLValidator, shaclVocabulary: AnyPointer) {
+    const { factory, ns } = context
     const { sh, xsd } = ns
 
-    this.nodePointer = $shapes.node(node)
+    this.nodePointer = shaclVocabulary.node(node)
 
     this.parameters = []
     this.parameterNodes = []
@@ -228,7 +232,7 @@ class ConstraintComponent {
         parameterCf.out(sh.path).forEach(({ term: path }) => {
           this.parameters.push(path)
           this.parameterNodes.push(parameter)
-          if ($shapes.dataset.match(parameter, sh.optional, trueTerm).size > 0) {
+          if (shaclVocabulary.dataset.match(parameter, sh.optional, trueTerm).size > 0) {
             this.optionals[path.value] = true
           } else {
             this.requiredParameters.push(path)

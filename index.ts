@@ -1,4 +1,3 @@
-import shaclVocabularyFactory from '@vocabulary/sh'
 import type { DatasetCore, Term } from '@rdfjs/types'
 import type { AnyPointer } from 'clownface'
 import type { Environment } from './src/defaultEnv.js'
@@ -44,8 +43,7 @@ class SHACLValidator {
     this.factory = options.factory || factory
     this.ns = prepareNamespaces(this.factory)
     this.allowNamedNodeInList = options.allowNamedNodeInList === undefined ? false : options.allowNamedNodeInList
-    const shaclQuads = shaclVocabularyFactory({ factory: this.factory })
-    const dataset = this.factory.dataset(shaclQuads.concat([...(shapes)]))
+    const dataset = this.factory.dataset([...shapes])
     this.$shapes = this.factory.clownface({ dataset })
     this.$data = this.factory.clownface()
     this.validators = this.factory.termMap(defaultValidators)
@@ -58,8 +56,8 @@ class SHACLValidator {
   /**
    * Validates the provided data graph against the provided shapes graph
    */
-  validate(dataset: DatasetCore) {
-    this.$data = this.factory.clownface({ dataset })
+  validate(dataGraph: DatasetCore | AnyPointer) {
+    this.setDataGraph(dataGraph)
     this.validationEngine.validateAll(this.$data)
     return this.validationEngine.getReport()
   }
@@ -67,10 +65,18 @@ class SHACLValidator {
   /**
    * Validates the provided focus node against the provided shape
    */
-  validateNode(dataset: DatasetCore, focusNode: Term, shapeNode: Term) {
-    this.$data = this.factory.clownface({ dataset })
+  validateNode(dataGraph: DatasetCore | AnyPointer, focusNode: Term, shapeNode: Term) {
+    this.setDataGraph(dataGraph)
     this.nodeConformsToShape(focusNode, shapeNode, this.validationEngine)
     return this.validationEngine.getReport()
+  }
+
+  private setDataGraph(dataGraph: DatasetCore | AnyPointer) {
+    if ('dataset' in dataGraph) {
+      this.$data = dataGraph
+    } else {
+      this.$data = this.factory.clownface({ dataset: dataGraph })
+    }
   }
 
   /**
