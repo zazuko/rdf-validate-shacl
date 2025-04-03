@@ -5,6 +5,8 @@ import url from 'url'
 import rdf from '@zazuko/env-node'
 import SHACLValidator from '../index.js'
 import { loadDataset } from './utils.js'
+import sinon from 'sinon'
+import { expect } from 'chai'
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 const rootPath = path.join(__dirname, '.')
@@ -16,7 +18,7 @@ describe('nested results', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes, { factory: rdf })
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
     const result = report.results[0]
@@ -39,8 +41,33 @@ describe('recursive shapes', () => {
     const graph = await loadDataset(dataPath)
 
     const validator = new SHACLValidator(graph, { factory: rdf })
-    const report = validator.validate(graph)
+    const report = await validator.validate(graph)
 
     assert.strictEqual(report.conforms, false)
+  })
+})
+
+describe('owl:imports', () => {
+  it('recursively loads shapes from imported graphs', async () => {
+    // given
+    const dataPath = path.join(rootPath, 'data/owl-imports.ttl')
+    const importedPath = path.join(rootPath, 'data/owl-imported.ttl')
+    const graph = await loadDataset(dataPath)
+    const importGraph = sinon.stub()
+      .callsFake(() => {
+        return loadDataset(importedPath)
+      })
+
+    // when
+    const validator = new SHACLValidator(graph, { factory: rdf, importGraph })
+    await validator.validate(graph)
+    await validator.validate(graph)
+
+    // then
+    expect(importGraph).to.have.callCount(3)
+    expect(validator.$shapes.has(rdf.ns.rdf.type, rdf.ns.sh.NodeShape).terms).to.deep.contain.all.members([
+      rdf.namedNode('http://example.org/Shape1'),
+      rdf.namedNode('http://example.org/Shape2'),
+    ])
   })
 })

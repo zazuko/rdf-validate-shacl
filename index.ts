@@ -1,6 +1,7 @@
 import shaclVocabularyFactory from '@vocabulary/sh'
-import type { DatasetCore, Term } from '@rdfjs/types'
+import type { DatasetCore, NamedNode, Term } from '@rdfjs/types'
 import type { AnyPointer } from 'clownface'
+import TermSet from '@rdfjs/term-set'
 import type { Environment } from './src/defaultEnv.js'
 import factory from './src/defaultEnv.js'
 import type { Namespaces } from './src/namespaces.js'
@@ -16,6 +17,7 @@ interface Options {
    */
   maxErrors?: number
   allowNamedNodeInList?: boolean
+  importGraph?: (url: NamedNode) => Promise<DatasetCore> | DatasetCore
 }
 
 /**
@@ -30,6 +32,8 @@ class SHACLValidator {
   declare shapesGraph: ShapesGraph
   declare validationEngine: ValidationEngine
   declare depth: number
+  declare importGraph?: (url: NamedNode) => Promise<DatasetCore> | DatasetCore
+  private importsLoaded = false
 
   /**
    * @param shapes - Dataset containing the SHACL shapes for validation
@@ -47,6 +51,9 @@ class SHACLValidator {
     this.$data = this.factory.clownface()
     this.shapesGraph = new ShapesGraph(this)
     this.validationEngine = new ValidationEngine(this, options)
+    if (options.importGraph) {
+      this.importGraph = options.importGraph
+    }
 
     this.depth = 0
   }
@@ -54,7 +61,9 @@ class SHACLValidator {
   /**
    * Validates the provided data graph against the provided shapes graph
    */
-  validate(dataset: DatasetCore) {
+  async validate(dataset: DatasetCore) {
+    await this.loadOwlImports()
+
     this.$data = this.factory.clownface({ dataset })
     this.validationEngine.validateAll(this.$data)
     return this.validationEngine.getReport()
@@ -63,7 +72,9 @@ class SHACLValidator {
   /**
    * Validates the provided focus node against the provided shape
    */
-  validateNode(dataset: DatasetCore, focusNode: Term, shapeNode: Term) {
+  async validateNode(dataset: DatasetCore, focusNode: Term, shapeNode: Term) {
+    await this.loadOwlImports()
+
     this.$data = this.factory.clownface({ dataset })
     this.nodeConformsToShape(focusNode, shapeNode, this.validationEngine)
     return this.validationEngine.getReport()
@@ -97,6 +108,45 @@ class SHACLValidator {
 
   validateNodeAgainstShape(focusNode: Term, shapeNode: Term) {
     return this.nodeConformsToShape(focusNode, shapeNode, this.validationEngine)
+  }
+
+  private async loadOwlImports() {
+    if (this.importsLoaded) {
+      return
+    }
+
+    this.importsLoaded = true
+
+    const { owl } = this.ns
+    const loaded: Set<NamedNode> = new TermSet()
+
+    const doLoad = async (url: NamedNode) => {
+      if (!this.importGraph) {
+        throw new Error('importGraph parameter is required to load owl:imports')
+      }
+
+      const imported = await this.importGraph(url)
+
+      for (const quad of imported) {
+        this.$shapes.dataset.add(quad)
+      }
+
+      return imported
+    }
+
+    const loadFromDataset = async (dataset: DatasetCore) => {
+      await Promise.all([...dataset
+        .match(null, owl.imports)]
+        .map(async ({ object }) => {
+          if (object.termType !== 'NamedNode' || loaded.has(object)) return
+
+          loaded.add(object)
+
+          await loadFromDataset(await doLoad(object))
+        }))
+    }
+
+    await loadFromDataset(this.$shapes.dataset)
   }
 }
 

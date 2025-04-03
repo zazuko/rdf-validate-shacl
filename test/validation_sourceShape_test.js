@@ -20,7 +20,7 @@ describe('validation source shapes', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     // three results for the same source shape
     assert.strictEqual(report.results.length, 3)
@@ -38,7 +38,7 @@ describe('validation source shapes', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
     const sourceShapes = new Set(report.results.map(result => result.sourceShape))

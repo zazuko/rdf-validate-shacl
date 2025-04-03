@@ -15,7 +15,7 @@ describe('validation repro', () => {
     const shapes = await loadDataset(path.join(rootPath, 'repro125-shapes.ttl'))
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.equal(1, report.results.length)
     const result = report.results[0]

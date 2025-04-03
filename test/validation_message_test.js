@@ -15,7 +15,7 @@ describe('validation messages', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
     assert.strictEqual(report.results[0].message.length, 1)
@@ -28,7 +28,7 @@ describe('validation messages', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
     assert.strictEqual(report.results[0].message.length, 1)
@@ -41,7 +41,7 @@ describe('validation messages', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
     assert.strictEqual(report.results[0].message.length, 1)
@@ -54,7 +54,7 @@ describe('validation messages', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
     assert.deepStrictEqual(report.results[0].message, [])
@@ -66,7 +66,7 @@ describe('validation messages', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
     assert.strictEqual(report.results[0].message.length, 1)
@@ -79,7 +79,7 @@ describe('validation messages', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
     assert.strictEqual(report.results[0].message.length, 2)
@@ -96,7 +96,7 @@ describe('validation messages', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.strictEqual(report.results.length, 1)
     assert.strictEqual(report.results[0].message.length, 1)
