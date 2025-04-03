@@ -1,10 +1,10 @@
 import type { AnyPointer, MultiPointer } from 'clownface'
-import type { BlankNode, NamedNode, Term } from '@rdfjs/types'
+import type { NamedNode, Term } from '@rdfjs/types'
 import NodeSet from './node-set.js'
 import type { Namespaces } from './namespaces.js'
 
 // eslint-disable-next-line no-use-before-define
-export type ShaclPropertyPath = BlankNode | NamedNode | SequencePath | AlternativePath | InversePath | ZeroOrOnePath | ZeroOrMorePath | OneOrMorePath
+export type ShaclPropertyPath = Term | SequencePath | AlternativePath | InversePath | ZeroOrOnePath | ZeroOrMorePath | OneOrMorePath
 type SequencePath = ShaclPropertyPath[]
 type AlternativePath = { or: ShaclPropertyPath[] }
 type InversePath = { inverse: ShaclPropertyPath }
