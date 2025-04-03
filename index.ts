@@ -1,4 +1,3 @@
-import shaclVocabularyFactory from '@vocabulary/sh'
 import type { DatasetCore, Term } from '@rdfjs/types'
 import type { AnyPointer } from 'clownface'
 import type { Environment } from './src/defaultEnv.js'
@@ -41,8 +40,7 @@ class SHACLValidator {
     this.factory = options.factory || factory
     this.ns = prepareNamespaces(this.factory)
     this.allowNamedNodeInList = options.allowNamedNodeInList === undefined ? false : options.allowNamedNodeInList
-    const shaclQuads = shaclVocabularyFactory({ factory: this.factory })
-    const dataset = this.factory.dataset(shaclQuads.concat([...(shapes)]))
+    const dataset = this.factory.dataset([...shapes])
     this.$shapes = this.factory.clownface({ dataset })
     this.$data = this.factory.clownface()
     this.shapesGraph = new ShapesGraph(this)

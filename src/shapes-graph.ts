@@ -17,6 +17,7 @@
 // It basically walks through all Shapes that have target nodes and runs the validators
 // for each Constraint of the shape, producing results along the way.
 
+import shaclVocabularyFactory from '@vocabulary/sh'
 import type { Quad_Predicate, Term } from '@rdfjs/types'
 import type { AnyPointer, GraphPointer } from 'clownface'
 import type SHACLValidator from '../index.js'
@@ -40,8 +41,11 @@ class ShapesGraph {
 
     // Collect all defined constraint components
     const { sh } = context.ns
-    const componentNodes = getInstancesOf(context.$shapes.node(sh.ConstraintComponent), context.ns)
-    this._components = [...componentNodes].map((node) => new ConstraintComponent(node, context))
+    const shaclVocabulary = context.factory.clownface({
+      dataset: context.factory.dataset(shaclVocabularyFactory(context)),
+    })
+    const componentNodes = getInstancesOf(shaclVocabulary.node(sh.ConstraintComponent), context.ns)
+    this._components = [...componentNodes].map((node) => new ConstraintComponent(node, context, shaclVocabulary))
 
     // Build map from parameters to constraint components
     this._parametersMap = new Map()
@@ -169,13 +173,13 @@ class ConstraintComponent {
   declare propertyValidationFunction: ValidationFunction | null
   declare propertyValidationFunctionGeneric: boolean
 
-  constructor(node: Term, context: SHACLValidator) {
-    const { $shapes, factory, ns } = context
+  constructor(node: Term, context: SHACLValidator, shaclVocabulary: AnyPointer) {
+    const { factory, ns } = context
     const { sh, xsd } = ns
 
     this.context = context
     this.node = node
-    this.nodePointer = $shapes.node(node)
+    this.nodePointer = shaclVocabulary.node(node)
 
     this.parameters = []
     this.parameterNodes = []
@@ -184,13 +188,13 @@ class ConstraintComponent {
     const trueTerm = factory.literal('true', xsd.boolean)
     this.nodePointer
       .out(sh.parameter)
-      .forEach((/** @type import('clownface').GraphPointer */ parameterCf) => {
+      .forEach((parameterCf) => {
         const parameter = parameterCf.term
 
         parameterCf.out(sh.path).forEach(({ term: path }) => {
           this.parameters.push(path)
           this.parameterNodes.push(parameter)
-          if ($shapes.dataset.match(parameter, sh.optional, trueTerm).size > 0) {
+          if (shaclVocabulary.dataset.match(parameter, sh.optional, trueTerm).size > 0) {
             this.optionals[path.value] = true
           } else {
             this.requiredParameters.push(path)
