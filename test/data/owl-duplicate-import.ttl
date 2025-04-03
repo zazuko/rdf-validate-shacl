@@ -1,0 +1,13 @@
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+PREFIX ex: <http://example.org/>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+[
+    owl:imports <http://example.org/other-ontology.owl>
+] .
+
+[
+    owl:imports <http://example.org/other-ontology.owl> ;
+] .
+
+ex:Shape1 a sh:NodeShape .

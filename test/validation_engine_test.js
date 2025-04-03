@@ -70,4 +70,19 @@ describe('owl:imports', () => {
       rdf.namedNode('http://example.org/Shape2'),
     ])
   })
+
+  it('deduplicated same import from one graph', async () => {
+    // given
+    const dataPath = path.join(rootPath, 'data/owl-duplicate-import.ttl')
+    const graph = await loadDataset(dataPath)
+    const importGraph = sinon.stub().returns(rdf.dataset())
+
+    // when
+    const validator = new SHACLValidator(graph, { factory: rdf, importGraph })
+    await validator.validate(graph)
+    await validator.validate(graph)
+
+    // then
+    expect(importGraph).to.have.callCount(1)
+  })
 })

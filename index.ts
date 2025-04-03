@@ -140,16 +140,19 @@ class SHACLValidator {
       return imported
     }
 
-    const loadFromDataset = async (dataset: DatasetCore) => {
-      await Promise.all([...dataset
-        .match(null, owl.imports)]
-        .map(async ({ object }) => {
-          if (object.termType !== 'NamedNode' || loaded.has(object)) return
+    const loadFromDataset = (dataset: DatasetCore) => {
+      const toImport = new TermSet<NamedNode>()
 
+      for (const { object } of dataset.match(null, owl.imports)) {
+        if (object.termType === 'NamedNode' && !loaded.has(object) && !toImport.has(object)) {
           loaded.add(object)
+          toImport.add(object)
+        }
+      }
 
-          await loadFromDataset(await doLoad(object))
-        }))
+      return Promise.all([...toImport].map(async (url) => {
+        await loadFromDataset(await doLoad(url))
+      }))
     }
 
     await loadFromDataset(this.$shapes.dataset)
