@@ -12,6 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: bencherdev/bencher@main
       - name: Archive closed PR branch with Bencher
+        continue-on-error: true
         run: |
           bencher archive \
           --project rdf-validate-shacl \

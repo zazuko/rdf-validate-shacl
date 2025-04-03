@@ -8,9 +8,9 @@ jobs:
     strategy:
       matrix:
         node:
-          - "16"
           - "18"
           - "20"
+          - "22"
     name: Node ${{ matrix.node }}
     steps:
       - uses: actions/checkout@v4
@@ -18,8 +18,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: npm ci
-      - run: npm run build
-      - run: npx c8 --reporter lcovonly mocha
+      - run: npx c8 --reporter lcovonly npm test
       - uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
