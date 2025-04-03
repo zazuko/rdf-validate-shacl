@@ -1,12 +1,12 @@
 {
   "name": "rdf-validate-shacl",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "description": "RDF SHACL validator",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "lint": "eslint . --ignore-path .gitignore",
-    "test": "mocha --require tsx",
+    "test": "mocha",
     "benchmark-prepare": "test/data/benchmarks/prepare.sh",
     "benchmark": "test/run-benchmark.js > benchmark.json",
     "build": "tsc",
