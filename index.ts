@@ -1,4 +1,3 @@
-import shaclVocabularyFactory from '@vocabulary/sh'
 import type { DatasetCore, NamedNode, Term } from '@rdfjs/types'
 import type { AnyPointer } from 'clownface'
 import TermSet from '@rdfjs/term-set'
@@ -45,8 +44,7 @@ class SHACLValidator {
     this.factory = options.factory || factory
     this.ns = prepareNamespaces(this.factory)
     this.allowNamedNodeInList = options.allowNamedNodeInList === undefined ? false : options.allowNamedNodeInList
-    const shaclQuads = shaclVocabularyFactory({ factory: this.factory })
-    const dataset = this.factory.dataset(shaclQuads.concat([...(shapes)]))
+    const dataset = this.factory.dataset([...shapes])
     this.$shapes = this.factory.clownface({ dataset })
     this.$data = this.factory.clownface()
     this.shapesGraph = new ShapesGraph(this)
@@ -61,10 +59,10 @@ class SHACLValidator {
   /**
    * Validates the provided data graph against the provided shapes graph
    */
-  async validate(dataset: DatasetCore) {
+  async validate(dataGraph: DatasetCore | AnyPointer) {
     await this.loadOwlImports()
 
-    this.$data = this.factory.clownface({ dataset })
+    this.setDataGraph(dataGraph)
     this.validationEngine.validateAll(this.$data)
     return this.validationEngine.getReport()
   }
@@ -72,12 +70,20 @@ class SHACLValidator {
   /**
    * Validates the provided focus node against the provided shape
    */
-  async validateNode(dataset: DatasetCore, focusNode: Term, shapeNode: Term) {
+  async validateNode(dataGraph: DatasetCore | AnyPointer, focusNode: Term, shapeNode: Term) {
     await this.loadOwlImports()
 
-    this.$data = this.factory.clownface({ dataset })
+    this.setDataGraph(dataGraph)
     this.nodeConformsToShape(focusNode, shapeNode, this.validationEngine)
     return this.validationEngine.getReport()
+  }
+
+  private setDataGraph(dataGraph: DatasetCore | AnyPointer) {
+    if ('dataset' in dataGraph) {
+      this.$data = dataGraph
+    } else {
+      this.$data = this.factory.clownface({ dataset: dataGraph })
+    }
   }
 
   /**

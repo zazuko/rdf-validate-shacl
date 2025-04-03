@@ -79,7 +79,10 @@
     "CHANGELOG.md"
   ],
   "mocha": {
-    "ignore": "test/run-benchmark.js",
-    "require": "test/mocha-setup.js"
+    "require": [
+      "tsx",
+      "test/mocha-setup.js"
+    ],
+    "ignore": "test/run-benchmark.js"
   }
 }
