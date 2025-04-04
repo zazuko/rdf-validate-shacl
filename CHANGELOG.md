@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.5.10
+
+### Patch Changes
+
+- Fix type of `Environment`
+
 ## 0.5.9
 
 ### Patch Changes
