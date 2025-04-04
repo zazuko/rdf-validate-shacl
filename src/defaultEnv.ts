@@ -7,7 +7,11 @@ import NamespaceFactory from '@rdfjs/namespace/Factory.js'
 import ClownfaceFactory from 'clownface/Factory.js'
 
 export type Environment = import('@rdfjs/environment/Environment.js').Environment<
-DataFactory | DatasetFactory | import('@rdfjs/namespace/Factory.js').NamespaceFactory | import('clownface/Factory.js').default | import('@rdfjs/term-map/Factory.js').TermMapFactory
+import('@rdfjs/types').DataFactory
+| import('@rdfjs/types').DatasetCoreFactory
+| import('@rdfjs/namespace/Factory.js').NamespaceFactory
+| import('clownface/Factory.js').default
+| import('@rdfjs/term-map/Factory.js').TermMapFactory
 >
 
 export default new E([

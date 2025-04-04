@@ -13,6 +13,12 @@
 
 - 3f25756: Using multiple constraints which expect multiple parameter, such as `sh:pattern+(sh:flags)` caused an exception
 
+## 0.5.10
+
+### Patch Changes
+
+- Fix type of `Environment`
+
 ## 0.5.9
 
 ### Patch Changes
