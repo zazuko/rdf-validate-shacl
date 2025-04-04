@@ -16,7 +16,7 @@ describe('validation severity', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.ok(report.results[0].severity.equals(ns.sh.Violation))
   })
@@ -27,7 +27,7 @@ describe('validation severity', () => {
     const shapes = data
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.ok(report.results[0].severity.equals(ns.sh.Warning))
   })

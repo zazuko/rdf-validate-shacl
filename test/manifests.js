@@ -56,12 +56,14 @@ class TestCase {
   }
 
   async getShapes() {
-    const relativePath = this.node.out(mf.action).out(sht.shapesGraph).value
-    return this._loadDataset(relativePath)
+    return this.getGraph(this.node.out(mf.action).out(sht.shapesGraph))
   }
 
   async getData() {
-    const relativePath = this.node.out(mf.action).out(sht.dataGraph).value
+    return this.getGraph(this.node.out(mf.action).out(sht.dataGraph))
+  }
+
+  async getGraph({ value: relativePath }) {
     return this._loadDataset(relativePath)
   }
 
@@ -87,10 +89,15 @@ class TestCase {
       shapes = env.dataset([...shapes])
     }
 
-    const validator = new SHACLValidator(shapes, { factory: $rdf })
+    const validator = new SHACLValidator(shapes, {
+      factory: $rdf,
+      importGraph: (url) => {
+        return this.getGraph(url)
+      },
+    })
     const expectedReport = this.node.out(mf.result)
 
-    const report = $rdf.clownface({ dataset: validator.validate(data).dataset, factory: $rdf })
+    const report = $rdf.clownface({ dataset: (await validator.validate(data)).dataset, factory: $rdf })
       .node(sh.ValidationReport)
       .in(rdf.type)
 

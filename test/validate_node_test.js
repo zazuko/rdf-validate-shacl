@@ -18,7 +18,7 @@ describe('validate specific node with specific shape', () => {
     const shape = $rdf.namedNode('Shape1')
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validateNode(data, node, shape)
+    const report = await validator.validateNode(data, node, shape)
 
     assert.strictEqual(report.conforms, true)
   })
@@ -31,7 +31,7 @@ describe('validate specific node with specific shape', () => {
     const shape = $rdf.namedNode('Shape1')
 
     const validator = new SHACLValidator(shapes)
-    const report = validator.validateNode(data, node, shape)
+    const report = await validator.validateNode(data, node, shape)
 
     assert.strictEqual(report.conforms, false)
     assert.strictEqual(report.results.length, 1)

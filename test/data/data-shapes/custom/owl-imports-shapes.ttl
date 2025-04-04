@@ -1,0 +1,12 @@
+PREFIX sh: <http://www.w3.org/ns/shacl#>
+prefix ex: <http://datashapes.org/sh/tests/core/property/owl-imports.test#>
+
+ex:Shape
+    a sh:NodeShape ;
+    sh:targetClass ex:Type ;
+    sh:property
+        [
+            sh:path ex:property ;
+            sh:minCount 1 ;
+        ] ;
+.

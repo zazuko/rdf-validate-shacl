@@ -34,6 +34,7 @@
     "@vocabulary/sh": "^1.1.5",
     "clownface": "^2.0.0",
     "debug": "^4.3.2",
+    "rdf-dataset-ext": "^1.1.0",
     "rdf-literal": "^1.3.2",
     "rdf-validate-datatype": "^0.2.0"
   },
@@ -41,25 +42,34 @@
     "@changesets/cli": "^2.22.0",
     "@rdfjs/parser-n3": "^2.0.1",
     "@tpluscode/eslint-config": "^0.5",
+    "@types/chai": "^5.2.1",
+    "@types/chai-as-promised": "^8.0.2",
     "@types/clownface": "^2.0.5",
     "@types/debug": "^4.1.12",
     "@types/n3": "^1",
     "@types/node": "^20.10.6",
     "@types/rdfjs__environment": "^1.0.0",
+    "@types/sinon": "^17.0.4",
+    "@types/sinon-chai": "^4.0.0",
     "@typescript-eslint/eslint-plugin": "^7",
     "@typescript-eslint/parser": "^7",
     "@zazuko/env-node": "^2",
     "@zazuko/shacl-test": "^0.1.1",
     "bench-node": "^0.5.2",
     "c8": "^8.0.1",
+    "chai": "^5.2.0",
+    "chai-as-promised": "^8.0.1",
     "eslint": "^8.57.1",
     "eslint-import-resolver-typescript": "^3.8.3",
     "get-stream": "^6.0.0",
     "mocha": "^10.2.0",
+    "mocha-chai-rdf": "^0.1.8",
     "nanoid": "^4.0.2",
     "n3": "^1",
     "rdf-ext": "^2.5.1",
     "rdf-utils-dataset": "^2.0.0",
+    "sinon": "^20.0.0",
+    "sinon-chai": "^4.0.0",
     "tsx": "^4.19.3",
     "typescript": "^5.3.3"
   },
@@ -71,7 +81,10 @@
     "CHANGELOG.md"
   ],
   "mocha": {
-    "require": "tsx",
+    "require": [
+      "tsx",
+      "test/mocha-setup.js"
+    ],
     "ignore": "test/run-benchmark.js"
   }
 }

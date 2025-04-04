@@ -17,7 +17,7 @@ describe('using graph pointer', () => {
     const data = rdf.clownface({ dataset })
 
     const validator = new SHACLValidator(dataset, { factory: rdf })
-    const report = validator.validate(data)
+    const report = await validator.validate(data)
 
     assert.equal(report.conforms, false)
   })
@@ -30,7 +30,7 @@ describe('using graph pointer', () => {
     const shape = $rdf.namedNode('Shape1')
 
     const validator = new SHACLValidator(dataset, { factory: rdf })
-    const report = validator.validateNode(data, node, shape)
+    const report = await validator.validateNode(data, node, shape)
 
     assert.equal(report.conforms, false)
   })

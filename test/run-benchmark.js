@@ -42,7 +42,7 @@ const suite = new Suite({
 
       timer.start()
       const validator = new SHACLValidator(shapesGraph, { factory: rdf })
-      const report = validator.validate(dataGraph)
+      const report = await validator.validate(dataGraph)
       timer.end()
       if (!report.conforms) {
         throw new Error('SHACL violations found')
