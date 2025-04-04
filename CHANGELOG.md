@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.5.9
+
+### Patch Changes
+
+- 13efee7: Export types which were previously exported by `@types/rdf-validate-shacl`
+
 ## 0.5.8
 
 ### Patch Changes
