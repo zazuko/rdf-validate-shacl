@@ -55,11 +55,13 @@ main();
 
 The `SHACLValidator` constructor accepts an optional options object as second
 parameter. The available options are:
-- `factory`: RDF/JS data factory (must have a `.dataset()` method)
-- `maxErrors`: max number of errors after which the validation process should
-  stop. By default, it only stops after all the errors are found.
-- `allowNamedNodeInList`: SHACL only allows blank nodes in property lists. To
-  allow named nodes to occur in property lists, set this value to `true`.
+
+| Parameter              | type                                                                              |                                                                                                                                |
+|------------------------|-----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| `factory`              | [`DatasetFactory`](https://rdf.js.org/dataset-spec/#datasetcorefactory-interface) |                                                                                                                                |
+| `maxErrors`            | `number`                                                                          | max number of errors after which the validation process should stop. By default, it only stops after all the errors are found. |
+| `allowNamedNodeInList` | `boolean`                                                                         | SHACL only allows blank nodes in property lists. To allow named nodes to occur in property lists, set this value to `true`.    |
+| `importGraph`          | `(url: NamedNode) => DatasetCore \| Promise<DatasetCore>`                         | function to load imported shape graphs.                                                                                        |
 
 ## Running the tests
 
