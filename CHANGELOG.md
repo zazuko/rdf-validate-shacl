@@ -13,6 +13,12 @@
 
 - 3f25756: Using multiple constraints which expect multiple parameter, such as `sh:pattern+(sh:flags)` caused an exception
 
+## 0.5.9
+
+### Patch Changes
+
+- 13efee7: Export types which were previously exported by `@types/rdf-validate-shacl`
+
 ## 0.5.8
 
 ### Patch Changes

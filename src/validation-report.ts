@@ -8,7 +8,7 @@ import { prepareNamespaces } from './namespaces.js'
 /**
  * Result of a SHACL validation.
  */
-class ValidationReport {
+export class ValidationReport {
   declare factory: Environment
   declare ns: Namespaces
   declare pointer: GraphPointer
@@ -46,7 +46,7 @@ class ValidationReport {
   }
 }
 
-class ValidationResult {
+export class ValidationResult {
   declare term: Term
   declare dataset: DatasetCore
 
