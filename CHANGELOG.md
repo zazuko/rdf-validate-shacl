@@ -1,5 +1,18 @@
 ## 0.4.4
 
+## 0.6.0
+
+### Minor Changes
+
+- 65549db: Added support for `owl:imports`. BREAKING: `.validate` and `.validateNode` methods are now asynchronous
+- 0a72314: Refactored the way validators are registered to allow extensions
+- 7143c2c: Drop support for Node 16 (this only means we don't run tests on it anymore, but the library should work just fine).
+- f194e58: RDF/JS Environment passed to the validator now requires [`TermMapFactory`](https://github.com/rdfjs-base/term-map/blob/master/Factory.js)
+
+### Patch Changes
+
+- 3f25756: Using multiple constraints which expect multiple parameter, such as `sh:pattern+(sh:flags)` caused an exception
+
 ## 0.5.8
 
 ### Patch Changes
