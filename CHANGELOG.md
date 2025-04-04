@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.6.1
+
+### Patch Changes
+
+- fd5327e: Backport fixes from v0.5 branch
+
 ## 0.6.0
 
 ### Minor Changes
