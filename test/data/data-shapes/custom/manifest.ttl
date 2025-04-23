@@ -9,7 +9,6 @@
 	mf:include <uniqueLang-false.ttl> ;
 	mf:include <multiLevelInheritance.ttl> ;
 	mf:include <multiLevelInheritanceWithImplicitTarget.ttl> ;
-	mf:include <targetNodeDoesNotExist.ttl> ;
 	mf:include <lessThan-moreTypes.ttl> ;
 	mf:include <circularReferences.ttl> ;
 	mf:include <and-minCount.ttl> ;
