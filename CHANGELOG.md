@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.6.2
+
+### Patch Changes
+
+- 6d294d8: Nodes targeted by `sh:targetNode` should fail validation even if they are not explicitly used in the Data Graph (fixes #107)
+
 ## 0.6.1
 
 ### Patch Changes
