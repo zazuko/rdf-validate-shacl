@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.6.3
+
+### Patch Changes
+
+- 65fd079: Updated dependencies (remove `@rdfjs/types` v1)
+
 ## 0.6.2
 
 ### Patch Changes
