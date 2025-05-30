@@ -41,7 +41,7 @@ class SHACLValidator {
    * @param shapes - Dataset containing the SHACL shapes for validation
    * @param {object} [options] - Validator options
    */
-  constructor(shapes: DatasetCore, options: Options) {
+  constructor(shapes: DatasetCore, options?: Options) {
     options = options || {}
 
     this.factory = options.factory || factory
