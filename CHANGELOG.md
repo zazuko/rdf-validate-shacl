@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.6.5
+
+### Patch Changes
+
+- 4e08184: Options should be optional (wrong annotation)
+
 ## 0.6.4
 
 ### Patch Changes
