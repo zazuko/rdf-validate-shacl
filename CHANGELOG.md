@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.6.4
+
+### Patch Changes
+
+- 065652d: Export `Options` interface
+
 ## 0.6.3
 
 ### Patch Changes
