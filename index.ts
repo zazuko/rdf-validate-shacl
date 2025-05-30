@@ -11,7 +11,7 @@ import ValidationEngine from './src/validation-engine.js'
 import type { ShaclPropertyPath } from './src/property-path.js'
 import defaultValidators from './src/validators-registry.js'
 
-interface Options {
+export interface Options {
   factory?: Environment
   /**
    * Max number of errors before the engine stops. Defaults to finding all the errors.
