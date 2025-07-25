@@ -70,7 +70,7 @@ parameter. The available options are:
 You can add custom constraints to the validator by providing a `constraintValidators` and `constraintVocabularies`. 
 The latter can be skipped if you only intend to override existing constraints.
 
-In a module with validators, export object which implements the `Validator` interface.
+In a module with validators, export objects which implement the `Validator` interface.
 
 ```ts
 // dash-validators.js
