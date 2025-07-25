@@ -14,4 +14,5 @@
 	mf:include <and-minCount.ttl> ;
 	mf:include <pattern-multiple.ttl> ;
 	mf:include <owl-imports.ttl> ;
+	mf:include <dash.ttl> ;
 	.

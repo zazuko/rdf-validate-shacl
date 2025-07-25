@@ -1,15 +1,18 @@
 import type { DatasetCore, NamedNode, Term } from '@rdfjs/types'
 import type { AnyPointer } from 'clownface'
 import TermSet from '@rdfjs/term-set'
+import type sh from '@vocabulary/sh'
 import type { Environment } from './src/defaultEnv.js'
 import factory from './src/defaultEnv.js'
 import type { Namespaces } from './src/namespaces.js'
 import { prepareNamespaces } from './src/namespaces.js'
 import ShapesGraph from './src/shapes-graph.js'
-import type { ValidatorRegistry } from './src/validation-engine.js'
+import type { Validator, ValidatorRegistry } from './src/validation-engine.js'
 import ValidationEngine from './src/validation-engine.js'
 import type { ShaclPropertyPath } from './src/property-path.js'
-import defaultValidators from './src/validators-registry.js'
+import * as defaultValidators from './src/validators.js'
+
+export type { Validator } from './src/validation-engine.js'
 
 export interface Options {
   factory?: Environment
@@ -19,6 +22,8 @@ export interface Options {
   maxErrors?: number
   allowNamedNodeInList?: boolean
   importGraph?: (url: NamedNode) => Promise<DatasetCore> | DatasetCore
+  constraintVocabularies?: Array<typeof sh>
+  constraintValidators?: Record<string, Validator>
 }
 
 /**
@@ -41,7 +46,7 @@ class SHACLValidator {
    * @param shapes - Dataset containing the SHACL shapes for validation
    * @param {object} [options] - Validator options
    */
-  constructor(shapes: DatasetCore, options?: Options) {
+  constructor(shapes: DatasetCore, { constraintValidators = {}, ...options }: Options = {}) {
     options = options || {}
 
     this.factory = options.factory || factory
@@ -50,8 +55,13 @@ class SHACLValidator {
     const dataset = this.factory.dataset([...shapes])
     this.$shapes = this.factory.clownface({ dataset })
     this.$data = this.factory.clownface()
-    this.validators = this.factory.termMap(defaultValidators)
-    this.shapesGraph = new ShapesGraph(this)
+    this.validators = this.factory.termMap([
+      ...Object.values(defaultValidators).map(toMapInit),
+      ...Object.values(constraintValidators).map(toMapInit),
+    ])
+    this.shapesGraph = new ShapesGraph(this, {
+      additionalVocabularies: options.constraintVocabularies,
+    })
     this.validationEngine = new ValidationEngine(this, options)
     if (options.importGraph) {
       this.importGraph = options.importGraph
@@ -161,6 +171,10 @@ class SHACLValidator {
 
     await loadFromDataset(this.$shapes.dataset)
   }
+}
+
+function toMapInit(validator: Validator): [NamedNode, Validator] {
+  return [validator.component, validator]
 }
 
 export default SHACLValidator

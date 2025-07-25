@@ -53,6 +53,7 @@
     "@types/sinon-chai": "^4.0.0",
     "@typescript-eslint/eslint-plugin": "^7",
     "@typescript-eslint/parser": "^7",
+    "@vocabulary/dash": "^1.0.5",
     "@zazuko/env-node": "^3",
     "@zazuko/shacl-test": "^0.1.1",
     "bench-node": "^0.5.2",

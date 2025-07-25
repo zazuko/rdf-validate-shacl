@@ -20,12 +20,17 @@
 import shaclVocabularyFactory from '@vocabulary/sh'
 import type { NamedNode, Term } from '@rdfjs/types'
 import type { AnyPointer, GraphPointer } from 'clownface'
+import addAll from 'rdf-dataset-ext/addAll.js'
 import type SHACLValidator from '../index.js'
 import NodeSet from './node-set.js'
 import type { ShaclPropertyPath } from './property-path.js'
 import { extractPropertyPath, getPathObjects } from './property-path.js'
 import { getInstancesOf, isInstanceOf, rdfListToArray } from './dataset-utils.js'
 import type { ValidationFunction, Validator } from './validation-engine.js'
+
+interface Options {
+  additionalVocabularies?: Array<typeof shaclVocabularyFactory>
+}
 
 class ShapesGraph {
   declare context: SHACLValidator
@@ -35,13 +40,17 @@ class ShapesGraph {
   private _shapeNodesWithConstraints: Term[] | undefined
   private _shapesWithTarget: Shape[] | undefined
 
-  constructor(context: SHACLValidator) {
+  constructor(context: SHACLValidator, { additionalVocabularies = [] }: Options) {
     this.context = context
 
     // Collect all defined constraint components
     const { sh } = context.ns
+    const vocabularyDataset = context.factory.dataset()
+    for (const additionalVocabulary of [shaclVocabularyFactory, ...additionalVocabularies]) {
+      addAll(vocabularyDataset, additionalVocabulary(context))
+    }
     const shaclVocabulary = context.factory.clownface({
-      dataset: context.factory.dataset(shaclVocabularyFactory(context)),
+      dataset: vocabularyDataset,
     })
     const componentNodes = getInstancesOf(shaclVocabulary.node(sh.ConstraintComponent), context.ns)
     this._components = [...componentNodes].map((node: NamedNode) => new ConstraintComponent(node, context, shaclVocabulary))

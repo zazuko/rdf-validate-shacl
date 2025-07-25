@@ -10,7 +10,8 @@ import type { Namespaces } from './namespaces.js'
 import type { Constraint } from './shapes-graph.js'
 import ns from './namespaces.js'
 
-const validateAnd: Validator = {
+export const validateAnd: Validator = {
+  component: ns.sh.AndConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const andNode = constraint.getParameterValue(sh.and)
@@ -26,7 +27,8 @@ const validateAnd: Validator = {
   },
 }
 
-const validateClass: Validator = {
+export const validateClass: Validator = {
+  component: ns.sh.ClassConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const classNode = constraint.getParameterValue(ns.sh.class)
 
@@ -34,7 +36,8 @@ const validateClass: Validator = {
   },
 }
 
-const validateClosed: Validator = {
+export const validateClosed: Validator = {
+  component: ns.sh.ClosedConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh, xsd } = context.ns
     const closedNode = constraint.getParameterValue(sh.closed)
@@ -72,7 +75,8 @@ const validateClosed: Validator = {
   validationMessage: 'Predicate is not allowed (closed shape)',
 }
 
-const validateDatatype: Validator = {
+export const validateDatatype: Validator = {
+  component: ns.sh.DatatypeConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const datatypeNode = constraint.getParameterValue(sh.datatype)
@@ -86,7 +90,8 @@ const validateDatatype: Validator = {
   validationMessage: 'Value does not have datatype {$datatype}',
 }
 
-const validateDisjoint: Validator = {
+export const validateDisjoint: Validator = {
+  component: ns.sh.DisjointConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const disjointNode = constraint.getParameterValue(sh.disjoint)
@@ -96,7 +101,8 @@ const validateDisjoint: Validator = {
   validationMessage: 'Value node must not also be one of the values of {$disjoint}',
 }
 
-const validateEquals: Validator = {
+export const validateEquals: Validator = {
+  component: ns.sh.EqualsConstraintComponent,
   propertyValidate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const path = constraint.shape.pathObject
@@ -143,7 +149,8 @@ const validateEquals: Validator = {
   nodeValidationMessage: 'Must have same values as {$equals}',
 }
 
-const validateHasValue: Validator = {
+export const validateHasValue: Validator = {
+  component: ns.sh.HasValueConstraintComponent,
   nodeValidate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const hasValueNode = constraint.getParameterValue(sh.hasValue)
@@ -163,14 +170,16 @@ const validateHasValue: Validator = {
   propertyValidationMessage: 'Missing expected value {$hasValue}',
 }
 
-const validateIn: Validator = {
+export const validateIn: Validator = {
+  component: ns.sh.InConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     return constraint.nodeSet.has(valueNode)
   },
   validationMessage: 'Value is not one of the allowed values: {$in}',
 }
 
-const validateLanguageIn: Validator = {
+export const validateLanguageIn: Validator = {
+  component: ns.sh.LanguageInConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     if (valueNode.termType !== 'Literal') {
@@ -190,7 +199,8 @@ const validateLanguageIn: Validator = {
   validationMessage: 'Language does not match any of {$languageIn}',
 }
 
-const validateLessThan: Validator = {
+export const validateLessThan: Validator = {
+  component: ns.sh.LessThanConstraintComponent,
   propertyValidate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const valuePath = constraint.shape.pathObject
@@ -212,7 +222,8 @@ const validateLessThan: Validator = {
   propertyValidationMessage: 'Value is not less than value of {$lessThan}',
 }
 
-const validateLessThanOrEquals: Validator = {
+export const validateLessThanOrEquals: Validator = {
+  component: ns.sh.LessThanOrEqualsConstraintComponent,
   propertyValidate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const valuePath = constraint.shape.pathObject
@@ -234,7 +245,8 @@ const validateLessThanOrEquals: Validator = {
   propertyValidationMessage: 'Value is not less than or equal to value of {$lessThanOrEquals}',
 }
 
-const validateMaxCount: Validator = {
+export const validateMaxCount: Validator = {
+  component: ns.sh.MaxCountConstraintComponent,
   propertyValidate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const path = constraint.shape.pathObject
@@ -246,7 +258,8 @@ const validateMaxCount: Validator = {
   propertyValidationMessage: 'More than {$maxCount} values',
 }
 
-const validateMaxExclusive: Validator = {
+export const validateMaxExclusive: Validator = {
+  component: ns.sh.MaxExclusiveConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const maxExclusiveNode = constraint.getParameterValue(sh.maxExclusive)
@@ -257,7 +270,8 @@ const validateMaxExclusive: Validator = {
   validationMessage: 'Value is not less than {$maxExclusive}',
 }
 
-const validateMaxInclusive: Validator = {
+export const validateMaxInclusive: Validator = {
+  component: ns.sh.MaxInclusiveConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const maxInclusiveNode = constraint.getParameterValue(sh.maxInclusive)
@@ -268,7 +282,8 @@ const validateMaxInclusive: Validator = {
   validationMessage: 'Value is not less than or equal to {$maxInclusive}',
 }
 
-const validateMaxLength: Validator = {
+export const validateMaxLength: Validator = {
+  component: ns.sh.MaxLengthConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     if (valueNode.termType === 'BlankNode') {
       return false
@@ -281,7 +296,8 @@ const validateMaxLength: Validator = {
   validationMessage: 'Value has more than {$maxLength} characters',
 }
 
-const validateMinCount: Validator = {
+export const validateMinCount: Validator = {
+  component: ns.sh.MinCountConstraintComponent,
   propertyValidate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const path = constraint.pathObject
@@ -293,7 +309,8 @@ const validateMinCount: Validator = {
   propertyValidationMessage: 'Less than {$minCount} values',
 }
 
-const validateMinExclusive: Validator = {
+export const validateMinExclusive: Validator = {
+  component: ns.sh.MinExclusiveConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const minExclusiveNode = constraint.getParameterValue(sh.minExclusive)
@@ -304,7 +321,8 @@ const validateMinExclusive: Validator = {
   validationMessage: 'Value is not greater than {$minExclusive}',
 }
 
-const validateMinInclusive: Validator = {
+export const validateMinInclusive: Validator = {
+  component: ns.sh.MinInclusiveConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const minInclusiveNode = constraint.getParameterValue(sh.minInclusive)
@@ -315,7 +333,8 @@ const validateMinInclusive: Validator = {
   validationMessage: 'Value is not greater than or equal to {$minInclusive}',
 }
 
-const validateMinLength: Validator = {
+export const validateMinLength: Validator = {
+  component: ns.sh.MinLengthConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     if (valueNode.termType === 'BlankNode') {
       return false
@@ -328,7 +347,8 @@ const validateMinLength: Validator = {
   validationMessage: 'Value has less than {$minLength} characters',
 }
 
-const validateNodeKind: Validator = {
+export const validateNodeKind: Validator = {
+  component: ns.sh.NodeKindConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const nodeKindNode = constraint.getParameterValue(sh.nodeKind)
@@ -350,7 +370,8 @@ const validateNodeKind: Validator = {
   validationMessage: 'Value does not have node kind {$nodeKind}',
 }
 
-const validateNode: Validator = {
+export const validateNode: Validator = {
+  component: ns.sh.NodeConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const nodeNode = constraint.getParameterValue(sh.node)
@@ -359,7 +380,8 @@ const validateNode: Validator = {
   validationMessage: 'Value does not have shape {$node}',
 }
 
-const validateNot: Validator = {
+export const validateNot: Validator = {
+  component: ns.sh.NotConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const notNode = constraint.getParameterValue(sh.not)
@@ -368,7 +390,8 @@ const validateNot: Validator = {
   validationMessage: 'Value does have shape {$not}',
 }
 
-const validateOr: Validator = {
+export const validateOr: Validator = {
+  component: ns.sh.OrConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const orNode = constraint.getParameterValue(sh.or)
@@ -377,7 +400,8 @@ const validateOr: Validator = {
   },
 }
 
-const validatePattern: Validator = {
+export const validatePattern: Validator = {
+  component: ns.sh.PatternConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     if (valueNode.termType === 'BlankNode') {
       return false
@@ -392,7 +416,8 @@ const validatePattern: Validator = {
   validationMessage: 'Value does not match pattern "{$pattern}"',
 }
 
-const validateQualifiedMaxCount: Validator = {
+export const validateQualifiedMaxCount: Validator = {
+  component: ns.sh.QualifiedMaxCountConstraintComponent,
   propertyValidate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const count = validateQualifiedHelper(context, focusNode, constraint)
@@ -403,7 +428,8 @@ const validateQualifiedMaxCount: Validator = {
   propertyValidationMessage: 'More than {$qualifiedMaxCount} values have shape {$qualifiedValueShape}',
 }
 
-const validateQualifiedMinCount: Validator = {
+export const validateQualifiedMinCount: Validator = {
+  component: ns.sh.QualifiedMinCountConstraintComponent,
   propertyValidate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const count = validateQualifiedHelper(context, focusNode, constraint)
@@ -456,7 +482,8 @@ function validateQualifiedConformsToASibling(context: SHACLValidator, value: Ter
   return false
 }
 
-const validateUniqueLang: Validator = {
+export const validateUniqueLang: Validator = {
+  component: ns.sh.UniqueLangConstraintComponent,
   propertyValidate(context, focusNode, valueNode, constraint) {
     const { sh, xsd } = context.ns
     const uniqueLangNode = constraint.getParameterValue(sh.uniqueLang)
@@ -493,7 +520,8 @@ const validateUniqueLang: Validator = {
   propertyValidationMessage: 'Language "{?lang}" used more than once',
 }
 
-const validateXone: Validator = {
+export const validateXone: Validator = {
+  component: ns.sh.XoneConstraintComponent,
   validate(context, focusNode, valueNode, constraint) {
     const { sh } = context.ns
     const xoneNode = constraint.getParameterValue(sh.xone)
@@ -547,35 +575,4 @@ function compareTerms(term1: Term | null | undefined, term2: Term | null | undef
 function hasTimezone(node: Literal, ns: Namespaces) {
   const pattern = /^.*(((\+|-)\d{2}:\d{2})|Z)$/
   return ns.xsd.dateTime.equals(node.datatype) && pattern.test(node.value)
-}
-
-export default {
-  validateAnd,
-  validateClass,
-  validateClosed,
-  validateDatatype,
-  validateDisjoint,
-  validateEquals,
-  validateHasValue,
-  validateIn,
-  validateLanguageIn,
-  validateLessThan,
-  validateLessThanOrEquals,
-  validateMaxCount,
-  validateMaxExclusive,
-  validateMaxInclusive,
-  validateMaxLength,
-  validateMinCount,
-  validateMinExclusive,
-  validateMinInclusive,
-  validateMinLength,
-  validateNode,
-  validateNodeKind,
-  validateNot,
-  validateOr,
-  validatePattern,
-  validateQualifiedMaxCount,
-  validateQualifiedMinCount,
-  validateUniqueLang,
-  validateXone,
 }

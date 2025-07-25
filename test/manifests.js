@@ -3,10 +3,12 @@ import url from 'node:url'
 import assert from 'node:assert'
 import $rdf from '@zazuko/env-node'
 import resource from 'rdf-utils-dataset/resource.js'
+import dash from '@vocabulary/dash'
 import ns from '../src/namespaces.js'
 import env from '../src/defaultEnv.js'
 import SHACLValidator from '../index.js'
 import { loadDataset } from './utils.js'
+import * as constraintValidators from './dash-validators.js'
 
 const { rdfs, rdf, sh } = ns
 export const mf = $rdf.namespace('http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#')
@@ -94,6 +96,8 @@ class TestCase {
       importGraph: (url) => {
         return this.getGraph(url)
       },
+      constraintVocabularies: [dash],
+      constraintValidators,
     })
     const expectedReport = this.node.out(mf.result)
 
