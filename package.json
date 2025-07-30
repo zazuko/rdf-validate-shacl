@@ -18,6 +18,7 @@
     "@types/chai-as-promised": "^8.0.2",
     "@types/clownface": "^2.0.10",
     "@types/debug": "^4.1.12",
+    "@types/mocha": "^10.0.10",
     "@types/n3": "^1.24.2",
     "@types/node": "^20.10.6",
     "@types/rdfjs__environment": "^1.0.0",

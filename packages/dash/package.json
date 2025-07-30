@@ -6,10 +6,20 @@
   "exports": {
     ".": "./index.js"
   },
+  "scripts": {
+    "test": "mocha",
+    "build": "tsc",
+    "prepack": "npm run build"
+  },
   "dependencies": {
     "@vocabulary/dash": "^1.0.5"
   },
   "peerDependencies": {
     "rdf-validate-shacl": "^0.6.5"
+  },
+  "mocha": {
+    "extensions": ["ts"],
+    "spec": "test/**/*.test.ts",
+    "extends": "../../package.json"
   }
 }
