@@ -1,0 +1,66 @@
+@prefix dash: <http://datashapes.org/dash#> .
+@prefix ex: <http://datashapes.org/sh/tests/custom-dash.test#> .
+@prefix mf: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix sht: <http://www.w3.org/ns/shacl-test#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<>
+    rdf:type mf:Manifest ;
+    mf:entries (
+                   <dash-single-line-pass>
+                   <dash-single-line-fail>
+               ) ;
+.
+<dash-single-line-pass>
+    rdf:type sht:Validate ;
+    rdfs:label "Test dash:singleLine with postive outcome" ;
+    mf:action [
+                  sht:dataGraph <dash-single-line-valid-data.ttl> ;
+                  sht:shapesGraph <> ;
+              ] ;
+    mf:result [
+                  rdf:type sh:ValidationReport ;
+                  sh:conforms "true"^^xsd:boolean ;
+              ] ;
+    mf:status sht:proposed ;
+.
+<dash-single-line-fail>
+    rdf:type sht:Validate ;
+    rdfs:label "Test dash:singleLine with negative outcome" ;
+    mf:action [
+                  sht:dataGraph <dash-single-line-invalid-data.ttl> ;
+                  sht:shapesGraph <> ;
+              ] ;
+    mf:result
+        [
+            rdf:type sh:ValidationReport ;
+            sh:conforms false ;
+            sh:result
+                [
+                    rdf:type sh:ValidationResult ;
+                    sh:focusNode ex:Instance ;
+                    sh:resultPath ex:property ;
+                    sh:resultSeverity sh:Violation ;
+                    sh:sourceConstraintComponent dash:SingleLineConstraintComponent ;
+                    sh:sourceShape
+                        [
+                            sh:path ex:property ;
+                            dash:singleLine true ;
+                        ] ;
+                    sh:value "This is a single line string.\nThis is not a single line string." ;
+                ] ;
+        ] ;
+    mf:status sht:proposed ;
+.
+
+ex:Shape
+    a sh:NodeShape ;
+    sh:targetClass ex:Type ;
+    sh:property [
+        sh:path ex:property ;
+        dash:singleLine true ;
+    ] ;
+.

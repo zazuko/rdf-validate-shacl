@@ -41,7 +41,7 @@ export interface GenericValidator {
 }
 
 export type Validator = (NodeValidator | PropertyValidator | GenericValidator) & {
-  prepareParam?(param: NamedNode, value: GraphPointer, allParams: Map<NamedNode, GraphPointer>): unknown | void
+  component: NamedNode
 }
 
 export type ValidatorRegistry = Map<NamedNode, Validator>
