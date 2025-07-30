@@ -1,0 +1,12 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+<Alice> a <Person> , <Category1> , <Category3> .
+
+<ShapeWithXone> a sh:NodeShape ;
+  sh:targetClass <Person> ;
+  sh:xone (
+      [ sh:class <Category1> ]
+      [ sh:class <Category2> ]
+      [ sh:class <Category3> ]
+    ) ;
+  .
