@@ -97,7 +97,7 @@ class TestCase {
         return this.getGraph(url)
       },
       constraintVocabularies: [dash],
-      constraintValidators,
+      constraintValidators: [constraintValidators],
     })
     const expectedReport = this.node.out(mf.result)
 
