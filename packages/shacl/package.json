@@ -7,7 +7,7 @@
   "scripts": {
     "test": "mocha",
     "benchmark-prepare": "test/data/benchmarks/prepare.sh",
-    "benchmark": "test/run-benchmark.js",
+    "benchmark": "test/run-benchmark.js > benchmark.json",
     "build": "tsc",
     "prepack": "npm run build"
   },
