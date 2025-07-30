@@ -6,8 +6,5 @@
     "declaration": true,
     "esModuleInterop": true,
     "noImplicitAny": true
-  },
-  "files": [
-    "index.ts"
-  ]
+  }
 }

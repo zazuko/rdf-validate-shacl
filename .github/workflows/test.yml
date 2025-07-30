@@ -31,4 +31,4 @@ jobs:
         with:
           node-version: 'lts/*'
       - run: npm ci
-      - run: npx tsc
+      - run: npm run build -ws

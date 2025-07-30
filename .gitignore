@@ -4,4 +4,5 @@ coverage
 benchmark.json
 *.d.ts
 *.js
-!test/*.js
+!packages/shacl/test/*.js
+!mocha-setup.js

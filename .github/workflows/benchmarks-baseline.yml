@@ -19,7 +19,9 @@ jobs:
           node-version: "lts/*"
       - run: npm ci
       - run: npm run build
+        working-directory: packages/shacl
       - name: Track base branch benchmarks with Bencher
+        working-directory: packages/shacl
         run: |
           bencher run \
           --project rdf-validate-shacl \
