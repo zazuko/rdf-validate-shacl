@@ -5,5 +5,5 @@ export const singleLine = {
   validate(context, focusNode, valueNode, constraint) {
     // check value contains no line breaks
     return !valueNode.value.includes('\n')
-  }
+  },
 }

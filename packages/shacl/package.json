@@ -27,6 +27,7 @@
     "@rdfjs/data-model": "^2.1.0",
     "@rdfjs/dataset": "^2.0.2",
     "@rdfjs/environment": "^1.0.0",
+    "@rdfjs/term-map": "^2.0.2",
     "@rdfjs/namespace": "^2.0.1",
     "@rdfjs/term-set": "^2.0.3",
     "@rdfjs/types": "1 - 2",
@@ -36,6 +37,17 @@
     "rdf-dataset-ext": "^1.1.0",
     "rdf-literal": "^2.0.0",
     "rdf-validate-datatype": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/rdfjs__term-map": "^2.0.10",
+    "@vocabulary/dash": "^1.0.5",
+    "@zazuko/env-node": "^3.0.0",
+    "@zazuko/shacl-test": "^0.1.1",
+    "bench-node": "^0.5.2",
+    "chai": "^5.2.0",
+    "n3": "^1.25.2",
+    "rdf-utils-dataset": "^2.0.0",
+    "sinon": "^20.0.0"
   },
   "files": [
     "src/*.js",

@@ -3,9 +3,9 @@ import path from 'path'
 import assert from 'assert'
 import url from 'url'
 import rdf from '@zazuko/env-node'
+import $rdf from '@zazuko/env-node'
 import SHACLValidator from '../index.js'
 import { loadDataset } from './utils.js'
-import $rdf from '@zazuko/env-node'
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 const rootPath = path.join(__dirname, '/data')

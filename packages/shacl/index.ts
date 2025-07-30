@@ -23,7 +23,7 @@ export interface Options {
   allowNamedNodeInList?: boolean
   importGraph?: (url: NamedNode) => Promise<DatasetCore> | DatasetCore
   constraintVocabularies?: Array<typeof sh>
-  constraintValidators?: Record<string, Validator>
+  constraintValidators?: Array<Record<string, Validator>>
 }
 
 /**
@@ -46,7 +46,7 @@ class SHACLValidator {
    * @param shapes - Dataset containing the SHACL shapes for validation
    * @param {object} [options] - Validator options
    */
-  constructor(shapes: DatasetCore, { constraintValidators = {}, ...options }: Options = {}) {
+  constructor(shapes: DatasetCore, { constraintValidators = [], ...options }: Options = {}) {
     options = options || {}
 
     this.factory = options.factory || factory
@@ -57,7 +57,7 @@ class SHACLValidator {
     this.$data = this.factory.clownface()
     this.validators = this.factory.termMap([
       ...Object.values(defaultValidators).map(toMapInit),
-      ...Object.values(constraintValidators).map(toMapInit),
+      ...constraintValidators.flatMap(obj => Object.values(obj)).map(toMapInit),
     ])
     this.shapesGraph = new ShapesGraph(this, {
       additionalVocabularies: options.constraintVocabularies,
