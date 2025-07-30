@@ -17,10 +17,8 @@ jobs:
         with:
           node-version: "lts/*"
       - run: npm ci
-      - run: npm run build
-        working-directory: packages/shacl
+      - run: npm run build -w rdf-validate-shacl
       - name: Track PR Benchmarks with Bencher
-        working-directory: packages/shacl
         run: |
           bencher run \
           --project rdf-validate-shacl \
@@ -36,4 +34,4 @@ jobs:
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
           --ci-only-thresholds \
           --file benchmark.json \
-          npm run benchmark
+          npm run benchmark -w rdf-validate-shacl
