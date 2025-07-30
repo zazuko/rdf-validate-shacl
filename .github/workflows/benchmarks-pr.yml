@@ -18,7 +18,9 @@ jobs:
           node-version: "lts/*"
       - run: npm ci
       - run: npm run build
+        working-directory: packages/shacl
       - name: Track PR Benchmarks with Bencher
+        working-directory: packages/shacl
         run: |
           bencher run \
           --project rdf-validate-shacl \

@@ -1,0 +1,487 @@
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/ns/shacl#targetClass> <https://cube.link/Cube> .
+_:b2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b3 .
+_:b3 <http://www.w3.org/ns/shacl#path> <http://schema.org/name> .
+_:b3 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b3 <http://www.w3.org/ns/shacl#datatype> <http://www.w3.org/2001/XMLSchema#string> .
+_:b3 <http://www.w3.org/ns/shacl#message> "cube:Cube needs a schema:name" .
+_:b2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b4 .
+_:b4 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b5 .
+_:b5 <http://www.w3.org/ns/shacl#path> <http://schema.org/name> .
+_:b5 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b5 <http://www.w3.org/ns/shacl#datatype> <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString> .
+_:b5 <http://www.w3.org/ns/shacl#message> "cube:Cube needs a schema:name" .
+_:b4 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/ns/shacl#or> _:b2 .
+_:b6 <http://www.w3.org/ns/shacl#severity> <http://www.w3.org/ns/shacl#Warning> .
+_:b6 <http://www.w3.org/ns/shacl#path> <http://schema.org/publisher> .
+_:b6 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b6 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRI> .
+_:b6 <http://www.w3.org/ns/shacl#message> "cube:Cube needs an schema:publisher" .
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/ns/shacl#property> _:b6 .
+_:b7 <http://www.w3.org/ns/shacl#severity> <http://www.w3.org/ns/shacl#Warning> .
+_:b7 <http://www.w3.org/ns/shacl#path> <http://schema.org/creator> .
+_:b7 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b7 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRI> .
+_:b7 <http://www.w3.org/ns/shacl#message> "cube:Cube needs an schema:creator" .
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/ns/shacl#property> _:b7 .
+_:b8 <http://www.w3.org/ns/shacl#path> <http://schema.org/contactPoint> .
+_:b8 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b9 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b10 .
+_:b10 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRI> .
+_:b9 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b11 .
+_:b11 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b12 .
+_:b12 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#BlankNode> .
+_:b13 <http://www.w3.org/ns/shacl#path> <http://schema.org/email> .
+_:b13 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b13 <http://www.w3.org/ns/shacl#datatype> <http://www.w3.org/2001/XMLSchema#string> .
+_:b13 <http://www.w3.org/ns/shacl#message> "Contact point needs an email" .
+_:b12 <http://www.w3.org/ns/shacl#property> _:b13 .
+_:b14 <http://www.w3.org/ns/shacl#path> <http://schema.org/name> .
+_:b14 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b14 <http://www.w3.org/ns/shacl#datatype> <http://www.w3.org/2001/XMLSchema#string> .
+_:b14 <http://www.w3.org/ns/shacl#message> "Contact point needs a name" .
+_:b12 <http://www.w3.org/ns/shacl#property> _:b14 .
+_:b11 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b8 <http://www.w3.org/ns/shacl#xone> _:b9 .
+_:b8 <http://www.w3.org/ns/shacl#message> "cube:Cube needs a schema:contactpoint" .
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/ns/shacl#property> _:b8 .
+_:b15 <http://www.w3.org/ns/shacl#severity> <http://www.w3.org/ns/shacl#Warning> .
+_:b15 <http://www.w3.org/ns/shacl#path> <http://schema.org/contributor> .
+_:b15 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b15 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRI> .
+_:b15 <http://www.w3.org/ns/shacl#message> "cube:Cube needs an schema:contributor" .
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/ns/shacl#property> _:b15 .
+_:b16 <http://www.w3.org/ns/shacl#path> <http://schema.org/dateCreated> .
+_:b16 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b16 <http://www.w3.org/ns/shacl#datatype> <http://www.w3.org/2001/XMLSchema#date> .
+_:b16 <http://www.w3.org/ns/shacl#message> "cube:Cube needs a valid schema:dateCreated" .
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/ns/shacl#property> _:b16 .
+_:b17 <http://www.w3.org/ns/shacl#path> <http://schema.org/datePublished> .
+_:b17 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b17 <http://www.w3.org/ns/shacl#datatype> <http://www.w3.org/2001/XMLSchema#date> .
+_:b17 <http://www.w3.org/ns/shacl#message> "cube:Cube needs a valid schema:datePublished" .
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/ns/shacl#property> _:b17 .
+_:b18 <http://www.w3.org/ns/shacl#path> <http://schema.org/dateModified> .
+_:b19 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b20 .
+_:b20 <http://www.w3.org/ns/shacl#datatype> <http://www.w3.org/2001/XMLSchema#date> .
+_:b19 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b21 .
+_:b21 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b22 .
+_:b22 <http://www.w3.org/ns/shacl#datatype> <http://www.w3.org/2001/XMLSchema#dateTime> .
+_:b21 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b18 <http://www.w3.org/ns/shacl#or> _:b19 .
+_:b18 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b18 <http://www.w3.org/ns/shacl#message> "cube:Cube needs a valid schema:dateModified" .
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/ns/shacl#property> _:b18 .
+_:b23 <http://www.w3.org/ns/shacl#severity> <http://www.w3.org/ns/shacl#Warning> .
+_:b23 <http://www.w3.org/ns/shacl#path> <https://cube.link/observationSet> .
+_:b23 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b23 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-cube-constraint#ObservationSetShape> .
+_:b23 <http://www.w3.org/ns/shacl#message> "cube:Cube needs an observationSet" .
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/ns/shacl#property> _:b23 .
+_:b24 <http://www.w3.org/ns/shacl#path> <https://cube.link/observationConstraint> .
+_:b24 <http://www.w3.org/ns/shacl#message> "cube:Cube must point to a valid constraint" .
+<https://cube.link/shape/standalone-cube-constraint#CubeShape> <http://www.w3.org/ns/shacl#property> _:b24 .
+<https://cube.link/shape/standalone-cube-constraint#ObservationSetShape> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+<https://cube.link/shape/standalone-cube-constraint#ObservationSetShape> <http://www.w3.org/ns/shacl#targetClass> <https://cube.link/ObservationSet> .
+_:b25 <http://www.w3.org/ns/shacl#severity> <http://www.w3.org/ns/shacl#Warning> .
+_:b25 <http://www.w3.org/ns/shacl#path> <https://cube.link/observation> .
+_:b25 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b25 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-cube-constraint#ObservationShape> .
+_:b25 <http://www.w3.org/ns/shacl#message> "cube:Cube needs at least one observation" .
+<https://cube.link/shape/standalone-cube-constraint#ObservationSetShape> <http://www.w3.org/ns/shacl#property> _:b25 .
+<https://cube.link/shape/standalone-cube-constraint#ObservationShape> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+<https://cube.link/shape/standalone-cube-constraint#ObservationShape> <http://www.w3.org/ns/shacl#targetClass> <https://cube.link/Observation> .
+_:b26 <http://www.w3.org/ns/shacl#path> <https://cube.link/observedBy> .
+_:b26 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b26 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRI> .
+_:b26 <http://www.w3.org/ns/shacl#message> "cube:Observation requires cube:observedBy" .
+<https://cube.link/shape/standalone-cube-constraint#ObservationShape> <http://www.w3.org/ns/shacl#property> _:b26 .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#targetClass> <https://cube.link/Constraint> .
+_:b27 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#property> .
+_:b27 <http://www.w3.org/ns/shacl#minCount> "3"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b27 <http://www.w3.org/ns/shacl#message> "cube:Constraint needs at least a certain amount of sh:properties" .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b27 .
+_:b28 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#property> .
+_:b28 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#PropertyPath> .
+_:b28 <http://www.w3.org/ns/shacl#message> "a sh:path is needed on a property" .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b28 .
+_:b29 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#property> .
+_:b29 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#PropertyWithName> .
+_:b29 <http://www.w3.org/ns/shacl#message> "needs a schema:name" .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b29 .
+_:b30 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#property> .
+_:b30 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#PropertyNameType> .
+_:b30 <http://www.w3.org/ns/shacl#message> "schema:name needs to be a xsd:string or a rdf:langString" .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b30 .
+_:b31 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#property> .
+_:b31 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#PropertyWithType> .
+_:b31 <http://www.w3.org/ns/shacl#message> "needs a sh:datatype, sh:nodeKind or sh:datatype within sh:or (...)" .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b31 .
+_:b32 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#property> .
+_:b32 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#PropertyScaleType> .
+_:b32 <http://www.w3.org/ns/shacl#message> "If qudt:scaleType is used it needs to be within ( qudt:IntervalScale qudt:NominalScale qudt:EnumerationScale qudt:RatioScale qudt:OrdinalScale )" .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b32 .
+_:b33 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#property> .
+_:b33 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#PropertyRange> .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b33 .
+_:b34 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#property> .
+_:b34 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#PropertyInList> .
+_:b34 <http://www.w3.org/ns/shacl#message> "sh:in needs to be a list" .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b34 .
+_:b35 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#property> .
+_:b35 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#DimensionRelation> .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b35 .
+_:b36 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#property> .
+_:b37 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b38 .
+_:b38 <http://www.w3.org/ns/shacl#path> <http://qudt.org/schema/qudt/unit> .
+_:b38 <http://www.w3.org/ns/shacl#equals> <http://qudt.org/schema/qudt/hasUnit> .
+_:b37 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b39 .
+_:b39 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b40 .
+_:b40 <http://www.w3.org/ns/shacl#path> <http://qudt.org/schema/qudt/unit> .
+_:b40 <http://www.w3.org/ns/shacl#maxCount> "0"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b39 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b36 <http://www.w3.org/ns/shacl#or> _:b37 .
+_:b36 <http://www.w3.org/ns/shacl#severity> <http://www.w3.org/ns/shacl#Warning> .
+_:b36 <http://www.w3.org/ns/shacl#message> "The use of qudt:unit is deprecated, please use qudt:hasUnit instead" .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b36 .
+_:b41 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#closed> .
+_:b41 <http://www.w3.org/ns/shacl#hasValue> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b41 .
+_:b42 <http://www.w3.org/ns/shacl#path> <https://cube.link/meta/inHierarchy> .
+_:b42 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#Hierarchy> .
+_:b42 <http://www.w3.org/ns/shacl#message> "meta:inHierarchy does not validate" .
+<https://cube.link/shape/standalone-constraint-constraint#ObservationConstraintShape> <http://www.w3.org/ns/shacl#property> _:b42 .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyPath> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+_:b43 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#path> .
+_:b43 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b43 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyPath> <http://www.w3.org/ns/shacl#property> _:b43 .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyWithName> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+_:b44 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b45 .
+_:b45 <http://www.w3.org/ns/shacl#path> <http://schema.org/name> .
+_:b45 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b44 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b46 .
+_:b46 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b47 .
+_:b47 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#path> .
+_:b48 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> .
+_:b48 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b49 .
+_:b49 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <https://cube.link/observedBy> .
+_:b49 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b47 <http://www.w3.org/ns/shacl#in> _:b48 .
+_:b46 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyWithName> <http://www.w3.org/ns/shacl#or> _:b44 .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyNameType> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+_:b50 <http://www.w3.org/ns/shacl#path> <http://schema.org/name> .
+_:b51 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b52 .
+_:b52 <http://www.w3.org/ns/shacl#datatype> <http://www.w3.org/2001/XMLSchema#string> .
+_:b51 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b53 .
+_:b53 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b54 .
+_:b54 <http://www.w3.org/ns/shacl#datatype> <http://www.w3.org/1999/02/22-rdf-syntax-ns#langString> .
+_:b53 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b50 <http://www.w3.org/ns/shacl#xone> _:b51 .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyNameType> <http://www.w3.org/ns/shacl#property> _:b50 .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyWithType> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+_:b55 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b56 .
+_:b56 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#datatype> .
+_:b56 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b55 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b57 .
+_:b57 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b58 .
+_:b58 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#nodeKind> .
+_:b58 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b57 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b59 .
+_:b59 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b60 .
+_:b60 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#or> .
+_:b60 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b60 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#listnode> .
+_:b62 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b63 .
+_:b63 <http://www.w3.org/ns/shacl#zeroOrMorePath> <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> .
+_:b62 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b64 .
+_:b64 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> .
+_:b64 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b61 <http://www.w3.org/ns/shacl#path> _:b62 .
+_:b65 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#datatype> .
+_:b65 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b61 <http://www.w3.org/ns/shacl#property> _:b65 .
+_:b60 <http://www.w3.org/ns/shacl#property> _:b61 .
+_:b59 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyWithType> <http://www.w3.org/ns/shacl#or> _:b55 .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyInList> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+_:b66 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#in> .
+_:b66 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#listnode> .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyInList> <http://www.w3.org/ns/shacl#property> _:b66 .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyScaleType> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+_:b67 <http://www.w3.org/ns/shacl#path> <http://qudt.org/schema/qudt/scaleType> .
+_:b68 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://qudt.org/schema/qudt/IntervalScale> .
+_:b68 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b69 .
+_:b69 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://qudt.org/schema/qudt/NominalScale> .
+_:b69 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b70 .
+_:b70 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://qudt.org/schema/qudt/EnumerationScale> .
+_:b70 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b71 .
+_:b71 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://qudt.org/schema/qudt/RatioScale> .
+_:b71 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b72 .
+_:b72 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://qudt.org/schema/qudt/OrdinalScale> .
+_:b72 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b67 <http://www.w3.org/ns/shacl#in> _:b68 .
+_:b67 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyScaleType> <http://www.w3.org/ns/shacl#property> _:b67 .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyRange> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+_:b73 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#minInclusive> .
+_:b73 <http://www.w3.org/ns/shacl#nodeType> <http://www.w3.org/ns/shacl#Literal> .
+_:b73 <http://www.w3.org/ns/shacl#message> "sh:minInclusive needs to be a literal" .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyRange> <http://www.w3.org/ns/shacl#property> _:b73 .
+_:b74 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#maxInclusive> .
+_:b74 <http://www.w3.org/ns/shacl#nodeType> <http://www.w3.org/ns/shacl#Literal> .
+_:b74 <http://www.w3.org/ns/shacl#message> "sh:maxInclusive needs to be a literal" .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyRange> <http://www.w3.org/ns/shacl#property> _:b74 .
+_:b75 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#minCount> .
+_:b75 <http://www.w3.org/ns/shacl#hasValue> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b75 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b75 <http://www.w3.org/ns/shacl#message> "sh:minCount needs to be 1" .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyRange> <http://www.w3.org/ns/shacl#property> _:b75 .
+_:b76 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#maxCount> .
+_:b76 <http://www.w3.org/ns/shacl#hasValue> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b76 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b76 <http://www.w3.org/ns/shacl#message> "sh:maxCount needs to be 1" .
+<https://cube.link/shape/standalone-constraint-constraint#PropertyRange> <http://www.w3.org/ns/shacl#property> _:b76 .
+<https://cube.link/shape/standalone-constraint-constraint#DimensionRelation> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+_:b77 <http://www.w3.org/ns/shacl#path> <https://cube.link/meta/dimensionRelation> .
+_:b78 <http://www.w3.org/ns/shacl#path> <https://cube.link/meta/relatesTo> .
+_:b78 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRI> .
+_:b78 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b78 <http://www.w3.org/ns/shacl#message> "meta:dimensionRelation requires at least one meta:relatesTo" .
+_:b77 <http://www.w3.org/ns/shacl#property> _:b78 .
+_:b80 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <https://cube.link/meta/relatesTo> .
+_:b80 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b81 .
+_:b81 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b82 .
+_:b82 <http://www.w3.org/ns/shacl#inversePath> <http://www.w3.org/ns/shacl#path> .
+_:b81 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b83 .
+_:b83 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b84 .
+_:b84 <http://www.w3.org/ns/shacl#inversePath> <http://www.w3.org/ns/shacl#property> .
+_:b83 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b79 <http://www.w3.org/ns/shacl#path> _:b80 .
+_:b79 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b79 <http://www.w3.org/ns/shacl#class> <https://cube.link/Constraint> .
+_:b79 <http://www.w3.org/ns/shacl#message> "value of meta:relatesTo must be a cube dimension" .
+_:b77 <http://www.w3.org/ns/shacl#property> _:b79 .
+_:b86 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <https://cube.link/meta/relatesTo> .
+_:b86 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b87 .
+_:b87 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b88 .
+_:b88 <http://www.w3.org/ns/shacl#inversePath> <http://www.w3.org/ns/shacl#path> .
+_:b87 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b85 <http://www.w3.org/ns/shacl#path> _:b86 .
+_:b85 <http://www.w3.org/ns/shacl#class> <https://cube.link/MeasureDimension> .
+_:b85 <http://www.w3.org/ns/shacl#message> "value of meta:relatesTo must point to measure dimension " .
+_:b77 <http://www.w3.org/ns/shacl#property> _:b85 .
+<https://cube.link/shape/standalone-constraint-constraint#DimensionRelation> <http://www.w3.org/ns/shacl#property> _:b77 .
+<https://cube.link/shape/standalone-constraint-constraint#Annotation> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+<https://cube.link/shape/standalone-constraint-constraint#Annotation> <http://www.w3.org/ns/shacl#targetObjectsOf> <https://cube.link/meta/annotation> .
+_:b89 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> .
+_:b89 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b89 <http://www.w3.org/ns/shacl#message> "annotation needs an rdf:type" .
+<https://cube.link/shape/standalone-constraint-constraint#Annotation> <http://www.w3.org/ns/shacl#property> _:b89 .
+_:b90 <http://www.w3.org/ns/shacl#path> <https://cube.link/meta/annotationContext> .
+_:b90 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#BlankNode> .
+<https://cube.link/shape/standalone-constraint-constraint#Annotation> <http://www.w3.org/ns/shacl#property> _:b90 .
+_:b92 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b93 .
+_:b93 <http://www.w3.org/ns/shacl#inversePath> <https://cube.link/meta/annotation> .
+_:b92 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b91 <http://www.w3.org/ns/shacl#path> _:b92 .
+_:b91 <http://www.w3.org/ns/shacl#class> <https://cube.link/MeasureDimension> .
+_:b91 <http://www.w3.org/ns/shacl#message> "annotated dimension must be a cube:MeasureDimension" .
+<https://cube.link/shape/standalone-constraint-constraint#Annotation> <http://www.w3.org/ns/shacl#property> _:b91 .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationValue> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationValue> <http://www.w3.org/ns/shacl#targetObjectsOf> <https://cube.link/meta/annotation> .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationValue> <http://www.w3.org/ns/shacl#message> "annotation must have at most one min value and one max value" .
+_:b96 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://schema.org/minValue> .
+_:b96 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b97 .
+_:b97 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://schema.org/maxValue> .
+_:b97 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b95 <http://www.w3.org/ns/shacl#alternativePath> _:b96 .
+_:b94 <http://www.w3.org/ns/shacl#path> _:b95 .
+_:b94 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationValue> <http://www.w3.org/ns/shacl#property> _:b94 .
+_:b98 <http://www.w3.org/ns/shacl#path> <http://schema.org/minValue> .
+_:b98 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationValue> <http://www.w3.org/ns/shacl#property> _:b98 .
+_:b99 <http://www.w3.org/ns/shacl#path> <http://schema.org/maxValue> .
+_:b99 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationValue> <http://www.w3.org/ns/shacl#property> _:b99 .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationContextDimensionType> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationContextDimensionType> <http://www.w3.org/ns/shacl#targetObjectsOf> <https://cube.link/meta/annotationContext> .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationContextDimensionType> <http://www.w3.org/ns/shacl#message> "annotation context must have exactly one sh:path which is cube's key dimension" .
+_:b102 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b103 .
+_:b103 <http://www.w3.org/ns/shacl#inversePath> <https://cube.link/meta/annotationContext> .
+_:b102 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b104 .
+_:b104 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b105 .
+_:b105 <http://www.w3.org/ns/shacl#inversePath> <https://cube.link/meta/annotation> .
+_:b104 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b106 .
+_:b106 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b107 .
+_:b107 <http://www.w3.org/ns/shacl#inversePath> <http://www.w3.org/ns/shacl#property> .
+_:b106 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b108 .
+_:b108 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/ns/shacl#property> .
+_:b108 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b109 .
+_:b109 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/ns/shacl#path> .
+_:b109 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b101 <http://www.w3.org/ns/shacl#path> _:b102 .
+_:b101 <http://www.w3.org/ns/shacl#disjoint> <http://www.w3.org/ns/shacl#path> .
+_:b100 <http://www.w3.org/ns/shacl#property> _:b101 .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationContextDimensionType> <http://www.w3.org/ns/shacl#not> _:b100 .
+_:b110 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#path> .
+_:b110 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b110 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b110 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRI> .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationContextDimensionType> <http://www.w3.org/ns/shacl#property> _:b110 .
+_:b112 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/ns/shacl#path> .
+_:b112 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b113 .
+_:b113 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b114 .
+_:b114 <http://www.w3.org/ns/shacl#inversePath> <http://www.w3.org/ns/shacl#path> .
+_:b113 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b111 <http://www.w3.org/ns/shacl#path> _:b112 .
+_:b115 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b116 .
+_:b116 <http://www.w3.org/ns/shacl#class> <https://cube.link/KeyDimension> .
+_:b115 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b117 .
+_:b117 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b118 .
+_:b120 <http://www.w3.org/ns/shacl#inversePath> <https://cube.link/meta/annotationContext> .
+_:b119 <http://www.w3.org/ns/shacl#path> _:b120 .
+_:b119 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b118 <http://www.w3.org/ns/shacl#property> _:b119 .
+_:b117 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b111 <http://www.w3.org/ns/shacl#xone> _:b115 .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationContextDimensionType> <http://www.w3.org/ns/shacl#property> _:b111 .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationContext> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationContext> <http://www.w3.org/ns/shacl#targetObjectsOf> <https://cube.link/meta/annotationContext> .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationContext> <http://www.w3.org/ns/shacl#message> "annotation context only allows constraints sh:hasValue, sh:in, sh:minInclusive, sh:maxInclusive, sh:minExclusive, sh:maxExclusive and they cannot be mixed" .
+_:b121 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b122 .
+_:b123 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#hasValue> .
+_:b123 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b123 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b123 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRIOrLiteral> .
+_:b122 <http://www.w3.org/ns/shacl#property> _:b123 .
+_:b121 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b124 .
+_:b124 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b125 .
+_:b126 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#in> .
+_:b126 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b126 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b126 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#listnode> .
+_:b126 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#BlankNode> .
+_:b125 <http://www.w3.org/ns/shacl#property> _:b126 .
+_:b124 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b127 .
+_:b127 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b128 .
+_:b131 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/ns/shacl#maxInclusive> .
+_:b131 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b132 .
+_:b132 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/ns/shacl#maxExclusive> .
+_:b132 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b133 .
+_:b133 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/ns/shacl#minInclusive> .
+_:b133 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b134 .
+_:b134 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/ns/shacl#minExclusive> .
+_:b134 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b130 <http://www.w3.org/ns/shacl#alternativePath> _:b131 .
+_:b129 <http://www.w3.org/ns/shacl#path> _:b130 .
+_:b129 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b129 <http://www.w3.org/ns/shacl#maxCount> "2"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b128 <http://www.w3.org/ns/shacl#property> _:b129 .
+_:b137 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/ns/shacl#maxInclusive> .
+_:b137 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b138 .
+_:b138 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/ns/shacl#maxExclusive> .
+_:b138 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b136 <http://www.w3.org/ns/shacl#alternativePath> _:b137 .
+_:b135 <http://www.w3.org/ns/shacl#path> _:b136 .
+_:b135 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b128 <http://www.w3.org/ns/shacl#property> _:b135 .
+_:b141 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/ns/shacl#minInclusive> .
+_:b141 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b142 .
+_:b142 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/ns/shacl#minExclusive> .
+_:b142 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b140 <http://www.w3.org/ns/shacl#alternativePath> _:b141 .
+_:b139 <http://www.w3.org/ns/shacl#path> _:b140 .
+_:b139 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b128 <http://www.w3.org/ns/shacl#property> _:b139 .
+_:b127 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+<https://cube.link/shape/standalone-constraint-constraint#AnnotationContext> <http://www.w3.org/ns/shacl#xone> _:b121 .
+<https://cube.link/shape/standalone-constraint-constraint#Confidence> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+<https://cube.link/shape/standalone-constraint-constraint#Confidence> <http://www.w3.org/ns/shacl#targetClass> <https://cube.link/relation/ConfidenceLowerBound> .
+<https://cube.link/shape/standalone-constraint-constraint#Confidence> <http://www.w3.org/ns/shacl#targetClass> <https://cube.link/relation/ConfidenceUpperBound> .
+_:b143 <http://www.w3.org/ns/shacl#path> <http://purl.org/dc/terms/type> .
+_:b143 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<https://cube.link/shape/standalone-constraint-constraint#Confidence> <http://www.w3.org/ns/shacl#property> _:b143 .
+<https://cube.link/shape/standalone-constraint-constraint#restvalue> <http://www.w3.org/ns/shacl#targetObjectsOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> .
+<https://cube.link/shape/standalone-constraint-constraint#restvalue> <http://www.w3.org/ns/shacl#message> "rdf:rest value must be a list node or rdf:nil" .
+_:b144 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b145 .
+_:b145 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#listnode> .
+_:b144 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b146 .
+_:b146 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b147 .
+_:b147 <http://www.w3.org/ns/shacl#hasValue> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+_:b146 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+<https://cube.link/shape/standalone-constraint-constraint#restvalue> <http://www.w3.org/ns/shacl#xone> _:b144 .
+<https://cube.link/shape/standalone-constraint-constraint#listnode> <http://www.w3.org/ns/shacl#targetSubjectsOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> .
+<https://cube.link/shape/standalone-constraint-constraint#listnode> <http://www.w3.org/ns/shacl#targetSubjectsOf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> .
+_:b148 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> .
+_:b148 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b148 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b148 <http://www.w3.org/ns/shacl#message> "list node needs exactly one rdf:first" .
+<https://cube.link/shape/standalone-constraint-constraint#listnode> <http://www.w3.org/ns/shacl#property> _:b148 .
+_:b149 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> .
+_:b149 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b149 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b149 <http://www.w3.org/ns/shacl#message> "list node needs exactly one rdf:rest" .
+<https://cube.link/shape/standalone-constraint-constraint#listnode> <http://www.w3.org/ns/shacl#property> _:b149 .
+<https://cube.link/shape/standalone-constraint-constraint#listnode> <http://www.w3.org/ns/shacl#closed> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+_:b150 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> .
+_:b150 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+<https://cube.link/shape/standalone-constraint-constraint#listnode> <http://www.w3.org/ns/shacl#ignoredProperties> _:b150 .
+<https://cube.link/shape/standalone-constraint-constraint#inversepathnode> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+_:b151 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#inversePath> .
+_:b151 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRI> .
+_:b151 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b151 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b151 <http://www.w3.org/ns/shacl#message> "nextInHierarchy requires sh:path to be IRI or [ sh:inversePath ... ]" .
+<https://cube.link/shape/standalone-constraint-constraint#inversepathnode> <http://www.w3.org/ns/shacl#property> _:b151 .
+<https://cube.link/shape/standalone-constraint-constraint#NextInHierarchy> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+_:b152 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#path> .
+_:b152 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b152 <http://www.w3.org/ns/shacl#maxCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b152 <http://www.w3.org/ns/shacl#message> "nextInHierarchy requires exactly one sh:path" .
+<https://cube.link/shape/standalone-constraint-constraint#NextInHierarchy> <http://www.w3.org/ns/shacl#property> _:b152 .
+_:b153 <http://www.w3.org/ns/shacl#path> <http://schema.org/name> .
+_:b153 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b153 <http://www.w3.org/ns/shacl#message> "nextInHierarchy requires schema:name" .
+<https://cube.link/shape/standalone-constraint-constraint#NextInHierarchy> <http://www.w3.org/ns/shacl#property> _:b153 .
+_:b154 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#targetClass> .
+_:b154 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRI> .
+_:b154 <http://www.w3.org/ns/shacl#message> "meta:nextInHierarchy/sh:targetClass must be an IRI" .
+<https://cube.link/shape/standalone-constraint-constraint#NextInHierarchy> <http://www.w3.org/ns/shacl#property> _:b154 .
+_:b155 <http://www.w3.org/ns/shacl#path> <https://cube.link/meta/nextInHierarchy> .
+_:b155 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#NextInHierarchy> .
+_:b155 <http://www.w3.org/ns/shacl#severity> <http://www.w3.org/ns/shacl#Info> .
+_:b155 <http://www.w3.org/ns/shacl#message> "nextInHierarchy can have nested nodes" .
+<https://cube.link/shape/standalone-constraint-constraint#NextInHierarchy> <http://www.w3.org/ns/shacl#property> _:b155 .
+_:b156 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b157 .
+_:b157 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#path> .
+_:b157 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRI> .
+_:b157 <http://www.w3.org/ns/shacl#message> "nextInHierarchy requires sh:path to be IRI or [ sh:inversePath ... ]" .
+_:b156 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:b158 .
+_:b158 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> _:b159 .
+_:b159 <http://www.w3.org/ns/shacl#path> <http://www.w3.org/ns/shacl#path> .
+_:b159 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#BlankNode> .
+_:b159 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#inversepathnode> .
+_:b159 <http://www.w3.org/ns/shacl#message> "nextInHierarchy requires sh:path to be IRI or [ sh:inversePath ... ]" .
+_:b158 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+<https://cube.link/shape/standalone-constraint-constraint#NextInHierarchy> <http://www.w3.org/ns/shacl#xone> _:b156 .
+<https://cube.link/shape/standalone-constraint-constraint#Hierarchy> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/shacl#NodeShape> .
+<https://cube.link/shape/standalone-constraint-constraint#Hierarchy> <http://www.w3.org/ns/shacl#targetClass> <https://cube.link/meta/Hierarchy> .
+_:b160 <http://www.w3.org/ns/shacl#path> <https://cube.link/meta/hierarchyRoot> .
+_:b160 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b160 <http://www.w3.org/ns/shacl#nodeKind> <http://www.w3.org/ns/shacl#IRI> .
+_:b160 <http://www.w3.org/ns/shacl#message> "inHierarchy requires hierarchyRoot" .
+<https://cube.link/shape/standalone-constraint-constraint#Hierarchy> <http://www.w3.org/ns/shacl#property> _:b160 .
+_:b161 <http://www.w3.org/ns/shacl#path> <http://schema.org/name> .
+_:b161 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b161 <http://www.w3.org/ns/shacl#message> "inHierarchy requires schema:name" .
+<https://cube.link/shape/standalone-constraint-constraint#Hierarchy> <http://www.w3.org/ns/shacl#property> _:b161 .
+_:b162 <http://www.w3.org/ns/shacl#path> <https://cube.link/meta/nextInHierarchy> .
+_:b162 <http://www.w3.org/ns/shacl#node> <https://cube.link/shape/standalone-constraint-constraint#NextInHierarchy> .
+_:b162 <http://www.w3.org/ns/shacl#minCount> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:b162 <http://www.w3.org/ns/shacl#message> "inHierarchy requires a conform nextInHierarchy" .
+<https://cube.link/shape/standalone-constraint-constraint#Hierarchy> <http://www.w3.org/ns/shacl#property> _:b162 .
