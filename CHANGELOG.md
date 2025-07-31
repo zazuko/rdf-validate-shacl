@@ -1,5 +1,11 @@
 ## 0.4.4
 
+## 0.6.6
+
+### Patch Changes
+
+- ddb4ee2: Extend options to enable providing custom constraints and validators
+
 ## 0.6.5
 
 ### Patch Changes
