@@ -102,4 +102,17 @@ describe('validation messages', () => {
     assert.strictEqual(report.results[0].message.length, 1)
     assert.strictEqual(report.results[0].message[0].value, 'Value is not one of the allowed values: a, b, c ... (and 2 more)')
   })
+
+  it('Lists conforming shapes in message for xone', async () => {
+    const dataPath = path.join(rootPath, 'message-for-xone.ttl')
+    const data = await loadDataset(dataPath)
+    const shapes = data
+
+    const validator = new SHACLValidator(shapes)
+    const report = await validator.validate(data)
+
+    assert.strictEqual(report.results.length, 1)
+    assert.strictEqual(report.results[0].message.length, 1)
+    assert.strictEqual(report.results[0].message[0].value, 'multiple matches, at positions 1, 3')
+  })
 })

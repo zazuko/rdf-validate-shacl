@@ -51,6 +51,28 @@ async function main() {
 main();
 ```
 
+### Usage in the browser
+
+While the validator itself does not use RDF/JS Streams, in most scenarios it will be necessary
+to load the data and shapes graphs. In that case, use the environment exported by `@zazuko/env`.
+
+```js
+import rdf from '@zazuko/env'
+
+const validator = new SHACLValidator(shapes, { factory: rdf })
+```
+
+Note that this will require a bundler that supports polyfilling Node.js core modules, notably, `stream`.
+
+If you already have the data and shapes as `DatasetCore` instances,
+such as by parsing JSON-LD with [jsonld](https://www.npmjs.com/package/jsonld) or generating triples programmatically, you can use the lighter export, which does not require node-specific modules.
+
+```js
+import rdf from '@zazuko/env/web.js'
+
+const validator = new SHACLValidator(shapes, { factory: rdf })
+```
+
 ### Validator options
 
 The `SHACLValidator` constructor accepts an optional options object as second
@@ -67,7 +89,7 @@ parameter. The available options are:
 
 ### Custom constraints
 
-You can add custom constraints to the validator by providing a `constraintValidators` and `constraintVocabularies`. 
+You can add custom constraints to the validator by providing a `constraintValidators` and `constraintVocabularies`.
 The latter can be skipped if you only intend to override existing constraints.
 
 In a module with validators, export objects which implement the `Validator` interface.
@@ -84,7 +106,7 @@ export const singleLine: Validator = {
 }
 ```
 
-Then, you can import the validators and pass them to the `SHACLValidator` constructor. 
+Then, you can import the validators and pass them to the `SHACLValidator` constructor.
 To use DASH, import the module `@vocabulary/dash`.
 
 ```ts
