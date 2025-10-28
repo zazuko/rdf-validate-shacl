@@ -1,7 +1,7 @@
 import path from 'node:path'
 import assert from 'node:assert'
 import type { GraphPointer, MultiPointer } from 'clownface'
-import resource from 'rdf-utils-dataset/resource'
+import resource from 'rdf-utils-dataset/resource.js'
 import $rdf from '@zazuko/env-node'
 import type vocabFactory from '@vocabulary/sh'
 import type { NamedNode, Term } from '@rdfjs/types'
