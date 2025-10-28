@@ -11,6 +11,26 @@
     "build": "tsc",
     "prepack": "npm run build"
   },
+  "author": "Zazuko (https://zazuko.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zazuko/rdf-validate-shacl.git",
+    "directory": "packages/dash"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "validators.js",
+    "validators.d.ts",
+    "CHANGELOG.md"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "rdf",
+    "shacl",
+    "dash",
+    "validation"
+  ],
   "dependencies": {
     "@vocabulary/dash": "^1.0.5",
     "@tpluscode/rdf-ns-builders": "^5.0.0"
