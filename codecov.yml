@@ -1,0 +1,5 @@
+ignore:
+  - mocha_setup.js
+  - packages/test-harness
+  - "**/*.test.ts"
+  - "**/*.test.js"
