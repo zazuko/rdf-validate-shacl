@@ -17,8 +17,7 @@ jobs:
         with:
           node-version: "lts/*"
       - run: npm ci
-      - run: npm run build
-        working-directory: packages/shacl
+      - run: npm run build -ws
       - name: Track PR Benchmarks with Bencher
         working-directory: packages/shacl
         run: |
