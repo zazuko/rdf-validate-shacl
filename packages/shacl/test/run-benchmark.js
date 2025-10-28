@@ -2,8 +2,8 @@
 import url from 'node:url'
 import { Suite } from 'bench-node'
 import rdf from '@zazuko/env-node'
+import { walkManifests } from 'rdf-validate-shacl-test-harness'
 import SHACLValidator from '../index.js'
-import { walkManifests } from './manifests.js'
 
 function reporter(results) {
   const report = {}
