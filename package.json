@@ -11,7 +11,7 @@
     "packages/*"
   ],
   "dependencies": {
-    "@changesets/cli": "^2.22.0",
+    "@changesets/cli": "^2.29.7",
     "@rdfjs/parser-n3": "^2.0.2",
     "@tpluscode/eslint-config": "^0.5",
     "@types/chai": "^5.2.1",
