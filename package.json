@@ -1,44 +1,16 @@
 {
-  "name": "rdf-validate-shacl",
-  "version": "0.6.5",
-  "description": "RDF SHACL validator",
-  "main": "index.js",
+  "name": "rdf-validate",
+  "private": true,
   "type": "module",
   "scripts": {
-    "lint": "eslint . --ignore-path .gitignore",
-    "test": "mocha",
-    "benchmark-prepare": "test/data/benchmarks/prepare.sh",
-    "benchmark": "test/run-benchmark.js > benchmark.json",
-    "build": "tsc",
-    "prepack": "npm run build",
+    "lint": "eslint . --ignore-path .gitignore --quiet",
+    "test": "npm test --workspaces --if-present",
     "release": "changeset publish"
   },
-  "author": "Zazuko (https://zazuko.com)",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zazuko/rdf-validate-shacl.git"
-  },
-  "license": "MIT",
-  "keywords": [
-    "rdf",
-    "shacl",
-    "validation"
+  "workspaces": [
+    "packages/*"
   ],
   "dependencies": {
-    "@rdfjs/data-model": "^2.1.0",
-    "@rdfjs/dataset": "^2.0.2",
-    "@rdfjs/environment": "^1.0.0",
-    "@rdfjs/namespace": "^2.0.1",
-    "@rdfjs/term-set": "^2.0.3",
-    "@rdfjs/types": "1 - 2",
-    "@vocabulary/sh": "^1.1.6",
-    "clownface": "^2.0.3",
-    "debug": "^4.3.2",
-    "rdf-dataset-ext": "^1.1.0",
-    "rdf-literal": "^2.0.0",
-    "rdf-validate-datatype": "^0.2.2"
-  },
-  "devDependencies": {
     "@changesets/cli": "^2.22.0",
     "@rdfjs/parser-n3": "^2.0.2",
     "@tpluscode/eslint-config": "^0.5",
@@ -46,6 +18,7 @@
     "@types/chai-as-promised": "^8.0.2",
     "@types/clownface": "^2.0.10",
     "@types/debug": "^4.1.12",
+    "@types/mocha": "^10.0.10",
     "@types/n3": "^1.24.2",
     "@types/node": "^20.10.6",
     "@types/rdfjs__environment": "^1.0.0",
@@ -53,10 +26,6 @@
     "@types/sinon-chai": "^4.0.0",
     "@typescript-eslint/eslint-plugin": "^7",
     "@typescript-eslint/parser": "^7",
-    "@vocabulary/dash": "^1.0.5",
-    "@zazuko/env-node": "^3",
-    "@zazuko/shacl-test": "^0.1.1",
-    "bench-node": "^0.5.2",
     "c8": "^8.0.1",
     "chai": "^5.2.0",
     "chai-as-promised": "^8.0.1",
@@ -66,26 +35,9 @@
     "mocha": "^11.2.2",
     "mocha-chai-rdf": "^0.1.8",
     "nanoid": "^5.1.5",
-    "n3": "^1.25.2",
     "rdf-ext": "^2.5.2",
-    "rdf-utils-dataset": "^2.0.0",
-    "sinon": "^20.0.0",
     "sinon-chai": "^4.0.0",
     "tsx": "^4.19.3",
     "typescript": "^5.3.3"
-  },
-  "files": [
-    "src/*.js",
-    "src/*.d.ts",
-    "index.js",
-    "index.d.ts",
-    "CHANGELOG.md"
-  ],
-  "mocha": {
-    "require": [
-      "tsx",
-      "test/mocha-setup.js"
-    ],
-    "ignore": "test/run-benchmark.js"
   }
 }

@@ -1,0 +1,16 @@
+{
+  "name": "rdf-validate-shacl-test-harness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@zazuko/env-node": "^3.0.0",
+    "n3": "^1.25.2",
+    "rdf-utils-dataset": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/rdf-utils-dataset": "^2.0.4"
+  }
+}

@@ -6,11 +6,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node:
-          - "18"
-          - "20"
-          - "22"
+          - "latest"
+          - "lts/*"
+          - "lts/-1"
     name: Node ${{ matrix.node }}
     steps:
       - uses: actions/checkout@v4
@@ -18,7 +19,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: npm ci
-      - run: npx c8 --reporter lcovonly npm test
+      - run: npx c8 --all --reporter lcovonly npm test
       - uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -31,4 +32,4 @@ jobs:
         with:
           node-version: 'lts/*'
       - run: npm ci
-      - run: npx tsc
+      - run: npm run build -ws --if-present

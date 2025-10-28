@@ -1,0 +1,63 @@
+@prefix ex: <http://example.org#> .
+@prefix mf: <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix sht: <http://www.w3.org/ns/shacl-test#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<>
+  rdf:type mf:Manifest ;
+  mf:entries (
+      <multiLevelInheritance>
+    ) ;
+.
+
+<multiLevelInheritance>
+  rdf:type sht:Validate ;
+  rdfs:label "Test of multi level subclasses in shapes" ;
+  mf:action [
+      sht:dataGraph <> ;
+      sht:shapesGraph <> ;
+    ] ;
+  mf:result [
+      rdf:type sh:ValidationReport ;
+      sh:conforms "false"^^xsd:boolean ;
+      sh:result [
+        a sh:ValidationResult ;
+        sh:resultSeverity sh:Violation ;
+        sh:sourceConstraintComponent sh:MinCountConstraintComponent ;
+        sh:sourceShape ex:prop ;
+        sh:focusNode ex:invalidBottomInstance ;
+        sh:resultPath ex:name ;
+      ] ;
+  ] ;
+.
+
+ex:TopShape
+    a sh:NodeShape ;
+    sh:targetClass ex:TopClass ;
+    sh:property ex:prop ;
+.
+
+ex:TopClass
+    a rdfs:Class ;
+.
+
+ex:MidClass
+    a rdfs:Class ;
+    rdfs:subClassOf ex:TopClass ;
+.
+
+ex:BottomClass
+    a rdfs:Class ;
+    rdfs:subClassOf ex:MidClass ;
+.
+
+ex:prop sh:path ex:name ;
+  sh:minCount 1 ;
+.
+
+ex:invalidBottomInstance
+  a ex:BottomClass ;
+.

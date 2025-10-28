@@ -1,0 +1,62 @@
+{
+  "name": "rdf-validate-shacl",
+  "version": "0.6.5",
+  "description": "RDF SHACL validator",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "mocha",
+    "benchmark-prepare": "test/data/benchmarks/prepare.sh",
+    "benchmark": "test/run-benchmark.js > benchmark.json",
+    "build": "tsc",
+    "prepack": "npm run build"
+  },
+  "author": "Zazuko (https://zazuko.com)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zazuko/rdf-validate-shacl.git",
+    "directory": "packages/shacl"
+  },
+  "license": "MIT",
+  "keywords": [
+    "rdf",
+    "shacl",
+    "validation"
+  ],
+  "dependencies": {
+    "@rdfjs/data-model": "^2.1.0",
+    "@rdfjs/dataset": "^2.0.2",
+    "@rdfjs/environment": "^1.0.0",
+    "@rdfjs/term-map": "^2.0.2",
+    "@rdfjs/namespace": "^2.0.1",
+    "@rdfjs/term-set": "^2.0.3",
+    "@rdfjs/types": "1 - 2",
+    "@vocabulary/sh": "^1.1.6",
+    "clownface": "^2.0.3",
+    "debug": "^4.3.2",
+    "rdf-dataset-ext": "^1.1.0",
+    "rdf-literal": "^2.0.0",
+    "rdf-validate-datatype": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/rdfjs__term-map": "^2.0.10",
+    "@vocabulary/dash": "^1.0.5",
+    "@zazuko/env-node": "^3.0.0",
+    "@zazuko/shacl-test": "^0.1.1",
+    "bench-node": "^0.5.2",
+    "chai": "^5.2.0",
+    "sinon": "^20.0.0",
+    "rdf-validate-shacl-test-harness": "*"
+  },
+  "files": [
+    "src/*.js",
+    "src/*.d.ts",
+    "index.js",
+    "index.d.ts",
+    "CHANGELOG.md"
+  ],
+  "mocha": {
+    "extends": "../../package.json",
+    "ignore": "test/run-benchmark.js"
+  }
+}
