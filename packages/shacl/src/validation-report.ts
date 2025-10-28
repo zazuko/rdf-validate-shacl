@@ -4,22 +4,23 @@ import type { Environment } from './defaultEnv.js'
 import factory from './defaultEnv.js'
 import type { Namespaces } from './namespaces.js'
 import { prepareNamespaces } from './namespaces.js'
+import type { ExtractDataset } from './dataset-utils.js'
 
 /**
  * Result of a SHACL validation.
  */
-export class ValidationReport {
-  declare factory: Environment
+export class ValidationReport<E extends Environment> {
+  declare factory: E
   declare ns: Namespaces
   declare pointer: GraphPointer
   declare term: Term
-  declare dataset: DatasetCore
+  declare dataset: ExtractDataset<E>
   declare conforms: boolean
   // eslint-disable-next-line no-use-before-define
-  declare results: ValidationResult[]
+  declare results: ValidationResult<ExtractDataset<E>>[]
 
-  constructor(pointer: GraphPointer, options: { factory?: Environment; ns?: Namespaces } = {}) {
-    this.factory = options.factory || factory
+  constructor(pointer: GraphPointer<Term, ExtractDataset<E>>, options: { factory?: E; ns?: Namespaces } = {}) {
+    this.factory = options.factory || (factory as E)
     this.ns = options.ns || prepareNamespaces(this.factory)
 
     const { sh, xsd } = this.ns
@@ -46,11 +47,11 @@ export class ValidationReport {
   }
 }
 
-export class ValidationResult {
+export class ValidationResult<D extends DatasetCore> {
   declare term: Term
-  declare dataset: DatasetCore
+  declare dataset: D
 
-  constructor(private pointer: GraphPointer, private ns: Namespaces) {
+  constructor(private pointer: GraphPointer<Term, D>, private ns: Namespaces) {
     this.term = pointer.term
     this.dataset = pointer.dataset
   }

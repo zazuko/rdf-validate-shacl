@@ -45,9 +45,8 @@
     "@zazuko/shacl-test": "^0.1.1",
     "bench-node": "^0.5.2",
     "chai": "^5.2.0",
-    "n3": "^1.25.2",
-    "rdf-utils-dataset": "^2.0.0",
-    "sinon": "^20.0.0"
+    "sinon": "^20.0.0",
+    "rdf-validate-shacl-test-harness": "*"
   },
   "files": [
     "src/*.js",

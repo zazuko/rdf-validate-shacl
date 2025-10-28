@@ -1,75 +1,47 @@
 import path from 'node:path'
-import url from 'node:url'
 import assert from 'node:assert'
+import type { GraphPointer, MultiPointer } from 'clownface'
+import resource from 'rdf-utils-dataset/resource'
 import $rdf from '@zazuko/env-node'
-import resource from 'rdf-utils-dataset/resource.js'
-import dash from '@vocabulary/dash'
-import ns from '../src/namespaces.js'
-import env from '../src/defaultEnv.js'
-import SHACLValidator from '../index.js'
+import type vocabFactory from '@vocabulary/sh'
+import type { NamedNode, Term } from '@rdfjs/types'
+import type { Dataset as DatasetExt } from '@zazuko/env/lib/DatasetExt.js'
+import type SHACLValidator from 'rdf-validate-shacl'
+import type { Validator } from 'rdf-validate-shacl'
+import { mf, sht } from './ns.js'
 import { loadDataset } from './utils.js'
-import * as constraintValidators from './dash-validators.js'
 
-const { rdfs, rdf, sh } = ns
-export const mf = $rdf.namespace('http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#')
-export const sht = $rdf.namespace('http://www.w3.org/ns/shacl-test#')
+const { rdfs, rdf, sh } = $rdf.ns
 
-const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
-const rootManifestPath = path.join(__dirname, 'data', 'data-shapes', 'manifest.ttl')
-
-export async function walkManifests({ mapTestCase = toTestCase, manifestPath = rootManifestPath } = {}) {
-  const dir = path.dirname(manifestPath)
-  const dataset = await loadDataset(manifestPath)
-  const cf = $rdf.clownface({ dataset, factory: $rdf })
-  const manifest = cf.node(mf.Manifest).in(rdf.type)
-
-  if (!manifest.term) {
-    throw new Error(`No manifest found at ${manifestPath}`)
-  }
-
-  const childrenTestCases = await Promise.all(
-    manifest
-      .out(mf.include)
-      .values
-      .map((childRelativePath) => {
-        const childManifestPath = path.join(dir, childRelativePath)
-        return walkManifests({
-          mapTestCase,
-          manifestPath: childManifestPath,
-        })
-      }),
-  )
-
-  const testCases = [...manifest.out(mf.entries).list()]
-    .map((node) => mapTestCase(node, dir))
-
-  return testCases.concat(...childrenTestCases)
+interface Options {
+  node: GraphPointer<Term, DatasetExt>
+  dir: string
+  constraintVocabularies?: Array<typeof vocabFactory>
+  constraintValidators?: Array<Record<string, Validator>>
 }
 
-function toTestCase(node, dir) {
-  return new TestCase(node, dir)
-}
+export class TestCase {
+  private node: GraphPointer<Term, DatasetExt>
+  public label: string
 
-class TestCase {
-  constructor(node, dir) {
-    this.node = node
-    this.dir = dir
-    this.label = node.out(rdfs.label).value
+  constructor(private Validator: typeof SHACLValidator, private options: Options) {
+    this.node = options.node
+    this.label = options.node.out(rdfs.label).value
   }
 
   async getShapes() {
-    return this.getGraph(this.node.out(mf.action).out(sht.shapesGraph))
+    return this.getGraph(this.node.out(mf.action).out(sht.shapesGraph).term)
   }
 
   async getData() {
-    return this.getGraph(this.node.out(mf.action).out(sht.dataGraph))
+    return this.getGraph(this.node.out(mf.action).out(sht.dataGraph).term)
   }
 
-  async getGraph({ value: relativePath }) {
+  async getGraph({ value: relativePath }: Term) {
     return this._loadDataset(relativePath)
   }
 
-  async _loadDataset(relativePath) {
+  async _loadDataset(relativePath: string) {
     if (relativePath === '') {
       return this.node.dataset
     }
@@ -78,26 +50,26 @@ class TestCase {
       relativePath = './' + relativePath
     }
 
-    const filePath = path.resolve(this.dir, relativePath)
+    const filePath = path.resolve(this.options.dir, relativePath)
     return loadDataset(filePath)
   }
 
   async execute({ useRdfExt = false } = {}) {
-    let data = await this.getData()
-    let shapes = await this.getShapes()
+    const data = await this.getData()
+    const shapes = await this.getShapes()
 
     if (!useRdfExt) {
-      data = env.dataset([...data])
-      shapes = env.dataset([...shapes])
+      // data = env.dataset([...data])
+      // shapes = env.dataset([...shapes])
     }
 
-    const validator = new SHACLValidator(shapes, {
+    const validator = new this.Validator(shapes, {
       factory: $rdf,
-      importGraph: (url) => {
+      importGraph: (url: NamedNode) => {
         return this.getGraph(url)
       },
-      constraintVocabularies: [dash],
-      constraintValidators: [constraintValidators],
+      constraintVocabularies: this.options.constraintVocabularies,
+      constraintValidators: this.options.constraintValidators,
     })
     const expectedReport = this.node.out(mf.result)
 
@@ -114,7 +86,7 @@ class TestCase {
 }
 
 // As specified in https://w3c.github.io/data-shapes/data-shapes-test-suite/#Validate
-function normalizeReport(report, expectedReport) {
+function normalizeReport(report: MultiPointer<Term, DatasetExt>, expectedReport: MultiPointer<Term, DatasetExt>) {
   // Delete messages if expected report doesn't have any
   if (expectedReport.out(sh.result).out(sh.resultMessage).values.length === 0) {
     report.out(sh.result).deleteOut(sh.resultMessage)
@@ -129,7 +101,7 @@ function normalizeReport(report, expectedReport) {
   splitSharedBlankNodes(report.dataset)
 }
 
-function splitSharedBlankNodes(dataset) {
+function splitSharedBlankNodes(dataset: DatasetExt) {
   const cf = $rdf.clownface({ dataset })
 
   const predicates = [

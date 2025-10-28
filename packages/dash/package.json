@@ -13,14 +13,18 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@vocabulary/dash": "^1.0.5"
+    "@vocabulary/dash": "^1.0.5",
+    "@tpluscode/rdf-ns-builders": "^5.0.0"
+  },
+  "devDependencies": {
+    "rdf-validate-shacl": "^0.6.5",
+    "rdf-validate-shacl-test-harness": "*"
   },
   "peerDependencies": {
     "rdf-validate-shacl": "^0.6.5"
   },
   "mocha": {
-    "extensions": ["ts"],
-    "spec": "test/**/*.test.ts",
+    "spec": "test/*.test.ts",
     "extends": "../../package.json"
   }
 }

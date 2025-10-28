@@ -4,8 +4,8 @@ import assert from 'assert'
 import url from 'url'
 import rdf from '@zazuko/env-node'
 import $rdf from '@zazuko/env-node'
+import { loadDataset } from 'rdf-validate-shacl-test-harness'
 import SHACLValidator from '../index.js'
-import { loadDataset } from './utils.js'
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 const rootPath = path.join(__dirname, '/data')

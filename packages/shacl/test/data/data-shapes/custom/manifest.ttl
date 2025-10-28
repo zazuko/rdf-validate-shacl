@@ -1,6 +1,5 @@
 @prefix mf:      <http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#> .
 @prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix sht:     <http://www.w3.org/ns/shacl-test#> .
 
 <>
 	a mf:Manifest ;
@@ -14,5 +13,4 @@
 	mf:include <and-minCount.ttl> ;
 	mf:include <pattern-multiple.ttl> ;
 	mf:include <owl-imports.ttl> ;
-	mf:include <dash.ttl> ;
 	.

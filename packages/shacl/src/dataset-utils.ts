@@ -1,9 +1,11 @@
 import TermSet from '@rdfjs/term-set'
-import type { DatasetCore, Quad, Term } from '@rdfjs/types'
+import type { DatasetCore, DatasetCoreFactory, Quad, Term } from '@rdfjs/types'
 import type { GraphPointer, MultiPointer } from 'clownface'
 import NodeSet from './node-set.js'
 import type { Shape } from './shapes-graph.js'
 import type { Namespaces } from './namespaces.js'
+
+export type ExtractDataset<This> = This extends DatasetCoreFactory ? ReturnType<This['dataset']> : never;
 
 /**
  * Extracts all the quads forming the structure under a blank node. Stops at

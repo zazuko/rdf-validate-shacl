@@ -14,8 +14,8 @@ import * as defaultValidators from './src/validators.js'
 
 export type { Validator } from './src/validation-engine.js'
 
-export interface Options {
-  factory?: Environment
+export interface Options<E extends Environment> {
+  factory?: E
   /**
    * Max number of errors before the engine stops. Defaults to finding all the errors.
    */
@@ -29,14 +29,14 @@ export interface Options {
 /**
  * Validates RDF data based on a set of RDF shapes.
  */
-class SHACLValidator {
-  declare factory: Environment
+class SHACLValidator<E extends Environment = Environment> {
+  declare factory: E
   declare ns: Namespaces
   declare allowNamedNodeInList: boolean
   declare $shapes: AnyPointer
   declare $data: AnyPointer
   declare shapesGraph: ShapesGraph
-  declare validationEngine: ValidationEngine
+  declare validationEngine: ValidationEngine<E>
   declare depth: number
   declare importGraph?: (url: NamedNode) => Promise<DatasetCore> | DatasetCore
   declare validators: ValidatorRegistry
@@ -46,10 +46,10 @@ class SHACLValidator {
    * @param shapes - Dataset containing the SHACL shapes for validation
    * @param {object} [options] - Validator options
    */
-  constructor(shapes: DatasetCore, { constraintValidators = [], ...options }: Options = {}) {
+  constructor(shapes: DatasetCore, { constraintValidators = [], ...options }: Options<E> = {}) {
     options = options || {}
 
-    this.factory = options.factory || factory
+    this.factory = options.factory || (factory as E)
     this.ns = prepareNamespaces(this.factory)
     this.allowNamedNodeInList = options.allowNamedNodeInList === undefined ? false : options.allowNamedNodeInList
     const dataset = this.factory.dataset([...shapes])
@@ -103,8 +103,8 @@ class SHACLValidator {
   /**
    * Exposed to be available from validation functions as `SHACL.nodeConformsToShape`
    */
-  nodeConformsToShape(focusNode: Term, shapeNode: Term, propertyPathOrEngine?: ValidationEngine | ShaclPropertyPath | null) {
-    let engine: ValidationEngine
+  nodeConformsToShape(focusNode: Term, shapeNode: Term, propertyPathOrEngine?: ValidationEngine<E> | ShaclPropertyPath | null) {
+    let engine: ValidationEngine<E>
     let shape = this.shapesGraph?.getShape(shapeNode)
 
     if (propertyPathOrEngine && 'termType' in propertyPathOrEngine) {

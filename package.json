@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "lint": "eslint . --ignore-path .gitignore --quiet",
-    "test": "npm test --workspaces",
+    "test": "npm test --workspaces --if-present",
     "release": "changeset publish"
   },
   "workspaces": [

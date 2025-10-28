@@ -2,8 +2,8 @@
 import assert from 'assert'
 import path from 'path'
 import url from 'url'
+import { loadDataset } from 'rdf-validate-shacl-test-harness'
 import SHACLValidator from '../index.js'
-import { loadDataset } from './utils.js'
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url))
 

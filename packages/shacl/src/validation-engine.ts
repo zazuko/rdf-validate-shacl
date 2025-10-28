@@ -4,6 +4,7 @@ import type { AnyPointer, GraphPointer } from 'clownface'
 import type { Literal, NamedNode, Quad_Predicate, Term } from '@rdfjs/types'
 import type SHACLValidator from '../index.js'
 import ValidationReport from './validation-report.js'
+import type { ExtractDataset } from './dataset-utils.js'
 import { extractStructure, extractSourceShapeStructure } from './dataset-utils.js'
 import type { Constraint, Shape } from './shapes-graph.js'
 import type { Environment } from './defaultEnv.js'
@@ -54,9 +55,9 @@ type Options = {
   nestedResults?: Record<string, GraphPointer[]>
 }
 
-class ValidationEngine {
-  declare context: SHACLValidator
-  declare factory: Environment
+class ValidationEngine<E extends Environment> {
+  declare context: SHACLValidator<E>
+  declare factory: E
   declare maxErrors: number | undefined
   declare maxNodeChecks: number
   declare recordErrorsLevel: number
@@ -64,9 +65,9 @@ class ValidationEngine {
   declare validationError: Error | null
   declare nestedResults: Record<string, GraphPointer[]>
   declare nodeCheckCounters: Record<string, number>
-  declare reportPointer: GraphPointer
+  declare reportPointer: GraphPointer<Term, ExtractDataset<E>>
 
-  constructor(context: SHACLValidator, options: Options) {
+  constructor(context: SHACLValidator<E>, options: Options) {
     this.context = context
     this.factory = context.factory
     this.maxErrors = options.maxErrors
@@ -77,10 +78,10 @@ class ValidationEngine {
     this.validationError = null
     this.nestedResults = options.nestedResults || {}
     this.nodeCheckCounters = {}
-    this.reportPointer = this.factory.clownface().blankNode()
+    this.reportPointer = this.factory.clownface().blankNode() as GraphPointer<Term, ExtractDataset<E>>
   }
 
-  clone({ recordErrorsLevel }: Options = {}): ValidationEngine {
+  clone({ recordErrorsLevel }: Options = {}): ValidationEngine<E> {
     return new ValidationEngine(this.context, {
       maxErrors: this.maxErrors,
       maxNodeChecks: this.maxNodeChecks,
@@ -94,7 +95,7 @@ class ValidationEngine {
 
     this.reportPointer = this.factory.clownface({
       term: this.factory.blankNode('report'),
-    }).addOut(rdf.type, sh.ValidationReport)
+    }).addOut(rdf.type, sh.ValidationReport) as GraphPointer<Term, ExtractDataset<E>>
   }
 
   /**
@@ -234,7 +235,7 @@ class ValidationEngine {
       error('Validation Failure: ' + this.validationError)
       throw (this.validationError)
     } else {
-      return new ValidationReport(this.reportPointer, { factory: this.factory, ns: this.context.ns })
+      return new ValidationReport<E>(this.reportPointer, { factory: this.factory, ns: this.context.ns })
     }
   }
 

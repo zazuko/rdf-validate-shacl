@@ -3,10 +3,10 @@ import path from 'path'
 import assert from 'assert'
 import * as url from 'url'
 import clownface from 'clownface'
+import { loadDataset } from 'rdf-validate-shacl-test-harness'
 import SHACLValidator from '../index.js'
 import ns from '../src/namespaces.js'
 import { rdfListToArray } from '../src/dataset-utils.js'
-import { loadDataset } from './utils.js'
 
 const { rdfs, sh } = ns
 
