@@ -1,3 +1,3 @@
 module.exports = {
-  require: ["tsx", require.resolve("./mocha-setup.js")]
+  require: ["tsx/esm", require.resolve("./mocha-setup.js")]
 }
