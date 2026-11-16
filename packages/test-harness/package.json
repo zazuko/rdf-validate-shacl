@@ -1,5 +1,6 @@
 {
   "name": "rdf-validate-shacl-test-harness",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
