@@ -410,7 +410,13 @@ export const validatePattern: Validator = {
     const { sh } = context.ns
     const flagsNode = constraint.getParameterValue(sh.flags)
     const patternNode = constraint.getParameterValue(sh.pattern)
-    const re = flagsNode ? new RegExp(patternNode.value, flagsNode.value) : new RegExp(patternNode.value)
+    let flags = flagsNode?.value || ''
+    const pattern = flags.includes('x') ? removePatternWhitespace(patternNode.value) : patternNode.value
+    flags = flags.replace(/x/g, '')
+    if (!flags.includes('u')) {
+      flags += 'u'
+    }
+    const re = new RegExp(pattern, flags)
     return re.test(valueNode.value)
   },
   validationMessage: 'Value does not match pattern "{$pattern}"',
@@ -546,6 +552,32 @@ export const validateXone: Validator = {
 }
 
 // Private helper functions
+
+function removePatternWhitespace(pattern: string): string {
+  let result = ''
+  let inCharacterClass = false
+  let escaped = false
+
+  for (const character of pattern) {
+    // XPath's x flag removes only XML whitespace, before interpreting escapes.
+    if (!inCharacterClass && /[ \t\r\n]/.test(character)) {
+      continue
+    }
+
+    result += character
+    if (escaped) {
+      escaped = false
+    } else if (character === '\\') {
+      escaped = true
+    } else if (character === '[') {
+      inCharacterClass = true
+    } else if (character === ']') {
+      inCharacterClass = false
+    }
+  }
+
+  return result
+}
 
 /**
  * Compare 2 terms.
