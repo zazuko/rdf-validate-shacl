@@ -186,15 +186,18 @@ export const validateLanguageIn: Validator = {
       return false
     }
 
-    const valueLanguage = valueNode.language
-    if (!valueLanguage || valueLanguage === '') {
+    const valueLanguage = valueNode.language.toLowerCase()
+    if (!valueLanguage) {
       return false
     }
 
     const languageInNode = constraint.getParameterValue(sh.languageIn)
     const allowedLanguages = rdfListToArray(context.$shapes.node(languageInNode))
 
-    return allowedLanguages.some(allowedLanguage => valueLanguage.startsWith(allowedLanguage.value))
+    return allowedLanguages.some(allowedLanguage => {
+      const range = allowedLanguage.value.toLowerCase()
+      return range === '*' || valueLanguage === range || valueLanguage.startsWith(`${range}-`)
+    })
   },
   validationMessage: 'Language does not match any of {$languageIn}',
 }
@@ -291,7 +294,7 @@ export const validateMaxLength: Validator = {
 
     const { sh } = context.ns
     const maxLengthNode = constraint.getParameterValue(sh.maxLength)
-    return valueNode.value.length <= Number(maxLengthNode.value)
+    return Array.from(valueNode.value).length <= Number(maxLengthNode.value)
   },
   validationMessage: 'Value has more than {$maxLength} characters',
 }
@@ -342,7 +345,7 @@ export const validateMinLength: Validator = {
 
     const { sh } = context.ns
     const minLengthNode = constraint.getParameterValue(sh.minLength)
-    return valueNode.value.length >= Number(minLengthNode.value)
+    return Array.from(valueNode.value).length >= Number(minLengthNode.value)
   },
   validationMessage: 'Value has less than {$minLength} characters',
 }
@@ -410,7 +413,23 @@ export const validatePattern: Validator = {
     const { sh } = context.ns
     const flagsNode = constraint.getParameterValue(sh.flags)
     const patternNode = constraint.getParameterValue(sh.pattern)
-    const re = flagsNode ? new RegExp(patternNode.value, flagsNode.value) : new RegExp(patternNode.value)
+    let flags = flagsNode?.value || ''
+    const pattern = flags.includes('x') ? removePatternWhitespace(patternNode.value) : patternNode.value
+    flags = flags.replace(/x/g, '')
+    let re: RegExp
+    if (!flags.includes('u')) {
+      try {
+        re = new RegExp(pattern, `${flags}u`)
+      } catch (error) {
+        if (error instanceof SyntaxError) {
+          re = new RegExp(pattern, flags)
+        } else {
+          throw error
+        }
+      }
+    } else {
+      re = new RegExp(pattern, flags)
+    }
     return re.test(valueNode.value)
   },
   validationMessage: 'Value does not match pattern "{$pattern}"',
@@ -547,6 +566,32 @@ export const validateXone: Validator = {
 
 // Private helper functions
 
+function removePatternWhitespace(pattern: string): string {
+  let result = ''
+  let inCharacterClass = false
+  let escaped = false
+
+  for (const character of pattern) {
+    // XPath's x flag removes only XML whitespace, before interpreting escapes.
+    if (!inCharacterClass && /[ \t\r\n]/.test(character)) {
+      continue
+    }
+
+    result += character
+    if (escaped) {
+      escaped = false
+    } else if (character === '\\') {
+      escaped = true
+    } else if (character === '[') {
+      inCharacterClass = true
+    } else if (character === ']') {
+      inCharacterClass = false
+    }
+  }
+
+  return result
+}
+
 /**
  * Compare 2 terms.
  *
@@ -558,6 +603,10 @@ export const validateXone: Validator = {
  */
 function compareTerms(term1: Term | null | undefined, term2: Term | null | undefined, ns: Namespaces) {
   if (!term1 || !term2 || term1.termType !== 'Literal' || term2.termType !== 'Literal') {
+    return null
+  }
+
+  if (!validateTerm(term1) || !validateTerm(term2)) {
     return null
   }
 
@@ -576,10 +625,30 @@ function compareTerms(term1: Term | null | undefined, term2: Term | null | undef
   }
 
   if (typeof value1 === 'string') {
-    return value1.localeCompare(value2)
-  } else {
-    return value1 - value2
+    // fromRdf also returns strings for datatypes it cannot convert. Only
+    // xsd:string literals have SPARQL's code point string ordering.
+    if (!ns.xsd.string.equals(term1.datatype) || !ns.xsd.string.equals(term2.datatype)) {
+      return null
+    }
+
+    const characters1 = Array.from(value1)
+    const characters2 = Array.from(value2 as string)
+    for (let i = 0; i < Math.min(characters1.length, characters2.length); i++) {
+      const difference = characters1[i].codePointAt(0) - characters2[i].codePointAt(0)
+      if (difference !== 0) {
+        return difference
+      }
+    }
+    return characters1.length - characters2.length
   }
+
+  // Calendar datatypes converted to Date objects are not interchangeable.
+  if (typeof value1 === 'object' && !term1.datatype.equals(term2.datatype)) {
+    return null
+  }
+
+  const difference = value1 - value2
+  return Number.isNaN(difference) ? null : difference
 }
 
 function hasTimezone(node: Literal, ns: Namespaces) {
