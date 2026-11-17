@@ -1,3 +1,19 @@
+## 0.7.0
+
+### Minor Changes
+
+- c13e7b9: Updated `rdf-validate-datatype` to [v0.3](https://github.com/zazuko/rdf-validate-datatype/releases/tag/v0.3.0) which includes a potentially disruptive fix of XSD datatype validation
+
+### Patch Changes
+
+- 2013e35: Enable Unicode matching in `sh:pattern` validation so patterns treat astral characters, such as emoji, as single code points.
+- 4abf646: Fix literal comparisons in value range constraints, `sh:lessThan`, and `sh:lessThanOrEquals`. Compare strings by Unicode code point order instead of locale-sensitive collation, and report violations for unsupported or incompatible datatypes, invalid lexical forms, and `NaN` comparisons.
+- a0f5c62: Fix `sh:languageIn` to follow SPARQL `langMatches` semantics: match language ranges case-insensitively, require subtag boundaries for prefix matches, and support `*` for any non-empty language tag.
+- ddb4ee2: Extend options to enable providing custom constraints and validators
+- 84b5c46: Fix `sh:minLength` and `sh:maxLength` to count Unicode code points instead of UTF-16 code units, so characters such as emoji count as one character in literals and IRIs.
+- 443abbe: Updated `@vocabulary/sh`
+- 2013e35: Fix `sh:pattern` validation with `sh:flags "x"` by ignoring XML whitespace outside character classes without throwing an error.
+
 ## 0.4.4
 
 ## 0.6.5
