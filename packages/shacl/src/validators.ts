@@ -416,10 +416,20 @@ export const validatePattern: Validator = {
     let flags = flagsNode?.value || ''
     const pattern = flags.includes('x') ? removePatternWhitespace(patternNode.value) : patternNode.value
     flags = flags.replace(/x/g, '')
+    let re: RegExp
     if (!flags.includes('u')) {
-      flags += 'u'
+      try {
+        re = new RegExp(pattern, `${flags}u`)
+      } catch (error) {
+        if (error instanceof SyntaxError) {
+          re = new RegExp(pattern, flags)
+        } else {
+          throw error
+        }
+      }
+    } else {
+      re = new RegExp(pattern, flags)
     }
-    const re = new RegExp(pattern, flags)
     return re.test(valueNode.value)
   },
   validationMessage: 'Value does not match pattern "{$pattern}"',

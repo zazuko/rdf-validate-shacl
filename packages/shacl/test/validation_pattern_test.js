@@ -22,6 +22,10 @@ describe('pattern validation', () => {
     ['matches an astral character with dot', '^.$', '😀', undefined, true],
     ['counts astral characters in quantifiers', '^.{2}$', '😀', undefined, false],
     ['matches astral characters with other flags', '^.a$', '😀A', 'i', true],
+    ['handles legacy identity escapes (hyphen)', '^\\-$', '-', undefined, true],
+    ['reports non-matches for legacy identity escapes (hyphen)', '^\\-$', 'a', undefined, false],
+    ['handles legacy identity escapes (colon)', '^a\\:b$', 'a:b', undefined, true],
+    ['handles legacy identity escapes (slash)', '^a\\/b$', 'a/b', undefined, true],
   ]
 
   for (const propertyShape of [false, true]) {
