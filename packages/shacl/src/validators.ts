@@ -294,7 +294,7 @@ export const validateMaxLength: Validator = {
 
     const { sh } = context.ns
     const maxLengthNode = constraint.getParameterValue(sh.maxLength)
-    return valueNode.value.length <= Number(maxLengthNode.value)
+    return Array.from(valueNode.value).length <= Number(maxLengthNode.value)
   },
   validationMessage: 'Value has more than {$maxLength} characters',
 }
@@ -345,7 +345,7 @@ export const validateMinLength: Validator = {
 
     const { sh } = context.ns
     const minLengthNode = constraint.getParameterValue(sh.minLength)
-    return valueNode.value.length >= Number(minLengthNode.value)
+    return Array.from(valueNode.value).length >= Number(minLengthNode.value)
   },
   validationMessage: 'Value has less than {$minLength} characters',
 }
