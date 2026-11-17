@@ -186,15 +186,18 @@ export const validateLanguageIn: Validator = {
       return false
     }
 
-    const valueLanguage = valueNode.language
-    if (!valueLanguage || valueLanguage === '') {
+    const valueLanguage = valueNode.language.toLowerCase()
+    if (!valueLanguage) {
       return false
     }
 
     const languageInNode = constraint.getParameterValue(sh.languageIn)
     const allowedLanguages = rdfListToArray(context.$shapes.node(languageInNode))
 
-    return allowedLanguages.some(allowedLanguage => valueLanguage.startsWith(allowedLanguage.value))
+    return allowedLanguages.some(allowedLanguage => {
+      const range = allowedLanguage.value.toLowerCase()
+      return range === '*' || valueLanguage === range || valueLanguage.startsWith(`${range}-`)
+    })
   },
   validationMessage: 'Language does not match any of {$languageIn}',
 }
