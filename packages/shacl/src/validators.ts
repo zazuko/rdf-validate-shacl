@@ -593,6 +593,10 @@ function compareTerms(term1: Term | null | undefined, term2: Term | null | undef
     return null
   }
 
+  if (!validateTerm(term1) || !validateTerm(term2)) {
+    return null
+  }
+
   // Check that if one of the compared nodes is a datetime with a timezone,
   // the other one is too. A datetime with a specified timezone is not comparable
   // with a datetime without a timezone.
@@ -608,10 +612,30 @@ function compareTerms(term1: Term | null | undefined, term2: Term | null | undef
   }
 
   if (typeof value1 === 'string') {
-    return value1.localeCompare(value2)
-  } else {
-    return value1 - value2
+    // fromRdf also returns strings for datatypes it cannot convert. Only
+    // xsd:string literals have SPARQL's code point string ordering.
+    if (!ns.xsd.string.equals(term1.datatype) || !ns.xsd.string.equals(term2.datatype)) {
+      return null
+    }
+
+    const characters1 = Array.from(value1)
+    const characters2 = Array.from(value2 as string)
+    for (let i = 0; i < Math.min(characters1.length, characters2.length); i++) {
+      const difference = characters1[i].codePointAt(0) - characters2[i].codePointAt(0)
+      if (difference !== 0) {
+        return difference
+      }
+    }
+    return characters1.length - characters2.length
   }
+
+  // Calendar datatypes converted to Date objects are not interchangeable.
+  if (typeof value1 === 'object' && !term1.datatype.equals(term2.datatype)) {
+    return null
+  }
+
+  const difference = value1 - value2
+  return Number.isNaN(difference) ? null : difference
 }
 
 function hasTimezone(node: Literal, ns: Namespaces) {
