@@ -36,7 +36,7 @@
     "debug": "^4.3.2",
     "rdf-dataset-ext": "^1.1.0",
     "rdf-literal": "^2.0.0",
-    "rdf-validate-datatype": "^0.2.2"
+    "rdf-validate-datatype": "^0.3"
   },
   "devDependencies": {
     "@types/rdfjs__term-map": "^2.0.10",
