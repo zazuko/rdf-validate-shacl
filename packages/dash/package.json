@@ -1,6 +1,6 @@
 {
   "name": "rdf-validate-dash",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "main": "index.js",
   "exports": {
@@ -35,12 +35,12 @@
     "@vocabulary/dash": "^1.0.6"
   },
   "devDependencies": {
-    "rdf-validate-shacl": "^0.6.5",
+    "rdf-validate-shacl": "^0.7.0",
     "rdf-validate-shacl-test-harness": "*"
   },
   "peerDependencies": {
     "@tpluscode/rdf-ns-builders": ">=5",
-    "rdf-validate-shacl": "^0.6.5"
+    "rdf-validate-shacl": "^0.7.0"
   },
   "mocha": {
     "spec": "test/*.test.ts",
